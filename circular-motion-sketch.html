@@ -104,8 +104,8 @@
   .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .chips button:active { transform: scale(0.98); }
   .meters {
-    pointer-events: none; display: flex; flex-direction: column; gap: 7px;
-    min-width: min(320px, 46vw); padding: 12px 14px;
+    pointer-events: none; display: flex; flex-direction: column; gap: 5px;
+    min-width: min(300px, 44vw); padding: 8px 12px 8px;
     background: rgba(20, 8, 24, 0.72); border: 1px solid rgba(239,230,242,0.14);
     border-radius: 14px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   }
@@ -133,7 +133,7 @@
     letter-spacing: 0.01em; line-height: 1.45;
   }
   .meters .eq.f { color: var(--accent); }
-  .meters .flag { min-height: 1.2em; font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+  .meters .flag { min-height: 1.05em; font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
   #err {
     position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 300px;
     font-family: var(--font-mono); font-size: 10px; color: #ffd6d6;
@@ -765,14 +765,43 @@ const tagM = document.getElementById('tag-m');
 const tagC = document.getElementById('tag-c');
 const tagG = document.getElementById('tag-g');
 
+const _placed = [];
 function projectTag(el, x, y, z, ox, oy) {
   _pr.set(x, y, z);
   rig.localToWorld(_pr);
   _pr.project(camera);
   if (_pr.z > 1) { el.style.display = 'none'; return; }
   el.style.display = '';
-  const sx = (_pr.x * 0.5 + 0.5) * innerWidth + ox;
-  const sy = (-_pr.y * 0.5 + 0.5) * innerHeight + oy;
+  let sx = (_pr.x * 0.5 + 0.5) * innerWidth + ox;
+  let sy = (-_pr.y * 0.5 + 0.5) * innerHeight + oy;
+  const peg = _placed.peg;
+  if (peg) {
+    let dx = sx - peg.x;
+    let dy = sy - peg.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    if (dist < 86) {
+      sx = peg.x + (dx / dist) * 86;
+      sy = peg.y + (dy / dist) * 86;
+    }
+  }
+  for (let pass = 0; pass < 3; pass++) {
+    for (const p of _placed.list) {
+      const dx = sx - p.x;
+      const dy = sy - p.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 1) { sx += 88; sy -= 20; continue; }
+      if (dist < 118) {
+        const k = (118 - dist) / dist;
+        sx += dx * k;
+        sy += dy * k;
+      }
+    }
+  }
+  const leftBound = (embed ? 8 : chromeLeftEdge() + 6);
+  const footTop = footEl ? footEl.getBoundingClientRect().top : innerHeight - 8;
+  sx = Math.max(leftBound, Math.min(innerWidth - 130, sx));
+  sy = Math.max(52, Math.min(footTop - 30, sy));
+  _placed.list.push({ x: sx, y: sy });
   el.style.transform = `translate(${sx}px, ${sy}px)`;
 }
 function tagAlpha(which) {
@@ -793,26 +822,41 @@ function syncTags() {
   const s = Math.sin(state.theta);
   const R = state.r;
   const rad = massRadius();
-  projectTag(tagV, arrowV.userData.tipX || c * R, arrowV.userData.tipY || MASS_Y, arrowV.userData.tipZ || s * R, 8, -16);
-  tagV.textContent = `v ${fmt(state.v, 2)} m/s`;
-  tagV.style.opacity = String(tagAlpha('v'));
-  projectTag(tagA, arrowA.userData.tipX || 0, arrowA.userData.tipY || MASS_Y, arrowA.userData.tipZ || 0, 8, -16);
-  tagA.textContent = `a_c ${fmt(state.ac, 2)} m/s²`;
-  tagA.style.opacity = String(tagAlpha('a'));
-  const mid = R * 0.48;
-  projectTag(tagF, c * mid, MASS_Y, s * mid, 10, 8);
-  tagF.textContent = `F_c ${fmt(state.Fc, 2)} N`;
-  tagF.style.opacity = String(tagAlpha('f'));
-  projectTag(tagR, c * R * 0.5, MASS_Y + 0.22, s * R * 0.5, -28, -28);
-  tagR.textContent = `r ${fmt(state.r, 2)} m`;
-  tagR.style.opacity = String(tagAlpha('r'));
-  projectTag(tagM, c * R, MASS_Y + rad + 0.42, s * R, -24, -12);
+  _placed.list = [];
+  _pr.set(0, 0.95, 0);
+  rig.localToWorld(_pr);
+  _pr.project(camera);
+  _placed.peg = {
+    x: (_pr.x * 0.5 + 0.5) * innerWidth,
+    y: (-_pr.y * 0.5 + 0.5) * innerHeight,
+  };
+  projectTag(tagM, c * R, MASS_Y + rad + 0.55, s * R, -36, -28);
   tagM.textContent = `m ${fmt(state.m, 2)} kg`;
   tagM.style.opacity = String(tagAlpha('m'));
-  projectTag(tagC, 0, 1.08, 0, -22, -18);
-  tagC.style.opacity = String(tagAlpha('c') * 0.85);
+  projectTag(tagV, arrowV.userData.tipX || c * R, arrowV.userData.tipY || MASS_Y, arrowV.userData.tipZ || s * R, 28, 14);
+  tagV.textContent = `v ${fmt(state.v, 2)} m/s`;
+  tagV.style.opacity = String(tagAlpha('v'));
+  projectTag(tagA, arrowA.userData.tipX || 0, (arrowA.userData.tipY || MASS_Y) + 0.22, arrowA.userData.tipZ || 0, -10, -46);
+  tagA.textContent = `a_c ${fmt(state.ac, 2)} m/s²`;
+  tagA.style.opacity = String(tagAlpha('a'));
+  if (showGhost) {
+    tagF.style.display = 'none';
+  } else {
+    projectTag(tagF, c * R * 0.42, MASS_Y - 0.16, s * R * 0.42, 18, 16);
+    tagF.textContent = `F_c ${fmt(state.Fc, 2)} N`;
+    tagF.style.opacity = String(tagAlpha('f'));
+  }
+  projectTag(tagR, c * R * 0.55, MASS_Y + 0.34, s * R * 0.55, -96, -6);
+  tagR.textContent = `r ${fmt(state.r, 2)} m`;
+  tagR.style.opacity = String(tagAlpha('r'));
+  if (focus === 'radius') {
+    projectTag(tagC, -0.35, 1.22, 0, -84, -14);
+    tagC.style.opacity = '0.9';
+  } else {
+    tagC.style.display = 'none';
+  }
   if (showGhost && arrowG.visible) {
-    projectTag(tagG, arrowG.userData.tipX, arrowG.userData.tipY, arrowG.userData.tipZ, 8, 6);
+    projectTag(tagG, arrowG.userData.tipX, arrowG.userData.tipY - 0.05, arrowG.userData.tipZ, 10, 70);
     tagG.textContent = 'if the string snapped';
     tagG.style.opacity = '0.9';
   } else {
@@ -1217,7 +1261,7 @@ function fitLesson() {
   const top = lessonEl.getBoundingClientRect().top;
   const footH = footEl.getBoundingClientRect().height;
   const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 16;
-  lessonEl.style.maxHeight = `${Math.max(160, innerHeight - padB - footH - 20 - top)}px`;
+  lessonEl.style.maxHeight = `${Math.max(150, innerHeight - padB - footH - 28 - top)}px`;
 }
 function onLessonKey(e) {
   if (e.target.closest && e.target.closest('input, textarea, select')) return;
@@ -1291,6 +1335,12 @@ if (!lsOpen) setLessonOpen(false);
 const ro = new ResizeObserver(() => { fitLesson(); resize(); if (still) { placeCamera(0); syncTags(); render(); } });
 ro.observe(stage);
 resize();
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => {
+    fitLesson();
+    if (still) { placeCamera(0); syncTags(); render(); }
+  });
+}
 if (still) {
   state.theta = 1.05;
   holdStill();
