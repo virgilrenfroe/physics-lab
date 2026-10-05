@@ -886,14 +886,22 @@ function doBounce() {
   } else if (repeat) {
     state.v1 += 0.35;
   }
+  rebaseline();
   note('bounce · they rebound and kinetic energy stays');
   syncChips();
 }
 function doStick() {
   const repeat = state.mode === 'stick';
   state.mode = 'stick';
-  if (!state.stuck && state.v1 < state.v2 + 0.25) state.v1 = state.v2 + 1.25;
-  else if (repeat && !state.stuck) state.v1 += 0.35;
+  if (state.stuck && repeat) {
+    state.v1 += 0.3;
+    state.v2 = state.v1;
+  } else if (!state.stuck && state.v1 < state.v2 + 0.25) {
+    state.v1 = state.v2 + 1.25;
+  } else if (repeat && !state.stuck) {
+    state.v1 += 0.35;
+  }
+  rebaseline();
   note('stick · they move as one and kinetic energy drops');
   syncChips();
 }
@@ -1428,7 +1436,10 @@ function frame() {
   render();
 }
 function warmStill() {
-  doReset();
+  state.mode = 'bounce';
+  state.m1 = 1;
+  state.m2 = 1;
+  placeClassic(1.5);
   for (let i = 0; i < 500; i++) {
     stepPhysics(H);
     if (state.hits > 0) break;
