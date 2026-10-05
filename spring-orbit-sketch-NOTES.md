@@ -27,5 +27,5 @@ One WebGL scene in Noctuary exhibit framing: void `#140818`, pearl type, warm `#
 - RAF pauses on `document.hidden`. `pagehide` teardown disposes geometry, materials, textures, composer, and renderer (`window.__springOrbitTeardown`).
 - Portrait layout stacks the spring over the orbit. Landscape places them side by side.
 
-## Physics Lab index
-Part of the Noctuary **Physics Lab** classroom set. Lab home: [`physics-lab/index.html`](physics-lab/index.html) (lists this demo and Newton’s laws, with room for more). Sibling: [`newton-laws-sketch.html`](newton-laws-sketch.html).
+## Physics Lab
+Standalone **Physics Lab** classroom repo. Lab home: [`index.html`](index.html). Sibling: [`newton-laws-sketch.html`](newton-laws-sketch.html).
