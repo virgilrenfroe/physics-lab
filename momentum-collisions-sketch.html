@@ -268,6 +268,14 @@
     70% { transform: translateY(3px); }
     100% { transform: translateY(0); }
   }
+  @keyframes take-hit {
+    0% { transform: translate3d(var(--hit-x, 16px), 7px, 0); }
+    55% { transform: translate3d(calc(var(--hit-x, 16px) * -0.08), 1px, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .label h1.is-hit, .meters.is-hit { animation: take-hit 0.72s var(--ease-mass); }
+  }
   @media (max-height: 820px) and (min-width: 721px) {
     .label h1 { font-size: clamp(2rem, 4vw, 3.1rem); }
     .lesson { margin-top: 10px; }
@@ -454,7 +462,7 @@ const state = {
   pushWho: 1, pushLeft: 0, pushF: PUSH_F,
   keBefore: 0, keAfter: 0, pBefore: 0, pAfter: 0, jHit: 0,
   hits: 0, walls: 0, hitKind: '',
-  flash: 0,
+  flash: 0, uiHit: 0,
   p1: 0, p2: 0, p: 0, ke: 0, gap: 0,
 };
 
@@ -546,6 +554,7 @@ function resolveCollision() {
   state.keAfter = 0.5 * state.m1 * state.v1 * state.v1 + 0.5 * state.m2 * state.v2 * state.v2;
   state.hits += 1;
   state.flash = 1;
+  state.uiHit = state.jHit < 0 ? 1 : -1;
   note(e === 0
     ? 'stick · one speed · kinetic energy drops'
     : 'bounce · momentum shared · kinetic energy stays');
@@ -807,15 +816,23 @@ function setPairBar(mesh, value, full) {
   mesh.scale.y = h;
   mesh.position.y = (value >= 0 ? h / 2 : -h / 2) + 0.04;
 }
-function syncCart(cart, m, x) {
+function syncCart(cart, m, x, squeeze) {
   const s = Math.cbrt(m);
-  cart.body.scale.set(s, s, s);
-  cart.body.position.y = 0.17 * s;
+  const sx = s * squeeze;
+  const sy = s * (1 + (1 - squeeze) * 0.55);
+  cart.body.scale.set(sx, sy, s);
+  cart.body.position.y = 0.17 * sy;
   cart.g.position.set(x, 0, 0);
 }
+function contactSqueeze(which) {
+  if (still) return state.stuck ? 0.96 : 1;
+  let q = state.stuck ? 0.94 : 1 - Math.min(1, state.flash) * 0.18;
+  if (drag.target === which) q *= 0.96;
+  return q;
+}
 function syncVisuals() {
-  syncCart(cartA, state.m1, state.x1);
-  syncCart(cartB, state.m2, state.x2);
+  syncCart(cartA, state.m1, state.x1, contactSqueeze('a'));
+  syncCart(cartB, state.m2, state.x2, contactSqueeze('b'));
   const yV = 0.72;
   const yP = 1.18;
   setArrowLen(arrowVA, state.v1 * 0.42);
@@ -1424,6 +1441,18 @@ function frame() {
     doLaunch();
   }
   simulate(dt);
+  if (state.uiHit && !motionQuery.matches && !still) {
+    const px = `${state.uiHit * 22}px`;
+    const title = document.querySelector('.label h1');
+    for (const el of [title, metersEl]) {
+      if (!el) continue;
+      el.style.setProperty('--hit-x', px);
+      el.classList.remove('is-hit');
+      void el.offsetWidth;
+      el.classList.add('is-hit');
+    }
+    state.uiHit = 0;
+  }
   state.flash *= Math.exp(-dt * 3.2);
   if (Math.floor(simT * 30) !== Math.floor((simT - dt) * 30)) pushTrace();
   flagHold = Math.max(0, flagHold - dt);

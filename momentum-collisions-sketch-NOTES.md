@@ -24,7 +24,7 @@ Units: SI (kg, m/s, kg·m/s, N·s, J). The air track has no friction, so between
 Placing a cart or changing mass starts that check again. A velocity you did not push or collide would break p − p₀ − J = 0.
 
 ## What it shows (craft)
-One WebGL scene, Noctuary void `#140818`, pearl / warm `#ffb36b` / honey `#f0c24b` / lilac `#b9a2ff`. A level air track, two carts, velocity and momentum arrows, a contact flash, and a gold link when they stick. Honey and lilac columns compare p total with p₀ + J. Lesson slab and chips use the lab’s weighted chrome.
+One WebGL scene, Noctuary void `#140818`, pearl / warm `#ffb36b` / honey `#f0c24b` / lilac `#b9a2ff`. A level air track, two carts, velocity and momentum arrows, a contact flash, and a gold link when they stick. Honey and lilac columns compare p total with p₀ + J. Lesson slab and chips keep the lab’s weighted chrome: hard offset, no rounded card, press that shortens, then settles. A hit shoves the title and the meters along the momentum transfer and eases back; the carts compress on contact. Reduced motion keeps the pose and skips that travel.
 
 ## Controls
 - Drag a cart to place it (that cart’s velocity goes to 0, and the momentum check starts again).
