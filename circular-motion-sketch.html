@@ -490,7 +490,7 @@ const stringMat = keep(new THREE.MeshStandardMaterial({
   color: 0xf4eadf, roughness: 0.42, metalness: 0.08,
   emissive: 0xffb36b, emissiveIntensity: 0.35,
 }));
-const stringMesh = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.02, 0.02, 1, 12)), stringMat);
+const stringMesh = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.028, 0.028, 1, 12)), stringMat);
 rig.add(stringMesh);
 const chevron = new THREE.Mesh(
   keep(new THREE.ConeGeometry(0.048, 0.13, 12)),
@@ -1098,6 +1098,8 @@ const LS = [
   { topic: 'Questions', focus: 'both', html: `
     <h3>Questions to try</h3>
     <p>Use the live scene, then open a hint.</p>
+    <p class="watch"><b>Watch</b>Reset, then try Double v, Double r, and Double m. The honey arrow stays aimed at the peg. Read a<sub>c</sub> and F<sub>c</sub> before you open the hint.</p>
+    <p class="live"><b>Now</b>a<sub>c</sub> = <span data-live="ac">—</span> · v²/r = <span data-live="acV">—</span> · ω²r = <span data-live="acW">—</span> · F<sub>c</sub> = <span data-live="Fc">—</span></p>
     <details><summary>The speed is constant. What is a<sub>c</sub>, and which way does it point?</summary><p>a<sub>c</sub> = v²/r, toward the center. A steady speed still has a changing direction, and that change is inward.</p></details>
     <details><summary>Predict a<sub>c</sub> for v = 2.0 m/s and r = 1.0 m.</summary><p>a<sub>c</sub> = 2²/1 = 4.0 m/s², inward. Set Wider / Faster until the meters are close, or just compute it.</p></details>
     <details><summary>You double v. r and m stay fixed. What happens to a<sub>c</sub> and F<sub>c</sub>?</summary><p>Both ×4, because of v². Reset, read the meters, tap Double v.</p></details>
@@ -1138,6 +1140,7 @@ function renderLesson() {
   document.body.dataset.focus = focus;
   updateLessonLive();
   syncVisuals();
+  syncTags();
 }
 function updateLessonLive() {
   if (!lsLive.length) return;
@@ -1190,6 +1193,7 @@ function setLessonOpen(open) {
   fitLesson();
   resize();
   syncVisuals();
+  syncTags();
 }
 function setMobileMode(mode) {
   mMode = mode;
