@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>Hooke's law &amp; orbital motion · Noctuary physics exhibit</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.52);
+    --faint: rgba(239, 230, 242, 0.3);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  #stage canvas.can-grab { cursor: grab; }
+  #stage canvas.grabbing { cursor: grabbing; }
+  .vig {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(ellipse at 50% 58%, transparent 44%, rgba(5, 1, 8, 0.58) 100%),
+      linear-gradient(to top, rgba(255, 150, 80, 0.045), transparent 32%);
+  }
+  .tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .tags span {
+    position: absolute; left: 0; top: 0; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+    color: var(--mute);
+    will-change: transform;
+  }
+  .tags span b { color: var(--accent); font-weight: 400; }
+  .chrome {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: max(18px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  }
+  .label .tag {
+    margin: 0 0 8px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.8);
+  }
+  .label h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(2.1rem, 5.4vw, 4.6rem); letter-spacing: -0.045em; line-height: 0.92;
+    text-shadow: 0 2px 30px rgba(20, 8, 24, 0.7);
+  }
+  .label h1 em { font-style: normal; font-weight: 250; color: var(--mute); }
+  .label .sub {
+    margin: 12px 0 0; max-width: 34ch;
+    font-size: clamp(0.82rem, 1.25vw, 0.98rem); line-height: 1.4; color: var(--mute);
+  }
+  .foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+  }
+  .hint {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--mute); line-height: 1.7;
+  }
+  .hint i {
+    font-style: normal; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin: 0 5px 0 0; vertical-align: 0;
+  }
+  .chips { display: flex; gap: 8px; margin: 0 0 12px; pointer-events: auto; flex-wrap: wrap; }
+  .chips button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16);
+    background: rgba(28, 12, 34, 0.55); color: var(--pearl);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500; letter-spacing: 0.01em;
+    padding: 10px 15px; min-height: 40px; border-radius: 999px; cursor: pointer;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    transition: border-color 0.25s ease-out, background 0.25s ease-out, color 0.25s ease-out;
+  }
+  .chips button small { font-family: var(--font-mono); font-size: 10px; color: var(--mute); margin-left: 6px; letter-spacing: 0.04em; }
+  .chips button[aria-pressed="true"] {
+    border-color: rgba(255, 179, 107, 0.62); background: rgba(255, 179, 107, 0.12); color: #ffe2c4;
+  }
+  .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .hud {
+    display: grid; grid-template-columns: auto auto; gap: 4px 26px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--pearl);
+    text-align: left; pointer-events: none;
+  }
+  .hud h2 {
+    grid-column: span 1; margin: 0 0 4px; font-family: var(--font-mono); font-weight: 400;
+    font-size: 10.5px; letter-spacing: 0.08em; color: rgba(255, 179, 107, 0.86);
+  }
+  .hud .col { display: flex; flex-direction: column; gap: 2px; min-width: 150px; }
+  .hud .row { display: flex; justify-content: space-between; gap: 14px; white-space: nowrap; }
+  .hud .row .l { color: var(--mute); }
+  .hud .row.k3 .v { color: var(--lilac); }
+  .hud canvas { display: block; width: 150px; height: 30px; margin-top: 4px; opacity: 0.95; }
+  .hud .flag { color: var(--accent); min-height: 1.3em; }
+  #err {
+    position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 300px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em;
+    color: #ffd6d6; background: rgba(58, 18, 18, 0.82); border-radius: 8px;
+    padding: 8px 10px; display: none;
+  }
+  /* ---------- lesson panel (teaching first) ---------- */
+  .lesson {
+    pointer-events: auto; margin-top: 18px; width: min(370px, 34vw); min-width: 300px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(26, 10, 32, 0.66); border: 1px solid rgba(239, 230, 242, 0.13);
+    border-radius: 18px; box-shadow: 0 18px 50px rgba(5, 1, 8, 0.45);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  body.has-lesson .label .sub { display: none; }
+  body.lesson-closed .label .sub { display: block; }
+  .lesson-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px;
+    border-bottom: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-kicker {
+    margin: 0; flex: 1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.86); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .lesson-kicker b { color: var(--pearl); font-weight: 400; }
+  .lesson button { font-family: var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .lesson button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lesson-toggle {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: transparent; color: var(--mute);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; min-height: 32px;
+  }
+  .lesson-tabs { display: none; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(239, 230, 242, 0.06); }
+  .lesson-tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--mute);
+    font-size: 12.5px; font-weight: 500; padding: 7px 13px; border-radius: 999px; min-height: 32px;
+  }
+  .lesson-tabs button[aria-selected="true"] { background: rgba(255, 179, 107, 0.16); color: #ffe2c4; }
+  .lesson-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 18px 6px;
+    font-size: 14.5px; line-height: 1.5; color: rgba(239, 230, 242, 0.88);
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .lesson-body h3 {
+    margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 22px;
+    letter-spacing: -0.025em; color: var(--pearl);
+  }
+  .lesson-body p { margin: 0 0 9px; }
+  .lesson-body .formula {
+    font-family: var(--font-mono); font-size: 15px; color: var(--accent); letter-spacing: 0.02em; margin-bottom: 10px;
+  }
+  .lesson-body .watch {
+    padding: 9px 11px; border-radius: 12px; background: rgba(255, 179, 107, 0.08);
+    border: 1px solid rgba(255, 179, 107, 0.2); color: #f6e7d8;
+  }
+  .lesson-body .watch b, .lesson-body .live b {
+    font-family: var(--font-mono); font-weight: 400; font-size: 9.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-right: 6px;
+  }
+  .lesson-body .live { font-family: var(--font-mono); font-size: 12px; color: var(--pearl); letter-spacing: 0.02em; }
+  .lesson-body .live span { color: var(--honey); }
+  .lesson-body .acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .lesson-body .acts button {
+    appearance: none; border: 1px solid rgba(255, 179, 107, 0.45); background: rgba(255, 179, 107, 0.1);
+    color: #ffe2c4; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 500; min-height: 36px;
+  }
+  .lesson-body .acts button[aria-pressed="true"] { background: rgba(255, 179, 107, 0.26); border-color: rgba(255, 179, 107, 0.8); }
+  .lesson-body details {
+    border-top: 1px solid rgba(239, 230, 242, 0.08); padding: 8px 0;
+  }
+  .lesson-body summary { cursor: pointer; color: var(--pearl); list-style: none; }
+  .lesson-body summary::before { content: "+ "; font-family: var(--font-mono); color: var(--accent); }
+  .lesson-body details[open] summary::before { content: "− "; }
+  .lesson-body details p { margin: 6px 0 2px; color: var(--mute); font-size: 13.5px; }
+  .lesson-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px 12px; border-top: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-nav > button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: rgba(239, 230, 242, 0.04);
+    color: var(--pearl); border-radius: 999px; padding: 8px 14px; font-size: 13px; min-height: 38px;
+  }
+  .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
+  .lesson-nav .dots { display: flex; gap: 2px; }
+  .lesson-nav .dots button {
+    appearance: none; border: 0; background: transparent; width: 22px; height: 30px; padding: 0;
+    display: grid; place-items: center;
+  }
+  .lesson-nav .dots button::after {
+    content: ""; width: 7px; height: 7px; border-radius: 50%; background: rgba(239, 230, 242, 0.25);
+    transition: background 0.25s ease-out, transform 0.25s ease-out;
+  }
+  .lesson-nav .dots button[aria-current="step"]::after { background: var(--accent); transform: scale(1.3); }
+  body.lesson-closed .lesson-body, body.lesson-closed .lesson-nav { display: none; }
+  body.lesson-closed .lesson { width: auto; min-width: 0; align-self: flex-start; display: inline-flex; }
+  body.lesson-closed .lesson-head { border-bottom: 0; }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(2rem, 4.2vw, 3.3rem); }
+    .lesson { margin-top: 12px; }
+    .lesson-body { font-size: 14px; }
+  }
+  /* scene focus follows the lesson step */
+  .hud .col, .tags span { transition: opacity 0.35s ease-out, color 0.35s ease-out; }
+  body[data-focus="spring"] .hud .col:last-child,
+  body[data-focus="orbit"] .hud .col:first-child { opacity: 0.5; }
+  body[data-focus="spring"] #tag-k, body[data-focus="spring"] #tag-eq, body[data-focus="spring"] #tag-m,
+  body[data-focus="orbit"] #tag-sun { color: #ffe2c4; }
+  body[data-focus="orbit"] #tag-k, body[data-focus="orbit"] #tag-eq { opacity: 0.45; }
+
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .label .sub, body.lesson-closed .label .sub { display: none; }
+    .lesson { width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(35vh, 300px); }
+    .lesson-head { padding: 8px 8px 8px 12px; }
+    .lesson-tabs { display: flex; }
+    .lesson-toggle { display: none; }
+    .lesson-kicker { font-size: 9.5px; letter-spacing: 0.08em; }
+    .lesson-body { padding: 10px 14px 4px; font-size: 13.5px; }
+    .lesson-body h3 { font-size: 19px; }
+    .lesson-nav { padding: 6px 8px 8px; }
+    body.m-learn .hud, body.m-learn .hint { display: none; }
+    body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
+    body.m-numbers .lesson { max-height: none; }
+    .label .tag { font-size: 9px; letter-spacing: 0.16em; }
+    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .hud { font-size: 10px; gap: 2px 18px; grid-template-columns: 1fr 1fr; }
+    .hud h2 { font-size: 9.5px; letter-spacing: 0.02em; white-space: nowrap; }
+    .hud .col { min-width: 0; }
+    .hud .lg, .hud .lgrow { display: none; }
+    .hud canvas { width: 110px; height: 22px; }
+    .chips { flex-wrap: nowrap; gap: 6px; margin-bottom: 8px; }
+    .chips button { font-size: 12px; padding: 8px 12px; min-height: 38px; white-space: nowrap; }
+    .chips .lg { display: none; }
+    .hint { font-size: 9px; letter-spacing: 0.08em; }
+    .hint .long { display: none; }
+    .tags span { font-size: 10px; }
+  }
+  html.embed, body.embed { background: transparent !important; }
+  body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
+  body.embed canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.has('embed')) {
+    document.body.classList.add('embed');
+    document.documentElement.classList.add('embed');
+  }
+})();
+</script>
+  <div id="stage"></div>
+  <div class="vig" aria-hidden="true"></div>
+  <div class="tags" aria-hidden="true">
+    <span id="tag-k">k · spring constant</span>
+    <span id="tag-m"><b>m</b></span>
+    <span id="tag-eq">x = 0 · equilibrium</span>
+    <span id="tag-sun">GM · central mass</span>
+  </div>
+  <div class="chrome">
+    <div class="label">
+      <p class="tag">Physics lab · mechanics · oscillation + gravitation</p>
+      <h1>Hooke&rsquo;s law <em>&amp;</em><br />orbital motion</h1>
+      <p class="sub">Stretch the spring: it pulls back with F = −kx, and damping bleeds the energy away. Fling the planet: gravity bends it into an ellipse — Kepler&rsquo;s laws, live. Every number is computed, softly lit.</p>
+      <section class="lesson" id="lesson" aria-label="Lesson: how it works">
+        <header class="lesson-head">
+          <div class="lesson-tabs" role="tablist" aria-label="Panel">
+            <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
+            <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
+          </div>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/7 · <b>Hooke&rsquo;s law</b></p>
+          <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
+        </header>
+        <div class="lesson-body" id="ls-body" aria-live="polite"></div>
+        <nav class="lesson-nav" aria-label="Lesson steps">
+          <button type="button" data-step="prev">← Back</button>
+          <div class="dots" id="ls-dots"></div>
+          <button type="button" data-step="next">Next →</button>
+        </nav>
+      </section>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="chips" role="group" aria-label="Spring damping">
+          <button type="button" data-preset="light" aria-pressed="true" title="0.8 kg, light damping (underdamped, rings)">Light<span class="lg"> damping</span><small>ζ 0.08</small></button>
+          <button type="button" data-preset="heavy" aria-pressed="false" title="2.4 kg, heavy damping (settles fast)">Heavy<span class="lg"> damping</span><small>ζ 0.60</small></button>
+          <button type="button" data-action="reset">Reset</button>
+        </div>
+        <div class="hint" id="hint">
+          <span><i style="background:#ffb36b"></i>pull the mass to stretch the spring · release</span><br />
+          <span><i style="background:#efe6f2"></i>fling a planet · new speed → new orbit</span><span class="long"> · drag empty space to lean</span>
+        </div>
+      </div>
+      <div class="hud" aria-live="off">
+        <div class="col">
+          <h2>Hooke&rsquo;s law · F = −kx − cv</h2>
+          <div class="row"><span class="l"><span class="lg">spring constant </span>k</span><span class="v" id="h-k">—</span></div>
+          <div class="row"><span class="l"><span class="lg">mass </span>m</span><span class="v" id="h-m">—</span></div>
+          <div class="row lgrow"><span class="l">damping c</span><span class="v" id="h-c">—</span></div>
+          <div class="row"><span class="l"><span class="lg">damping ratio </span>ζ</span><span class="v" id="h-z">—</span></div>
+          <div class="row"><span class="l">period T<span class="lg"> = 2π/ω<sub>d</sub></span></span><span class="v" id="h-td">—</span></div>
+          <div class="row"><span class="l"><span class="lg">displacement </span>x</span><span class="v" id="h-x">—</span></div>
+          <canvas id="spark" width="300" height="60" aria-hidden="true"></canvas>
+        </div>
+        <div class="col">
+          <h2>Gravity · F = GMm/r²</h2>
+          <div class="row"><span class="l">GM<span class="lg"> (central mass)</span></span><span class="v" id="h-gm">—</span></div>
+          <div class="row"><span class="l"><span class="lg">semi-major axis </span>a</span><span class="v" id="h-a">—</span></div>
+          <div class="row"><span class="l"><span class="lg">eccentricity </span>e</span><span class="v" id="h-e">—</span></div>
+          <div class="row"><span class="l">period T<span class="lg"> = 2π√(a³/GM)</span></span><span class="v" id="h-t">—</span></div>
+          <div class="row lgrow"><span class="l">r · speed v</span><span class="v" id="h-rv">—</span></div>
+          <div class="row lgrow"><span class="l">g = GM/r²</span><span class="v" id="h-g">—</span></div>
+          <div class="row k3"><span class="l">Kepler III<span class="lg"> T²/a³</span></span><span class="v" id="h-k3">—</span></div>
+          <div class="flag" id="h-flag"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="err" role="status"></div>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const VOID = 0x140818;
+const params = new URLSearchParams(location.search);
+const embed = params.has('embed');
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let still = reduced || params.has('still');
+
+const stage = document.getElementById('stage');
+const errEl = document.getElementById('err');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+
+const ua = navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+const SEG_W = isMobile ? 20 : 32;
+const SEG_H = isMobile ? 14 : 24;
+
+try {
+
+/* ================= renderer (the one WebGL context) ================= */
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha: embed,
+  powerPreference: isIOS ? 'default' : 'high-performance',
+});
+if (!renderer.getContext()) throw new Error('WebGL context failed to create.');
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); // mobile + desktop cap
+renderer.setClearColor(VOID, embed ? 0 : 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+stage.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+if (!embed) {
+  scene.background = new THREE.Color(VOID);
+  scene.fog = new THREE.Fog(VOID, 15, 36);
+}
+
+const BASE_FOV = 38;
+const camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.1, 80);
+const camBase = new THREE.Vector3(0.1, 0.55, 10.2);
+const camTarget = new THREE.Vector3(-0.1, 0.15, 0);
+
+const disposables = [];
+const keep = (x) => { disposables.push(x); return x; };
+
+/* ================= lights: dim hemi + the sun is the warm key ================= */
+const hemi = new THREE.HemisphereLight(0xcab8e8, 0x2a1020, 0.62);
+scene.add(hemi);
+const key = new THREE.PointLight(0xffb878, 46, 16, 1.55);
+scene.add(key);
+
+/* ================= rigs (translate-only; physics lives in rig-local coords) ================= */
+const springRig = new THREE.Group();
+const orbitRig = new THREE.Group();
+scene.add(springRig, orbitRig);
+
+/* ================= shared geometry / materials ================= */
+const sphereGeo = keep(new THREE.SphereGeometry(1, SEG_W, SEG_H));
+
+const massMat = keep(new THREE.MeshPhysicalMaterial({
+  color: 0xffb36b, roughness: 0.4, metalness: 0.06, clearcoat: 0.35, clearcoatRoughness: 0.4,
+  emissive: 0x6a2a08, emissiveIntensity: 0.28,
+}));
+const coilMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xe6dcec, roughness: 0.34, metalness: 0.42, emissive: 0x2a1a30, emissiveIntensity: 0.4,
+}));
+const railMat = keep(new THREE.MeshStandardMaterial({ color: 0x3a2440, roughness: 0.62, metalness: 0.1 }));
+const sunMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffc98a, emissive: 0xffa04a, emissiveIntensity: 1.05, roughness: 0.6,
+}));
+const pearlMat = keep(new THREE.MeshPhysicalMaterial({
+  color: 0xefe6f2, roughness: 0.38, metalness: 0.04, clearcoat: 0.4, clearcoatRoughness: 0.35,
+  emissive: 0x30203a, emissiveIntensity: 0.35,
+}));
+const lilacMat = keep(new THREE.MeshPhysicalMaterial({
+  color: 0xb9a2ff, roughness: 0.42, metalness: 0.05, clearcoat: 0.3, clearcoatRoughness: 0.4,
+  emissive: 0x24164a, emissiveIntensity: 0.4,
+}));
+
+/* soft radial sprite texture (sun halo, works without bloom on mobile) */
+function radialTexture(stops) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  for (const [o, col] of stops) grd.addColorStop(o, col);
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return keep(t);
+}
+const haloTex = radialTexture([[0, 'rgba(255,200,140,0.9)'], [0.25, 'rgba(255,170,100,0.35)'], [1, 'rgba(255,140,80,0)']]);
+
+/* ================= glow trail (ring-buffer Points, fades by age) ================= */
+const trailVert = /* glsl */`
+  attribute float aIdx;
+  uniform float uHead, uN, uFilled, uSize, uPR;
+  varying float vA;
+  void main() {
+    float age = mod(uHead - aIdx + uN, uN);
+    float f = age / uN;
+    vA = age < uFilled ? pow(1.0 - f, 1.7) : 0.0;
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mv;
+    gl_PointSize = uSize * uPR * (0.35 + 0.65 * (1.0 - f)) * (10.0 / max(0.5, -mv.z));
+  }`;
+const trailFrag = /* glsl */`
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  varying float vA;
+  void main() {
+    vec2 p = gl_PointCoord - 0.5;
+    float d = dot(p, p);
+    if (d > 0.25) discard;
+    float a = smoothstep(0.25, 0.0, d) * vA * uOpacity;
+    gl_FragColor = vec4(uColor * a, a);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+  }`;
+
+class Trail {
+  constructor(n, color, size, opacity) {
+    this.n = n; this.head = 0; this.filled = 0;
+    this.pos = new Float32Array(n * 3);
+    const idx = new Float32Array(n);
+    for (let i = 0; i < n; i++) idx[i] = i;
+    this.geo = keep(new THREE.BufferGeometry());
+    this.attr = new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage);
+    this.geo.setAttribute('position', this.attr);
+    this.geo.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
+    this.mat = keep(new THREE.ShaderMaterial({
+      uniforms: {
+        uHead: { value: 0 }, uN: { value: n }, uFilled: { value: 0 },
+        uSize: { value: size }, uPR: { value: 1 },
+        uColor: { value: new THREE.Color(color) }, uOpacity: { value: opacity },
+      },
+      vertexShader: trailVert, fragmentShader: trailFrag,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    }));
+    this.points = new THREE.Points(this.geo, this.mat);
+    this.points.frustumCulled = false;
+    this.points.renderOrder = 3;
+  }
+  push(v) {
+    this.head = (this.head + 1) % this.n;
+    const i = this.head * 3;
+    this.pos[i] = v.x; this.pos[i + 1] = v.y; this.pos[i + 2] = v.z;
+    this.filled = Math.min(this.filled + 1, this.n);
+    this.attr.needsUpdate = true;
+    this.mat.uniforms.uHead.value = this.head;
+    this.mat.uniforms.uFilled.value = this.filled;
+  }
+  clear(v) {
+    for (let i = 0; i < this.n; i++) { this.pos[i * 3] = v.x; this.pos[i * 3 + 1] = v.y; this.pos[i * 3 + 2] = v.z; }
+    this.filled = 0;
+    this.attr.needsUpdate = true;
+    this.mat.uniforms.uFilled.value = 0;
+  }
+}
+
+/* ================= 1 · SPRING (Hooke + viscous damping, 3D elastic pendulum) ================= */
+const G = 9.81;
+const spring = {
+  k: 28, L0: 1.05, m: 0.8, zeta: 0.08, c: 0, r: 0.2,
+  pos: new THREE.Vector3(), vel: new THREE.Vector3(),
+  dragging: false, target: new THREE.Vector3(), dragVel: new THREE.Vector3(),
+};
+const PRESETS = { light: { m: 0.8, zeta: 0.08 }, heavy: { m: 2.4, zeta: 0.6 } };
+let presetName = 'light';
+const Leq = () => spring.L0 + (spring.m * G) / spring.k; // static stretch mg/k
+
+/* anchor: soft rail + eye */
+const rail = new THREE.Mesh(keep(new THREE.CapsuleGeometry(0.05, 0.9, 4, 12)), railMat);
+rail.rotation.z = Math.PI / 2;
+rail.position.y = 0.05;
+const eye = new THREE.Mesh(keep(new THREE.TorusGeometry(0.06, 0.018, 8, 20)), coilMat);
+eye.position.y = 0.0;
+springRig.add(rail, eye);
+
+/* coil: unit-length helix along −y, tapered to the axis at both ends; scaled to live length */
+class Helix extends THREE.Curve {
+  constructor(turns, radius) { super(); this.turns = turns; this.radius = radius; }
+  getPoint(t, target = new THREE.Vector3()) {
+    const env = THREE.MathUtils.smoothstep(t, 0, 0.07) * (1 - THREE.MathUtils.smoothstep(t, 0.93, 1));
+    const a = t * this.turns * Math.PI * 2;
+    return target.set(Math.cos(a) * this.radius * env, -t, Math.sin(a) * this.radius * env);
+  }
+}
+const COIL_TURNS = 12;
+const coilGeo = keep(new THREE.TubeGeometry(new Helix(COIL_TURNS, 0.15), isMobile ? 170 : 300, 0.019, isMobile ? 5 : 7, false));
+const coil = new THREE.Mesh(coilGeo, coilMat);
+springRig.add(coil);
+
+const massMesh = new THREE.Mesh(sphereGeo, massMat);
+springRig.add(massMesh);
+
+/* equilibrium tick (x = 0), moves with mass/k */
+const eqGeo = keep(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.42, 0, 0), new THREE.Vector3(-0.22, 0, 0), new THREE.Vector3(0.22, 0, 0), new THREE.Vector3(0.42, 0, 0)]));
+const eqMat = keep(new THREE.LineBasicMaterial({ color: 0xefe6f2, transparent: true, opacity: 0.35 }));
+const eqTick = new THREE.LineSegments(eqGeo, eqMat);
+springRig.add(eqTick);
+
+const springTrail = new Trail(isMobile ? 70 : 110, 0xffb36b, 2.6, 0.55);
+scene.add(springTrail.points);
+
+function applyPreset(name, pluck) {
+  presetName = name;
+  const p = PRESETS[name];
+  spring.m = p.m;
+  spring.zeta = p.zeta;
+  spring.c = 2 * p.zeta * Math.sqrt(spring.k * p.m);
+  spring.r = 0.2 * Math.cbrt(p.m / 0.8);
+  massMesh.scale.setScalar(spring.r);
+  eqTick.position.set(0, -Leq(), 0);
+  for (const b of document.querySelectorAll('[data-preset]')) b.setAttribute('aria-pressed', String(b.dataset.preset === name));
+  for (const b of document.querySelectorAll('.lesson [data-act="preset"]')) b.setAttribute('aria-pressed', String(b.dataset.p === name));
+  if (pluck) pluckSpring(1);
+}
+function resetSpring() {
+  spring.pos.set(0, -Leq(), 0);
+  spring.vel.set(0, 0, 0);
+}
+function pluckSpring(s) {
+  spring.vel.x += 1.5 * s;
+  spring.vel.y += 2.1 * s;
+}
+
+const _d = new THREE.Vector3();
+const _f = new THREE.Vector3();
+function stepSpring(h) {
+  if (spring.dragging) {
+    const prevX = spring.pos.x, prevY = spring.pos.y, prevZ = spring.pos.z;
+    spring.pos.lerp(spring.target, Math.min(1, h * 28));
+    spring.pos.z *= 1 - Math.min(1, h * 10);
+    _d.set((spring.pos.x - prevX) / h, (spring.pos.y - prevY) / h, (spring.pos.z - prevZ) / h);
+    spring.dragVel.lerp(_d, 0.12);
+    spring.vel.copy(spring.dragVel);
+    return;
+  }
+  // F = −k (|d| − L0) d̂ − c v + m g
+  _d.copy(spring.pos);                      // anchor is the rig origin
+  const len = Math.max(1e-4, _d.length());
+  _f.copy(_d).multiplyScalar(-spring.k * (len - spring.L0) / len);
+  _f.addScaledVector(spring.vel, -spring.c);
+  _f.y -= spring.m * G;
+  spring.vel.addScaledVector(_f, h / spring.m);   // semi-implicit Euler
+  spring.pos.addScaledVector(spring.vel, h);
+}
+
+/* ================= 2 · ORBIT (central gravity, leapfrog / KDK) ================= */
+const MU = 8;                 // GM (toy units: u³/s²)
+const EPS2 = 0.02 * 0.02;     // tiny softening
+const SUN_R = 0.3;
+const orbitN = new THREE.Vector3(0.08, 0.76, 0.64).normalize();   // plane tilted toward camera
+const orbitU = new THREE.Vector3(1, 0, 0).addScaledVector(orbitN, -orbitN.x).normalize();
+const orbitW = new THREE.Vector3().crossVectors(orbitN, orbitU).normalize();
+
+const sun = new THREE.Mesh(sphereGeo, sunMat);
+sun.scale.setScalar(SUN_R);
+orbitRig.add(sun);
+const halo = new THREE.Sprite(keep(new THREE.SpriteMaterial({
+  map: haloTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.4,
+})));
+halo.scale.setScalar(1.7);
+orbitRig.add(halo);
+
+/* faint plane rings so the tilt reads */
+const ringMat = keep(new THREE.LineBasicMaterial({ color: 0xefe6f2, transparent: true, opacity: 0.07 }));
+for (const R of [1, 2, 3]) {
+  const pts = [];
+  for (let i = 0; i < 96; i++) {
+    const a = (i / 96) * Math.PI * 2;
+    pts.push(new THREE.Vector3().addScaledVector(orbitU, Math.cos(a) * R).addScaledVector(orbitW, Math.sin(a) * R));
+  }
+  orbitRig.add(new THREE.LineLoop(keep(new THREE.BufferGeometry().setFromPoints(pts)), ringMat));
+}
+
+const GHOST_N = 128;
+function makeBody(opts) {
+  const mesh = new THREE.Mesh(sphereGeo, opts.mat);
+  mesh.scale.setScalar(opts.r);
+  orbitRig.add(mesh);
+  const ghostArr = new Float32Array(GHOST_N * 3);
+  const ghostGeo = keep(new THREE.BufferGeometry());
+  ghostGeo.setAttribute('position', new THREE.BufferAttribute(ghostArr, 3).setUsage(THREE.DynamicDrawUsage));
+  const ghost = new THREE.LineLoop(ghostGeo, keep(new THREE.LineBasicMaterial({ color: opts.ghostColor, transparent: true, opacity: opts.ghostOpacity, depthWrite: false })));
+  ghost.frustumCulled = false;
+  orbitRig.add(ghost);
+  const trail = new Trail(opts.trailN, opts.trailColor, opts.trailSize, opts.trailOpacity);
+  scene.add(trail.points);
+  return {
+    ...opts, mesh, ghost, ghostArr, trail,
+    pos: new THREE.Vector3(), vel: new THREE.Vector3(), acc: new THREE.Vector3(),
+    dragging: false, target: new THREE.Vector3(), dragVel: new THREE.Vector3(),
+    spawn: 1, el: { a: 0, e: 0, T: 0, bound: true },
+  };
+}
+const bodies = [
+  makeBody({ name: 'pearl', r: 0.17, m: 0.5, mat: pearlMat, init: 'ellipse', rp: 0.95, ecc: 0.45,
+    trailN: isMobile ? 160 : 260, trailColor: 0xffd9b0, trailSize: 3.0, trailOpacity: 0.7,
+    ghostColor: 0xffb36b, ghostOpacity: 0.32 }),
+  makeBody({ name: 'lilac', r: 0.11, m: 0.3, mat: lilacMat, init: 'circle', rc: 1.3,
+    trailN: isMobile ? 90 : 140, trailColor: 0xb9a2ff, trailSize: 2.2, trailOpacity: 0.55,
+    ghostColor: 0xb9a2ff, ghostOpacity: 0.16 }),
+];
+
+function resetBody(b) {
+  if (b.init === 'ellipse') {
+    const vp = Math.sqrt(MU * (1 + b.ecc) / b.rp);          // vis-viva at periapsis
+    b.pos.copy(orbitU).multiplyScalar(b.rp);
+    b.vel.copy(orbitW).multiplyScalar(vp);
+  } else {
+    const vc = Math.sqrt(MU / b.rc);
+    b.pos.copy(orbitU).multiplyScalar(-b.rc * 0.6).addScaledVector(orbitW, b.rc * 0.8);
+    b.vel.copy(orbitU).multiplyScalar(-vc * 0.8).addScaledVector(orbitW, -vc * 0.6);
+  }
+  b.dragging = false;
+  b.spawn = 0;
+}
+function gravity(p, out) {
+  const r2 = p.lengthSq() + EPS2;
+  return out.copy(p).multiplyScalar(-MU / (r2 * Math.sqrt(r2)));
+}
+function stepBody(b, h) {
+  if (b.dragging) {
+    const px = b.pos.x, py = b.pos.y, pz = b.pos.z;
+    b.pos.lerp(b.target, Math.min(1, h * 26));
+    if (b.pos.length() < 0.5) b.pos.setLength(0.5);
+    _d.set((b.pos.x - px) / h, (b.pos.y - py) / h, (b.pos.z - pz) / h);
+    b.dragVel.lerp(_d, 0.1);
+    b.vel.copy(b.dragVel);
+    return;
+  }
+  gravity(b.pos, b.acc);
+  b.vel.addScaledVector(b.acc, h * 0.5);
+  b.pos.addScaledVector(b.vel, h);
+  gravity(b.pos, b.acc);
+  b.vel.addScaledVector(b.acc, h * 0.5);
+  const r = b.pos.length();
+  if (r < SUN_R + b.r * 0.4 || r > 7) resetBody(b);   // swallowed or escaped → respawn
+}
+
+/* osculating elements from (r, v): live, not hard-coded */
+const _h = new THREE.Vector3();
+const _e = new THREE.Vector3();
+const _p = new THREE.Vector3();
+const _q = new THREE.Vector3();
+function updateElements(b) {
+  const r = b.pos.length();
+  const v2 = b.vel.lengthSq();
+  const energy = v2 / 2 - MU / r;
+  _h.crossVectors(b.pos, b.vel);
+  _e.copy(b.pos).multiplyScalar(v2 - MU / r).addScaledVector(b.vel, -b.pos.dot(b.vel)).multiplyScalar(1 / MU);
+  const e = _e.length();
+  const el = b.el;
+  el.e = e;
+  el.r = r;
+  el.v = Math.sqrt(v2);
+  el.bound = energy < 0 && e < 1;
+  if (el.bound) {
+    el.a = -MU / (2 * energy);
+    el.T = 2 * Math.PI * Math.sqrt(el.a * el.a * el.a / MU);
+    // ghost ellipse: focus at sun, periapsis along ê
+    if (e > 1e-4) _p.copy(_e).multiplyScalar(1 / e); else _p.copy(b.pos).multiplyScalar(1 / r);
+    if (_h.lengthSq() < 1e-10) { b.ghost.visible = false; return; }
+    _q.crossVectors(_h, _p).normalize();
+    const a = el.a, bb = a * Math.sqrt(Math.max(0, 1 - e * e));
+    const arr = b.ghostArr;
+    for (let i = 0; i < GHOST_N; i++) {
+      const th = (i / GHOST_N) * Math.PI * 2;
+      const ca = a * (Math.cos(th) - e), sb = bb * Math.sin(th);
+      arr[i * 3] = _p.x * ca + _q.x * sb;
+      arr[i * 3 + 1] = _p.y * ca + _q.y * sb;
+      arr[i * 3 + 2] = _p.z * ca + _q.z * sb;
+    }
+    b.ghost.geometry.attributes.position.needsUpdate = true;
+    b.ghost.visible = true;
+  } else {
+    el.a = Infinity; el.T = Infinity;
+    b.ghost.visible = false;
+  }
+}
+
+/* ================= 3 · soft sphere push (spring mass ↔ planets) ================= */
+const _wm = new THREE.Vector3();
+const _wb = new THREE.Vector3();
+const _n = new THREE.Vector3();
+let contactPulse = 0;
+function softCollide(b) {
+  _wm.copy(spring.pos).add(springRig.position);
+  _wb.copy(b.pos).add(orbitRig.position);
+  _n.subVectors(_wm, _wb);
+  const dist = _n.length();
+  const minD = spring.r + b.r * Math.max(b.spawn, 0.05);
+  if (dist >= minD || dist < 1e-5) return;
+  _n.multiplyScalar(1 / dist);
+  const overlap = minD - dist;
+  const wM = spring.dragging ? 0 : 1 / spring.m;
+  const wB = b.dragging ? 0 : 1 / b.m;
+  const wSum = wM + wB;
+  if (wSum === 0) return;
+  // Verlet-style position correction (soft: half the overlap per substep)
+  const corr = overlap * 0.5 / wSum;
+  spring.pos.addScaledVector(_n, corr * wM);
+  b.pos.addScaledVector(_n, -corr * wB);
+  // gentle impulse along the normal, restitution 0.45
+  const vn = _d.subVectors(spring.vel, b.vel).dot(_n);
+  if (vn < 0) {
+    const j = -(1 + 0.45) * vn / wSum;
+    spring.vel.addScaledVector(_n, j * wM);
+    b.vel.addScaledVector(_n, -j * wB);
+    contactPulse = 1;
+  }
+}
+
+/* ================= night-city backdrop (cheap: one InstancedMesh + one Points) ================= */
+let cityWindows = null;
+if (!embed) {
+  const rnd = mulberry(7);
+  const N_B = isMobile ? 26 : 38;
+  const bGeo = keep(new THREE.BoxGeometry(1, 1, 1));
+  const bMat = keep(new THREE.MeshBasicMaterial({ color: 0x1b0b21, fog: true }));
+  const towers = new THREE.InstancedMesh(bGeo, bMat, N_B);
+  const m4 = new THREE.Matrix4();
+  const winPos = [], winCol = [], winSeed = [];
+  const palette = [new THREE.Color(0xffb36b), new THREE.Color(0xf0c24b), new THREE.Color(0xefe6f2), new THREE.Color(0xb9a2ff)];
+  const maxWin = isMobile ? 320 : 720;
+  let x = -22;
+  for (let i = 0; i < N_B; i++) {
+    const w = 0.9 + rnd() * 1.6;
+    const hgt = 2.0 + rnd() * rnd() * 6.5;
+    const z = -17 - rnd() * 4;
+    const base = -9.5;
+    m4.makeScale(w, hgt, 1.2).setPosition(x + w / 2, base + hgt / 2, z);
+    towers.setMatrixAt(i, m4);
+    for (let wy = base + 0.4; wy < base + hgt - 0.3; wy += 0.34) {
+      for (let wx = x + 0.2; wx < x + w - 0.15; wx += 0.3) {
+        if (rnd() < 0.16 && winPos.length / 3 < maxWin) {
+          winPos.push(wx, wy, z + 0.61);
+          const c = palette[rnd() < 0.62 ? 0 : rnd() < 0.5 ? 1 : rnd() < 0.7 ? 2 : 3];
+          winCol.push(c.r, c.g, c.b);
+          winSeed.push(rnd() * 100);
+        }
+      }
+    }
+    x += w + 0.05 + rnd() * 0.5;
+  }
+  towers.instanceMatrix.needsUpdate = true;
+  scene.add(towers);
+
+  const wGeo = keep(new THREE.BufferGeometry());
+  wGeo.setAttribute('position', new THREE.Float32BufferAttribute(winPos, 3));
+  wGeo.setAttribute('color', new THREE.Float32BufferAttribute(winCol, 3));
+  wGeo.setAttribute('aSeed', new THREE.Float32BufferAttribute(winSeed, 1));
+  const wMat = keep(new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uPR: { value: 1 } },
+    vertexShader: /* glsl */`
+      attribute float aSeed; attribute vec3 color;
+      uniform float uTime, uPR; varying vec3 vC; varying float vA;
+      void main() {
+        vC = color;
+        float tw = 0.72 + 0.28 * sin(uTime * (0.3 + fract(aSeed) * 0.9) + aSeed);
+        vA = tw * (0.35 + 0.35 * step(0.5, fract(aSeed * 1.37)));
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = 3.2 * uPR;
+      }`,
+    fragmentShader: /* glsl */`
+      varying vec3 vC; varying float vA;
+      void main() {
+        vec2 p = abs(gl_PointCoord - 0.5);
+        float a = (1.0 - smoothstep(0.32, 0.5, max(p.x, p.y))) * vA;
+        gl_FragColor = vec4(vC * a, a);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  }));
+  cityWindows = new THREE.Points(wGeo, wMat);
+  scene.add(cityWindows);
+
+  // warm horizon haze behind the towers
+  const hazeMat = keep(new THREE.ShaderMaterial({
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: /* glsl */`
+      varying vec2 vUv;
+      void main() {
+        float a = pow(1.0 - vUv.y, 2.4) * 0.16 * (1.0 - pow(abs(vUv.x - 0.5) * 2.0, 3.0));
+        vec3 c = mix(vec3(0.55, 0.22, 0.30), vec3(1.0, 0.55, 0.28), 1.0 - vUv.y);
+        gl_FragColor = vec4(c * a, a);
+        #include <colorspace_fragment>
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+  }));
+  const haze = new THREE.Mesh(keep(new THREE.PlaneGeometry(60, 14)), hazeMat);
+  haze.position.set(0, -4, -20);
+  scene.add(haze);
+}
+function mulberry(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ================= post: subtle bloom on desktop only ================= */
+let composer = null, bloom = null;
+if (!embed && !isMobile && !reduced && !params.has('nobloom')) {
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.24, 0.22, 0.9);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+}
+
+/* ================= layout (landscape side-by-side, portrait stacked) ================= */
+let portrait = false;
+function layout() {
+  const p = camera.aspect < 0.9;
+  const changed = p !== portrait;
+  portrait = p;
+  if (portrait) {
+    // stacked + offset so the scene sits between the title and the lesson / numbers sheet
+    camBase.set(0, -0.2, 7.8);
+    camTarget.set(0, -0.25, 0);
+    if (springRig.position.x !== -1.45) { springRig.position.set(-1.45, 3.2, 0); orbitRig.position.set(0.75, 0.2, 0); key.position.copy(orbitRig.position).add(_d.set(0, 0, 0.4)); return true; }
+  } else {
+    camBase.set(0.15, 0.5, 10.2);
+    camTarget.set(0.05, 0.05, 0);
+    // keep the spring clear of the lesson panel / title column on narrower screens
+    const leftPx = typeof chromeLeftEdge === 'function' ? chromeLeftEdge() : 0;
+    const W = Math.max(1, innerWidth);
+    const hw = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect * camBase.z;
+    const minX = camBase.x + 0.75 + ((leftPx + 28) / W * 2 - 1) * hw;
+    const sx = Math.max(-1.55, minX);
+    const ox = Math.max(2.45, sx + 3.9);
+    if (Math.abs(sx - springRig.position.x) > 1e-3 || Math.abs(ox - orbitRig.position.x) > 1e-3) {
+      springRig.position.set(sx, 1.35, 0);
+      orbitRig.position.set(ox, -0.25, 0);
+      key.position.copy(orbitRig.position).add(_d.set(0, 0, 0.4));
+      return true;
+    }
+  }
+  key.position.copy(orbitRig.position).add(_d.set(0, 0, 0.4));
+  return changed;
+}
+
+function resize() {
+  const w = stage.clientWidth || innerWidth;
+  const h = stage.clientHeight || innerHeight;
+  camera.aspect = w / Math.max(1, h);
+  camera.fov = camera.aspect < 1
+    ? THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(BASE_FOV / 2)) / camera.aspect))
+    : BASE_FOV;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, isMobile);
+  if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); }
+  const pr = renderer.getPixelRatio();
+  springTrail.mat.uniforms.uPR.value = pr;
+  for (const b of bodies) b.trail.mat.uniforms.uPR.value = pr;
+  if (cityWindows) cityWindows.material.uniforms.uPR.value = pr;
+  if (layout()) clearTrails();
+  placeCamera(simT);
+  sync();
+  if (still || !raf) render();
+}
+
+/* ================= camera: fixed exhibit framing + gentle idle sway + lean ================= */
+const lean = new THREE.Vector2();
+const leanGoal = new THREE.Vector2();
+function placeCamera(t) {
+  const sway = still ? 0 : 1;
+  camera.position.set(
+    camBase.x + Math.sin(t * 0.13) * 0.22 * sway + lean.x * 1.6,
+    camBase.y + Math.sin(t * 0.19 + 1.2) * 0.1 * sway + lean.y * 1.0,
+    camBase.z,
+  );
+  camera.lookAt(camTarget);
+}
+
+/* ================= sync meshes / labels ================= */
+const DOWN = new THREE.Vector3(0, -1, 0);
+const _dir = new THREE.Vector3();
+function sync() {
+  // spring
+  _dir.copy(spring.pos);
+  const len = Math.max(1e-4, _dir.length());
+  _dir.multiplyScalar(1 / len);
+  coil.quaternion.setFromUnitVectors(DOWN, _dir);
+  coil.scale.set(1, Math.max(0.06, len - spring.r * 0.92), 1);
+  massMesh.position.copy(spring.pos);
+  const stretch = (len - Leq()) / Leq();
+  coilMat.emissiveIntensity = 0.35 + Math.min(0.9, Math.abs(stretch) * 1.4);
+  massMat.emissiveIntensity = 0.28 + contactPulse * 0.9;
+  // bodies
+  for (const b of bodies) {
+    b.mesh.position.copy(b.pos);
+    b.mesh.scale.setScalar(b.r * (0.15 + 0.85 * easeOut(b.spawn)) * (1 + contactPulse * 0.08));
+  }
+}
+const easeOut = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+
+const tagK = document.getElementById('tag-k');
+const tagM = document.getElementById('tag-m');
+const tagEq = document.getElementById('tag-eq');
+const tagSun = document.getElementById('tag-sun');
+const _pr = new THREE.Vector3();
+function placeTag(el, v, dx, dy, alignRight) {
+  _pr.copy(v).project(camera);
+  const x = (_pr.x * 0.5 + 0.5) * innerWidth + dx;
+  const y = (-_pr.y * 0.5 + 0.5) * innerHeight + dy;
+  el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)${alignRight ? ' translateX(-100%)' : ''}`;
+}
+function syncTags() {
+  if (embed) return;
+  _wm.copy(spring.pos).multiplyScalar(0.5).add(springRig.position);
+  placeTag(tagK, _wm, 22, -6);
+  _wm.copy(spring.pos).add(springRig.position);
+  if (portrait) placeTag(tagM, _wm, -(18 + spring.r * 70), -6, true);
+  else placeTag(tagM, _wm, 14 + spring.r * 50, -(spring.r * 60 + 22));
+  _wm.set(0.48, -Leq(), 0).add(springRig.position);
+  placeTag(tagEq, _wm, 8, -8);
+  if (portrait) placeTag(tagSun, orbitRig.position, -26, 30, true);
+  else placeTag(tagSun, orbitRig.position, 30, 30);
+}
+
+/* ================= HUD (Space Mono, ~10 Hz) ================= */
+const $ = (id) => document.getElementById(id);
+const hud = { k: $('h-k'), m: $('h-m'), c: $('h-c'), z: $('h-z'), td: $('h-td'), x: $('h-x'),
+  gm: $('h-gm'), a: $('h-a'), e: $('h-e'), t: $('h-t'), rv: $('h-rv'), g: $('h-g'), k3: $('h-k3'), flag: $('h-flag') };
+const spark = $('spark');
+const sg = spark.getContext('2d');
+const SPARK_N = 150;
+const sparkBuf = new Float32Array(SPARK_N);
+let sparkHead = 0;
+const fmt = (v, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '∞');
+const sgn = (v, d = 2) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d);
+let flagHold = 0;
+let flagText = '';
+
+function axialX() { return spring.pos.length() - Leq(); }
+function updateHud() {
+  if (embed) return;
+  const w0 = Math.sqrt(spring.k / spring.m);
+  const wd = w0 * Math.sqrt(1 - spring.zeta * spring.zeta);
+  hud.k.textContent = `${fmt(spring.k, 1)} N/m`;
+  hud.m.textContent = `${fmt(spring.m, 2)} kg`;
+  hud.c.textContent = `${fmt(spring.c, 2)} N·s/m`;
+  hud.z.textContent = fmt(spring.zeta, 2);
+  hud.td.textContent = `${fmt(2 * Math.PI / wd, 2)} s`;
+  hud.x.textContent = `${sgn(axialX(), 3)} m`;
+  const A = bodies[0].el, B = bodies[1].el;
+  hud.gm.textContent = `${fmt(MU, 1)} u³/s²`;
+  hud.a.textContent = A.bound ? `${fmt(A.a, 2)} u` : 'unbound';
+  hud.e.textContent = fmt(A.e, 3);
+  hud.t.textContent = A.bound ? `${fmt(A.T, 2)} s` : '—';
+  hud.rv.textContent = `${fmt(A.r, 2)} u · ${fmt(A.v, 2)} u/s`;
+  hud.g.textContent = `${fmt(MU / (A.r * A.r), 2)} u/s²`;
+  const k3 = (el) => (el.bound ? fmt(el.T * el.T / (el.a * el.a * el.a), 3) : '—');
+  hud.k3.textContent = `${k3(A)} | ${k3(B)}`;
+  if (!A.bound) flagText = 'E ≥ 0 · escape speed exceeded';
+  hud.flag.textContent = flagHold > 0 || !A.bound ? flagText : '';
+  updateLessonLive();
+}
+function drawSpark() {
+  if (embed) return;
+  const W = spark.width, H = spark.height;
+  sg.clearRect(0, 0, W, H);
+  sg.strokeStyle = 'rgba(239,230,242,0.18)';
+  sg.lineWidth = 1;
+  sg.beginPath(); sg.moveTo(0, H / 2); sg.lineTo(W, H / 2); sg.stroke();
+  sg.strokeStyle = 'rgba(255,179,107,0.95)';
+  sg.lineWidth = 2;
+  sg.beginPath();
+  const scale = (H * 0.46) / 0.6;   // ±0.6 m full scale
+  for (let i = 0; i < SPARK_N; i++) {
+    const v = sparkBuf[(sparkHead + 1 + i) % SPARK_N];
+    const x = (i / (SPARK_N - 1)) * W;
+    const y = H / 2 - Math.max(-0.6, Math.min(0.6, v)) * scale;
+    if (i === 0) sg.moveTo(x, y); else sg.lineTo(x, y);
+  }
+  sg.stroke();
+}
+
+/* ================= pointer: pick mass / planets; empty space leans the camera ================= */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const plane = new THREE.Plane();
+const hit = new THREE.Vector3();
+let drag = null;           // { type: 'spring' | 'body' | 'lean', body, id, sx, sy }
+let lastInteract = 0;
+
+function setNdc(e) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  return r;
+}
+function screenDist(world, e, r) {
+  _pr.copy(world).project(camera);
+  const sx = (_pr.x * 0.5 + 0.5) * r.width + r.left;
+  const sy = (-_pr.y * 0.5 + 0.5) * r.height + r.top;
+  return Math.hypot(sx - e.clientX, sy - e.clientY);
+}
+function pick(e) {
+  const r = setNdc(e);
+  const pxPerUnit = r.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.distanceTo(camTarget));
+  const slop = isMobile ? 30 : 18;
+  let best = null, bestD = Infinity;
+  _wm.copy(spring.pos).add(springRig.position);
+  let d = screenDist(_wm, e, r);
+  if (d < Math.max(34, spring.r * pxPerUnit + slop) && d < bestD) { best = { type: 'spring' }; bestD = d; }
+  for (const b of bodies) {
+    _wb.copy(b.pos).add(orbitRig.position);
+    d = screenDist(_wb, e, r);
+    if (d < Math.max(30, b.r * pxPerUnit + slop) && d < bestD) { best = { type: 'body', body: b }; bestD = d; }
+  }
+  return best;
+}
+function dragPoint(target, origin, normal) {
+  raycaster.setFromCamera(ndc, camera);
+  plane.setFromNormalAndCoplanarPoint(normal, _wb.copy(origin));
+  if (raycaster.ray.intersectPlane(plane, hit)) { target.copy(hit).sub(origin); return true; }
+  return false;
+}
+const Z_AXIS = new THREE.Vector3(0, 0, 1);
+function updateDragTarget() {
+  if (!drag) return;
+  if (drag.type === 'spring') {
+    // plane z = anchor z, passing through the anchor
+    if (dragPoint(spring.target, springRig.position, Z_AXIS)) {
+      const L = spring.target.length();
+      if (L > 3.0) spring.target.setLength(3.0);
+      if (L < 0.35) spring.target.setLength(0.35);
+    }
+  } else if (drag.type === 'body') {
+    const b = drag.body;
+    if (dragPoint(b.target, orbitRig.position, orbitN)) {
+      if (b.target.length() > 4.2) b.target.setLength(4.2);
+    }
+  }
+}
+function onDown(e) {
+  if (e.button !== undefined && e.button !== 0) return;
+  lastInteract = performance.now();
+  const p = pick(e);
+  canvas.setPointerCapture(e.pointerId);
+  if (p && p.type === 'spring') {
+    drag = { type: 'spring', id: e.pointerId };
+    spring.dragging = true;
+    spring.dragVel.set(0, 0, 0);
+    spring.target.copy(spring.pos);
+    updateDragTarget();
+  } else if (p && p.type === 'body') {
+    drag = { type: 'body', body: p.body, id: e.pointerId };
+    p.body.dragging = true;
+    p.body.spawn = 1;
+    p.body.dragVel.copy(p.body.vel).multiplyScalar(0.3);
+    p.body.target.copy(p.body.pos);
+    updateDragTarget();
+  } else {
+    drag = { type: 'lean', id: e.pointerId, sx: e.clientX, sy: e.clientY, lx: leanGoal.x, ly: leanGoal.y };
+  }
+  canvas.classList.add('grabbing');
+}
+function onMove(e) {
+  if (!drag) {
+    if (!isMobile) canvas.classList.toggle('can-grab', !!pick(e));
+    return;
+  }
+  if (e.pointerId !== drag.id) return;
+  lastInteract = performance.now();
+  setNdc(e);
+  if (drag.type === 'lean') {
+    leanGoal.set(
+      THREE.MathUtils.clamp(drag.lx - (e.clientX - drag.sx) / innerWidth, -0.45, 0.45),
+      THREE.MathUtils.clamp(drag.ly + (e.clientY - drag.sy) / innerHeight, -0.35, 0.35),
+    );
+  } else {
+    updateDragTarget();
+  }
+  if (still) {
+    // reduced motion: no dynamics, just reposition and redraw on demand
+    if (drag.type === 'spring') spring.pos.copy(spring.target);
+    if (drag.type === 'body') drag.body.pos.copy(drag.body.target);
+    if (drag.type === 'lean') lean.copy(leanGoal);
+    for (const b of bodies) updateElements(b);
+    placeCamera(simT); sync(); syncTags(); updateHud(); render();
+  }
+}
+function onUp(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  if (drag.type === 'spring') {
+    spring.dragging = false;
+    spring.vel.copy(spring.dragVel).clampLength(0, 9);
+    if (still) spring.vel.set(0, 0, 0);
+  } else if (drag.type === 'body') {
+    const b = drag.body;
+    b.dragging = false;
+    b.vel.copy(b.dragVel).clampLength(0, 5.6);
+    b.trail.clear(_wb.copy(b.pos).add(orbitRig.position));
+  } else {
+    leanGoal.set(0, 0);   // lean eases back to exhibit framing
+    if (still) { lean.set(0, 0); placeCamera(simT); syncTags(); render(); }
+  }
+  drag = null;
+  canvas.classList.remove('grabbing');
+}
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+
+/* chips */
+const chipRoot = document.querySelector('.chips');
+function onChip(e) {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  lastInteract = performance.now();
+  if (btn.dataset.preset) {
+    applyPreset(btn.dataset.preset, !still);
+    if (still) { resetSpring(); spring.pos.x += 0.3; }
+  } else if (btn.dataset.action === 'reset') {
+    resetAll();
+  }
+  if (still) { for (const b of bodies) updateElements(b); sync(); syncTags(); updateHud(); render(); }
+}
+chipRoot.addEventListener('click', onChip);
+
+
+/* ================= lesson panel: teaching first, tied to the live scene ================= */
+const lessonEl = document.getElementById('lesson');
+const lsBody = document.getElementById('ls-body');
+const lsKicker = document.getElementById('ls-kicker');
+const lsDots = document.getElementById('ls-dots');
+const lsToggle = document.getElementById('ls-toggle');
+const labelEl = document.querySelector('.label');
+const footEl = document.querySelector('.foot');
+const hudEl = document.querySelector('.hud');
+const chipsEl = document.querySelector('.chips');
+const narrowMq = matchMedia('(max-width: 720px), (max-aspect-ratio: 5/6)');
+const LS = [
+  { topic: "Hooke\u2019s law", focus: 'spring', html: `
+    <h3>Hooke&rsquo;s law</h3>
+    <p class="formula">F = −k · x</p>
+    <p><b>x</b> is how far the mass is from its rest point (x = 0). <b>k</b> is the spring constant: how stiff the spring is. Here k = 28 N/m. So each 1 cm of stretch gives 0.28 N of pull.</p>
+    <p>The minus sign means the force always points back toward x = 0. Pull it twice as far and you get twice the force.</p>
+    <p class="watch"><b>Watch</b>Drag the orange mass down and hold it. Then let go. The spring pulls it back, it goes past x = 0, and it swings.</p>
+    <p class="live"><b>Now</b>x = <span data-live="x">—</span> → F = −kx = <span data-live="F">—</span></p>
+    <div class="acts"><button type="button" data-act="pluck">Pluck the spring</button></div>` },
+  { topic: 'Damping', focus: 'spring', html: `
+    <h3>Damping</h3>
+    <p class="formula">F = −k·x − c·v</p>
+    <p>Damping is a drag force. It grows with speed <b>v</b> and always works against the motion. Each swing, it changes some motion energy into heat, so the swings get smaller.</p>
+    <p><b>Light</b> (ζ = 0.08): the mass overshoots many times before it stops. <b>Heavy</b> (ζ = 0.60): it overshoots only a little, then settles. ζ = c / 2√(km) compares the damping to the spring.</p>
+    <p>The heavy preset also has more mass, so it swings more slowly: T ≈ 2π√(m/k).</p>
+    <p class="watch"><b>Watch</b>Look at the small line graph under the spring numbers. Its waves get smaller. That shrinking is the energy loss.</p>
+    <p class="live"><b>Now</b>m = <span data-live="m">—</span> · ζ = <span data-live="zeta">—</span> · T = <span data-live="T">—</span></p>
+    <div class="acts"><button type="button" data-act="preset" data-p="light">Light damping</button><button type="button" data-act="preset" data-p="heavy">Heavy damping</button></div>` },
+  { topic: 'Rest stretch mg/k', focus: 'spring', html: `
+    <h3>Why it hangs lower</h3>
+    <p class="formula">k · Δ = m · g  →  Δ = mg / k</p>
+    <p>Gravity pulls the mass down with its weight, <b>mg</b>. The spring stretches until its upward pull, <b>kΔ</b>, is equal to the weight. Then the forces balance.</p>
+    <p>That balanced stretch Δ is the new rest point, x = 0. A heavier mass needs more stretch. Light (0.8 kg): Δ = 0.28 m. Heavy (2.4 kg): Δ = 0.84 m.</p>
+    <p>Around this rest point, gravity and the extra spring pull combine into the same simple law: F = −kx.</p>
+    <p class="watch"><b>Watch</b>Switch Light ↔ Heavy. The dashed <i>x = 0 · equilibrium</i> mark moves down for the heavy mass.</p>
+    <p class="live"><b>Now</b>Δ = mg/k = <span data-live="m">—</span> × 9.81 / 28 = <span data-live="delta">—</span></p>
+    <div class="acts"><button type="button" data-act="preset" data-p="light">Light · 0.8 kg</button><button type="button" data-act="preset" data-p="heavy">Heavy · 2.4 kg</button></div>` },
+  { topic: 'Gravity & orbits', focus: 'orbit', html: `
+    <h3>Gravity makes an orbit</h3>
+    <p class="formula">F = G·M·m / r²</p>
+    <p>The sun pulls each planet toward its centre. The pull gets weaker with distance: double <b>r</b> and the force is 4× smaller.</p>
+    <p>A planet is always falling toward the sun. Its sideways speed makes it keep missing. Falling + missing = an orbit. Too slow and it falls in. Too fast and it escapes. In between, the path is an <b>ellipse</b> with the sun at one focus.</p>
+    <p class="watch"><b>Watch</b>Grab the pearl planet and fling it. The faint warm ring redraws to show its new ellipse. Near the sun it moves faster. Far away it moves slower.</p>
+    <p class="live"><b>Now</b>r = <span data-live="r">—</span> · v = <span data-live="v">—</span> · g = GM/r² = <span data-live="g">—</span></p>
+    <div class="acts"><button type="button" data-act="faster">Push faster +12%</button><button type="button" data-act="slower">Slow down −12%</button><button type="button" data-act="orbit-reset">Reset orbit</button></div>` },
+  { topic: 'Eccentricity', focus: 'orbit', html: `
+    <h3>Eccentricity: the shape</h3>
+    <p class="formula">e = (r<sub>max</sub> − r<sub>min</sub>) / (r<sub>max</sub> + r<sub>min</sub>)</p>
+    <p><b>e</b> tells how stretched the orbit is. e = 0 is a circle. Close to 1 is a long, thin ellipse. At e ≥ 1 the planet does not come back.</p>
+    <p>The lilac planet has e ≈ 0, a near-circle. The pearl planet has e ≈ 0.45, so its distance from the sun changes a lot each lap.</p>
+    <p class="watch"><b>Watch</b>Push the pearl planet faster when it is closest to the sun. Its far side swings out and e goes up. Slow it there and e goes down.</p>
+    <p class="live"><b>Now</b>pearl e = <span data-live="eA">—</span> · lilac e = <span data-live="eB">—</span></p>
+    <div class="acts"><button type="button" data-act="faster">Push faster +12%</button><button type="button" data-act="slower">Slow down −12%</button><button type="button" data-act="orbit-reset">Reset orbit</button></div>` },
+  { topic: 'Kepler III', focus: 'orbit', html: `
+    <h3>Kepler&rsquo;s third law</h3>
+    <p class="formula">T² / a³ = 4π² / GM</p>
+    <p><b>a</b> is the semi-major axis: half the longest width of the ellipse. <b>T</b> is the time for one lap (one &ldquo;year&rdquo;). Bigger orbits take longer, and T² grows in step with a³.</p>
+    <p>The ratio depends only on the sun (GM), not on the planet or its shape. Both planets orbit the same sun, so both get the same T²/a³, even though one orbit is a circle and one is an ellipse.</p>
+    <p class="watch"><b>Watch</b>Fling the pearl planet to a new orbit. a and T both change in the numbers, but T²/a³ stays the same.</p>
+    <p class="live"><b>Now</b>pearl <span data-live="k3A">—</span> · lilac <span data-live="k3B">—</span> · 4π²/GM = <span data-live="k3th">—</span></p>` },
+  { topic: 'Try it · questions', focus: 'both', html: `
+    <h3>Questions to try</h3>
+    <p>Use the scene to test each idea. Then open the hint.</p>
+    <details><summary>What happens to the period when m increases?</summary><p>It gets longer. T ≈ 2π√(m/k), so 3× the mass gives about √3 ≈ 1.7× the period. Compare Light and Heavy.</p></details>
+    <details><summary>If you double k, what happens to the rest stretch mg/k?</summary><p>It halves. A stiffer spring needs less stretch to hold the same weight.</p></details>
+    <details><summary>Why does heavy damping stop the swing sooner? Where does the energy go?</summary><p>More drag (bigger c) takes more energy each swing. It turns into heat in the damper and the air.</p></details>
+    <details><summary>Where on its orbit does the pearl planet move fastest?</summary><p>At its closest point to the sun. It speeds up as it falls in and slows as it climbs out (Kepler&rsquo;s second law).</p></details>
+    <details><summary>Make the pearl orbit bigger. Does T²/a³ change?</summary><p>No. a and T change, but the ratio stays 4π²/GM because the sun is the same.</p></details>
+    <details><summary>How fast must a planet go to escape?</summary><p>v<sub>esc</sub> = √(2GM/r). Now, at r = <span data-live="r">—</span>, that is <span data-live="vesc">—</span>. Fling faster than that and the HUD says it escapes.</p></details>
+    <details><summary>Swing the spring mass into a planet. What changes?</summary><p>They share momentum. The planet gets a new speed, so it moves to a new ellipse.</p></details>` },
+];
+let lsStep = 0;
+let lsOpen = !params.has('nolesson');
+let mMode = 'learn';
+const lsLive = [];
+for (let i = 0; i < LS.length; i++) {
+  const d = document.createElement('button');
+  d.type = 'button';
+  d.dataset.go = String(i);
+  d.setAttribute('aria-label', `Step ${i + 1}: ${LS[i].topic}`);
+  lsDots.appendChild(d);
+}
+function renderLesson() {
+  const st = LS[lsStep];
+  lsKicker.innerHTML = `Lesson ${lsStep + 1}/${LS.length} · <b>${st.topic}</b>`;
+  lsBody.innerHTML = st.html;
+  lsBody.scrollTop = 0;
+  lsLive.length = 0;
+  for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
+  for (const d of lsDots.children) d.toggleAttribute('aria-current', false);
+  lsDots.children[lsStep].setAttribute('aria-current', 'step');
+  lessonEl.querySelector('[data-step="prev"]').disabled = lsStep === 0;
+  lessonEl.querySelector('[data-step="next"]').disabled = lsStep === LS.length - 1;
+  document.body.dataset.focus = lsOpen ? st.focus : 'both';
+  syncPresetButtons();
+  updateLessonLive();
+}
+function syncPresetButtons() {
+  for (const b of lsBody.querySelectorAll('[data-act="preset"]')) b.setAttribute('aria-pressed', String(b.dataset.p === presetName));
+}
+function updateLessonLive() {
+  if (!lsLive.length) return;
+  const A = bodies[0].el, B = bodies[1].el;
+  const x = axialX();
+  const k3 = (el) => (el.bound ? (el.T * el.T / (el.a * el.a * el.a)).toFixed(3) : '— (unbound)');
+  const w0 = Math.sqrt(spring.k / spring.m);
+  const vals = {
+    x: `${sgn(x, 3)} m`,
+    F: `${sgn(-spring.k * x, 2)} N`,
+    m: `${spring.m.toFixed(1)} kg`,
+    zeta: spring.zeta.toFixed(2),
+    T: `${(2 * Math.PI / (w0 * Math.sqrt(1 - spring.zeta * spring.zeta))).toFixed(2)} s`,
+    delta: `${(spring.m * G / spring.k).toFixed(2)} m`,
+    r: `${A.r.toFixed(2)} u`,
+    v: `${A.v.toFixed(2)} u/s`,
+    g: `${(MU / (A.r * A.r)).toFixed(2)} u/s²`,
+    eA: A.e.toFixed(3),
+    eB: B.e.toFixed(3),
+    k3A: k3(A),
+    k3B: k3(B),
+    k3th: (4 * Math.PI * Math.PI / MU).toFixed(3),
+    vesc: `${Math.sqrt(2 * MU / A.r).toFixed(2)} u/s`,
+  };
+  for (const el of lsLive) el.textContent = vals[el.dataset.live] ?? '—';
+}
+function goStep(i) {
+  lsStep = Math.max(0, Math.min(LS.length - 1, i));
+  renderLesson();
+}
+function kickPlanet(f) {
+  const b = bodies[0];
+  b.vel.multiplyScalar(f);
+  b.spawn = 1;
+  b.trail.clear(_wb.copy(b.pos).add(orbitRig.position));
+}
+function refreshStill() {
+  if (!still) return;
+  for (const b of bodies) updateElements(b);
+  sync(); syncTags(); updateHud(); render();
+}
+function onLessonClick(e) {
+  const btn = e.target.closest('button');
+  if (!btn || !lessonEl.contains(btn)) return;
+  lastInteract = performance.now();
+  if (btn.dataset.step === 'prev') goStep(lsStep - 1);
+  else if (btn.dataset.step === 'next') goStep(lsStep + 1);
+  else if (btn.dataset.go) goStep(+btn.dataset.go);
+  else if (btn.dataset.mode) setMobileMode(btn.dataset.mode);
+  else if (btn === lsToggle) setLessonOpen(!lsOpen);
+  else if (btn.dataset.act === 'pluck') { if (!still) pluckSpring(1.2); else { spring.pos.x += 0.25; refreshStill(); } }
+  else if (btn.dataset.act === 'preset') {
+    applyPreset(btn.dataset.p, !still);
+    if (still) { resetSpring(); spring.pos.x += 0.3; }
+    syncPresetButtons();
+    refreshStill();
+  }
+  else if (btn.dataset.act === 'faster') { kickPlanet(1.12); refreshStill(); }
+  else if (btn.dataset.act === 'slower') { kickPlanet(0.88); refreshStill(); }
+  else if (btn.dataset.act === 'orbit-reset') { for (const b of bodies) { resetBody(b); b.spawn = 1; b.trail.clear(_wb.copy(b.pos).add(orbitRig.position)); } refreshStill(); }
+}
+function setLessonOpen(open) {
+  lsOpen = open;
+  document.body.classList.toggle('lesson-closed', !open);
+  lsToggle.setAttribute('aria-expanded', String(open));
+  lsToggle.textContent = open ? 'Hide' : 'Open lesson';
+  document.body.dataset.focus = open ? LS[lsStep].focus : 'both';
+  fitLesson();
+  resize();
+}
+function setMobileMode(mode) {
+  mMode = mode;
+  document.body.classList.toggle('m-learn', mode === 'learn');
+  document.body.classList.toggle('m-numbers', mode === 'numbers');
+  for (const b of lessonEl.querySelectorAll('[data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === mode));
+}
+function placeLesson() {
+  // desktop: under the title (left column). narrow / portrait: in the foot, sharing space with the numbers.
+  if (narrowMq.matches) {
+    if (lessonEl.parentElement !== footEl) footEl.insertBefore(lessonEl, hudEl);
+    if (!lsOpen) setLessonOpen(true);
+  } else if (lessonEl.parentElement !== labelEl) {
+    labelEl.appendChild(lessonEl);
+  }
+  fitLesson();
+}
+function fitLesson() {
+  if (narrowMq.matches) { lessonEl.style.maxHeight = ''; return; }
+  const top = lessonEl.getBoundingClientRect().top;
+  const footH = footEl.getBoundingClientRect().height;
+  const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 18;
+  const limit = innerHeight - padB - footH - 20;
+  lessonEl.style.maxHeight = `${Math.max(150, limit - top)}px`;
+}
+// left edge (px) that the landscape scene must stay right of: the lesson panel when open
+function chromeLeftEdge() {
+  if (embed || narrowMq.matches) return 0;
+  if (!lsOpen) return 0;
+  return lessonEl.getBoundingClientRect().right;
+}
+function onLessonKey(e) {
+  if (e.target.closest && e.target.closest('input, textarea')) return;
+  if (e.key === 'ArrowRight') goStep(lsStep + 1);
+  else if (e.key === 'ArrowLeft') goStep(lsStep - 1);
+}
+function onNarrowChange() { placeLesson(); resize(); }
+
+/* ================= simulation loop (fixed substeps) ================= */
+const H = 1 / 240;
+let acc = 0;
+let simT = 0;
+let sampleAcc = 0;
+let hudAcc = 0;
+let raf = 0;
+const clock = new THREE.Clock();
+
+function clearTrails() {
+  springTrail.clear(_wm.copy(spring.pos).add(springRig.position));
+  for (const b of bodies) b.trail.clear(_wb.copy(b.pos).add(orbitRig.position));
+}
+function pushTrails() {
+  springTrail.push(_wm.copy(spring.pos).add(springRig.position));
+  for (const b of bodies) b.trail.push(_wb.copy(b.pos).add(orbitRig.position));
+  sparkHead = (sparkHead + 1) % SPARK_N;
+  sparkBuf[sparkHead] = axialX();
+}
+function simulate(dt) {
+  acc += dt;
+  let n = 0;
+  while (acc >= H && n < 16) {
+    stepSpring(H);
+    for (const b of bodies) {
+      stepBody(b, H);
+      softCollide(b);
+      if (b.spawn < 1) b.spawn = Math.min(1, b.spawn + H / 0.7);
+    }
+    acc -= H; n++; simT += H;
+    sampleAcc += H;
+    if (sampleAcc >= 1 / 60) { sampleAcc -= 1 / 60; pushTrails(); }
+  }
+  if (n === 16) acc = 0;
+}
+function resetAll() {
+  resetSpring();
+  pluckSpring(0.8);
+  for (const b of bodies) { resetBody(b); b.spawn = 1; }
+  clearTrails();
+  sparkBuf.fill(0);
+  if (still) warmStill();
+}
+
+function render() {
+  if (composer) composer.render(); else renderer.render(scene, camera);
+}
+
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  // idle: if nobody has touched it for a while and the spring is resting, give it a soft pluck
+  if (performance.now() - lastInteract > 7000 && !spring.dragging &&
+      Math.abs(axialX()) < 0.01 && spring.vel.lengthSq() < 0.01) {
+    pluckSpring(0.9);
+    lastInteract = performance.now();
+  }
+  simulate(dt);
+  contactPulse = Math.max(0, contactPulse - dt * 2.2);
+  if (contactPulse > 0.95) { flagText = 'collision · momentum exchanged'; flagHold = 1.4; }
+  flagHold = Math.max(0, flagHold - dt);
+  lean.lerp(leanGoal, 1 - Math.exp(-dt * 5));
+  placeCamera(simT);
+  for (const b of bodies) updateElements(b);
+  sync();
+  syncTags();
+  if (cityWindows) cityWindows.material.uniforms.uTime.value = simT;
+  hudAcc += dt;
+  if (hudAcc > 0.1) { hudAcc = 0; updateHud(); }
+  drawSpark();
+  render();
+}
+
+/* still pose: real physics, run forward then frozen (no fake numbers) */
+function warmStill() {
+  resetSpring();
+  pluckSpring(1.1);
+  for (const b of bodies) { resetBody(b); b.spawn = 1; }
+  clearTrails();
+  sparkBuf.fill(0);
+  for (let i = 0; i < Math.round(2.2 / H); i++) {
+    stepSpring(H);
+    for (const b of bodies) stepBody(b, H);
+    if (i % 4 === 0) pushTrails();
+  }
+}
+function holdStill() {
+  cancelAnimationFrame(raf);
+  raf = 0;
+  lean.set(0, 0); leanGoal.set(0, 0);
+  placeCamera(0);
+  for (const b of bodies) updateElements(b);
+  sync(); syncTags(); updateHud(); drawSpark();
+  render();
+}
+function start() {
+  if (still) { holdStill(); return; }
+  if (raf || document.hidden) return;
+  clock.getDelta();
+  raf = requestAnimationFrame(frame);
+}
+
+/* ================= boot ================= */
+applyPreset('light', false);
+resetSpring();
+for (const b of bodies) { resetBody(b); b.spawn = 1; }
+document.body.classList.add('has-lesson');
+setMobileMode('learn');
+lessonEl.addEventListener('click', onLessonClick);
+addEventListener('keydown', onLessonKey);
+narrowMq.addEventListener('change', onNarrowChange);
+for (const b of bodies) updateElements(b);
+placeLesson();
+renderLesson();
+if (!lsOpen) setLessonOpen(false);
+const ro = new ResizeObserver(() => { fitLesson(); resize(); });
+ro.observe(stage);
+resize();
+clearTrails();
+if (still) warmStill(); else { pluckSpring(1); lastInteract = performance.now(); }
+start();
+
+function onMotionPref(e) {
+  reduced = e.matches;
+  still = reduced || params.has('still');
+  if (still) { warmStill(); holdStill(); } else start();
+}
+motionQuery.addEventListener('change', onMotionPref);
+
+function onVisibility() {
+  if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else start();
+}
+document.addEventListener('visibilitychange', onVisibility);
+
+canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); cancelAnimationFrame(raf); raf = 0; showErr('WebGL context lost — reload to resume.'); });
+
+/* ================= teardown ================= */
+function teardown() {
+  cancelAnimationFrame(raf); raf = 0;
+  ro.disconnect();
+  motionQuery.removeEventListener('change', onMotionPref);
+  document.removeEventListener('visibilitychange', onVisibility);
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup', onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  chipRoot.removeEventListener('click', onChip);
+  lessonEl.removeEventListener('click', onLessonClick);
+  removeEventListener('keydown', onLessonKey);
+  narrowMq.removeEventListener('change', onNarrowChange);
+  for (const d of disposables) d.dispose();
+  disposables.length = 0;
+  if (composer) { if (bloom) bloom.dispose(); composer.dispose(); }
+  renderer.dispose();
+  canvas.remove();
+}
+addEventListener('pagehide', (e) => { if (!e.persisted) teardown(); });
+window.__springOrbitTeardown = teardown;
+window.__springOrbit = { renderer, spring, bodies, get still() { return still; }, bloom: !!composer,
+  screen(which) {   // debug helper: CSS-pixel position of the spring mass or a planet
+    const w = which === 'spring' ? _wm.copy(spring.pos).add(springRig.position) : _wb.copy(bodies[which].pos).add(orbitRig.position);
+    _pr.copy(w).project(camera);
+    return { x: (_pr.x * 0.5 + 0.5) * innerWidth, y: (-_pr.y * 0.5 + 0.5) * innerHeight };
+  } };
+window.__springOrbitReady = true;
+
+} catch (e) {
+  const msg = (e && e.message) ? e.message : String(e);
+  showErr(msg);
+  console.error('[spring-orbit]', e);
+}
+</script>
+</body>
+</html>

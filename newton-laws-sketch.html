@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>Newton&rsquo;s laws · Physics Lab</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.55);
+    --faint: rgba(239, 230, 242, 0.3);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+    --fric: #9ad7c2;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  #stage canvas.can-grab { cursor: grab; }
+  #stage canvas.grabbing { cursor: grabbing; }
+  .vig {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(ellipse at 50% 62%, transparent 40%, rgba(5, 1, 8, 0.62) 100%),
+      linear-gradient(to top, rgba(255, 150, 80, 0.04), transparent 28%);
+  }
+  .tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .tags span {
+    position: absolute; left: 0; top: 0; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em;
+    color: var(--pearl); background: rgba(20, 8, 24, 0.72);
+    border: 1px solid rgba(239, 230, 242, 0.14); border-radius: 8px;
+    padding: 3px 8px; will-change: transform;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+  }
+  .tags span.fapp { border-color: rgba(255,179,107,0.55); color: #ffe2c4; }
+  .tags span.ffric { border-color: rgba(154,215,194,0.5); color: #c8f0e0; }
+  .tags span.fnet { border-color: rgba(240,194,75,0.65); color: #ffe9a8; font-weight: 700; }
+  .tags span.acc { border-color: rgba(185,162,255,0.6); color: #ddd0ff; }
+  .tags span.mass { border-color: rgba(239,230,242,0.35); }
+  .chrome {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  .label .tag {
+    margin: 0 0 8px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.8);
+  }
+  .label h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(1.9rem, 4.8vw, 3.8rem); letter-spacing: -0.045em; line-height: 0.94;
+    text-shadow: 0 2px 30px rgba(20, 8, 24, 0.7);
+  }
+  .label h1 em { font-style: normal; font-weight: 250; color: var(--mute); }
+  .label .sub {
+    margin: 10px 0 0; max-width: 38ch;
+    font-size: clamp(0.8rem, 1.2vw, 0.95rem); line-height: 1.4; color: var(--mute);
+  }
+  .foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .hint {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute); line-height: 1.7;
+  }
+  .hint i {
+    font-style: normal; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin: 0 5px 0 0; vertical-align: 0;
+  }
+  .chips { display: flex; gap: 8px; margin: 0 0 10px; pointer-events: auto; flex-wrap: wrap; }
+  .chips button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.18);
+    background: rgba(28, 12, 34, 0.72); color: var(--pearl);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    padding: 10px 14px; min-height: 42px; border-radius: 999px; cursor: pointer;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .chips button small { font-family: var(--font-mono); font-size: 10px; color: var(--mute); margin-left: 6px; }
+  .chips button[aria-pressed="true"] {
+    border-color: rgba(255, 179, 107, 0.7); background: rgba(255, 179, 107, 0.16); color: #ffe2c4;
+  }
+  .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chips button:active { transform: scale(0.98); }
+
+  /* teaching meters — unmistakable ΣF / m / a */
+  .meters {
+    pointer-events: none; display: flex; flex-direction: column; gap: 8px;
+    min-width: min(280px, 42vw); padding: 12px 14px;
+    background: rgba(20, 8, 24, 0.72); border: 1px solid rgba(239,230,242,0.14);
+    border-radius: 14px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .meters h2 {
+    margin: 0 0 2px; font-family: var(--font-mono); font-weight: 400;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,179,107,0.9);
+  }
+  .meter { display: grid; grid-template-columns: 52px 1fr 72px; gap: 8px; align-items: center; }
+  .meter .lab { font-family: var(--font-mono); font-size: 11px; color: var(--mute); }
+  .meter .track {
+    height: 14px; border-radius: 7px; background: rgba(239,230,242,0.08);
+    overflow: hidden; position: relative;
+  }
+  .meter .fill {
+    position: absolute; top: 0; bottom: 0; left: 50%; width: 0; transform-origin: left center;
+    border-radius: 7px; transition: width 0.12s linear, background 0.2s;
+  }
+  .meter .fill.neg { transform: translateX(-100%); transform-origin: right center; }
+  .meter.m-fapp .fill { background: linear-gradient(90deg, #ff8a3a, #ffb36b); }
+  .meter.m-ffric .fill { background: linear-gradient(90deg, #5fb89a, #9ad7c2); }
+  .meter.m-fnet .fill { background: linear-gradient(90deg, #e0a820, #f0c24b); height: 100%; }
+  .meter.m-fnet .track { height: 18px; }
+  .meter.m-m .fill { background: linear-gradient(90deg, #cfc4d8, #efe6f2); left: 0; }
+  .meter.m-a .fill { background: linear-gradient(90deg, #8a72e8, #b9a2ff); }
+  .meter .val { font-family: var(--font-mono); font-size: 11px; text-align: right; color: var(--pearl); }
+  .meters .eq {
+    margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--honey);
+    letter-spacing: 0.02em;
+  }
+  .meters .flag { min-height: 1.2em; font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+
+  #err {
+    position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 300px;
+    font-family: var(--font-mono); font-size: 10px; color: #ffd6d6;
+    background: rgba(58, 18, 18, 0.82); border-radius: 8px; padding: 8px 10px; display: none;
+  }
+
+  .lesson {
+    pointer-events: auto; margin-top: 14px; width: min(390px, 36vw); min-width: 300px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(26, 10, 32, 0.72); border: 1px solid rgba(239, 230, 242, 0.13);
+    border-radius: 18px; box-shadow: 0 18px 50px rgba(5, 1, 8, 0.45);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  body.has-lesson .label .sub { display: none; }
+  body.lesson-closed .label .sub { display: block; }
+  .lesson-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px;
+    border-bottom: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-kicker {
+    margin: 0; flex: 1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.86);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .lesson-kicker b { color: var(--pearl); font-weight: 400; }
+  .lesson button { font-family: var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .lesson button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lesson-toggle {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: transparent; color: var(--mute);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; min-height: 32px;
+  }
+  .lesson-tabs { display: none; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(239, 230, 242, 0.06); }
+  .lesson-tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--mute);
+    font-size: 12.5px; font-weight: 500; padding: 7px 13px; border-radius: 999px; min-height: 32px;
+  }
+  .lesson-tabs button[aria-selected="true"] { background: rgba(255, 179, 107, 0.16); color: #ffe2c4; }
+  .lesson-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 18px 6px;
+    font-size: 14.5px; line-height: 1.5; color: rgba(239, 230, 242, 0.9);
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .lesson-body h3 {
+    margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 21px;
+    letter-spacing: -0.025em; color: var(--pearl);
+  }
+  .lesson-body p { margin: 0 0 9px; }
+  .lesson-body .formula {
+    font-family: var(--font-mono); font-size: 15px; color: var(--accent); letter-spacing: 0.02em; margin-bottom: 10px;
+  }
+  .lesson-body .watch {
+    padding: 9px 11px; border-radius: 12px; background: rgba(255, 179, 107, 0.08);
+    border: 1px solid rgba(255, 179, 107, 0.22); color: #f6e7d8;
+  }
+  .lesson-body .watch b, .lesson-body .live b {
+    font-family: var(--font-mono); font-weight: 400; font-size: 9.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-right: 6px;
+  }
+  .lesson-body .live { font-family: var(--font-mono); font-size: 12px; color: var(--pearl); }
+  .lesson-body .live span { color: var(--honey); }
+  .lesson-body .acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .lesson-body .acts button {
+    appearance: none; border: 1px solid rgba(255, 179, 107, 0.5); background: rgba(255, 179, 107, 0.12);
+    color: #ffe2c4; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 500; min-height: 36px;
+  }
+  .lesson-body .acts button[aria-pressed="true"] { background: rgba(255, 179, 107, 0.28); border-color: rgba(255, 179, 107, 0.85); }
+  .lesson-body details { border-top: 1px solid rgba(239, 230, 242, 0.08); padding: 8px 0; }
+  .lesson-body summary { cursor: pointer; color: var(--pearl); list-style: none; }
+  .lesson-body summary::before { content: "+ "; font-family: var(--font-mono); color: var(--accent); }
+  .lesson-body details[open] summary::before { content: "− "; }
+  .lesson-body details p { margin: 6px 0 2px; color: var(--mute); font-size: 13.5px; }
+  .lesson-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px 12px; border-top: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-nav > button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: rgba(239, 230, 242, 0.04);
+    color: var(--pearl); border-radius: 999px; padding: 8px 14px; font-size: 13px; min-height: 38px;
+  }
+  .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
+  .lesson-nav .dots { display: flex; flex-wrap: wrap; gap: 1px; justify-content: center; max-width: 180px; }
+  .lesson-nav .dots button {
+    appearance: none; border: 0; background: transparent; width: 18px; height: 28px; padding: 0;
+    display: grid; place-items: center;
+  }
+  .lesson-nav .dots button::after {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(239, 230, 242, 0.25);
+  }
+  .lesson-nav .dots button[aria-current="step"]::after { background: var(--accent); transform: scale(1.35); }
+  body.lesson-closed .lesson-body, body.lesson-closed .lesson-nav { display: none; }
+  body.lesson-closed .lesson { width: auto; min-width: 0; align-self: flex-start; display: inline-flex; }
+  body.lesson-closed .lesson-head { border-bottom: 0; }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(1.8rem, 3.8vw, 3rem); }
+    .lesson { margin-top: 10px; }
+    .lesson-body { font-size: 14px; }
+  }
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .label .sub, body.lesson-closed .label .sub { display: none; }
+    .lesson { width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(38vh, 320px); }
+    .lesson-head { padding: 8px 8px 8px 12px; }
+    .lesson-tabs { display: flex; }
+    .lesson-toggle { display: none; }
+    .lesson-kicker { font-size: 9.5px; }
+    .lesson-body { padding: 10px 14px 4px; font-size: 13.5px; }
+    .lesson-body h3 { font-size: 18px; }
+    body.m-learn .meters, body.m-learn .hint { display: none; }
+    body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
+    body.m-numbers .lesson { max-height: none; }
+    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .meters { min-width: 0; width: 100%; }
+    .chips button { font-size: 12px; padding: 8px 12px; min-height: 38px; }
+    .chips .lg { display: none; }
+    .hint .long { display: none; }
+    .tags span { font-size: 10px; padding: 2px 6px; }
+  }
+  html.embed, body.embed { background: transparent !important; }
+  body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
+  body.embed canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.has('embed')) {
+    document.body.classList.add('embed');
+    document.documentElement.classList.add('embed');
+  }
+})();
+</script>
+  <div id="stage"></div>
+  <div class="vig" aria-hidden="true"></div>
+  <div class="tags" aria-hidden="true">
+    <span id="tag-fapp" class="fapp">F<sub>app</sub></span>
+    <span id="tag-ffric" class="ffric">F<sub>fric</sub></span>
+    <span id="tag-fnet" class="fnet">ΣF</span>
+    <span id="tag-a" class="acc">a</span>
+    <span id="tag-m" class="mass">m</span>
+  </div>
+  <div class="chrome">
+    <div class="label">
+      <p class="tag">Physics lab · mechanics · Newton&rsquo;s laws</p>
+      <h1>Newton&rsquo;s laws <em>of</em><br />motion</h1>
+      <p class="sub">One cart. Three ideas: inertia, a = ΣF/m, and action–reaction. Big arrows, live meters, guided steps.</p>
+      <section class="lesson" id="lesson" aria-label="Lesson: how it works">
+        <header class="lesson-head">
+          <div class="lesson-tabs" role="tablist" aria-label="Panel">
+            <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
+            <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
+          </div>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/11 · <b>Meet the cart</b></p>
+          <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
+        </header>
+        <div class="lesson-body" id="ls-body" aria-live="polite"></div>
+        <nav class="lesson-nav" aria-label="Lesson steps">
+          <button type="button" data-step="prev">← Back</button>
+          <div class="dots" id="ls-dots"></div>
+          <button type="button" data-step="next">Next →</button>
+        </nav>
+      </section>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="chips" id="chips" role="group" aria-label="Simulation controls">
+          <button type="button" data-act="push">Apply push</button>
+          <button type="button" data-act="double-f">Double F</button>
+          <button type="button" data-act="double-m">Double m</button>
+          <button type="button" data-act="friction" aria-pressed="false" id="fric-chip">Friction<span class="lg"> off</span><small>μ 0</small></button>
+          <button type="button" data-act="reset">Reset</button>
+        </div>
+        <div class="hint">
+          <span><i style="background:#ffb36b"></i>drag force handle · set F<sub>app</sub></span><br />
+          <span><i style="background:#efe6f2"></i>drag cart when still · set mass</span><span class="long"> · empty space leans camera</span>
+        </div>
+      </div>
+      <div class="meters" id="meters" aria-live="off">
+        <h2>Live · a = ΣF / m</h2>
+        <div class="meter m-fapp"><span class="lab">F<sub>app</sub></span><div class="track"><div class="fill" id="bar-fapp"></div></div><span class="val" id="h-fapp">—</span></div>
+        <div class="meter m-ffric"><span class="lab">F<sub>fric</sub></span><div class="track"><div class="fill" id="bar-ffric"></div></div><span class="val" id="h-ff">—</span></div>
+        <div class="meter m-fnet"><span class="lab">ΣF</span><div class="track"><div class="fill" id="bar-fnet"></div></div><span class="val" id="h-fnet">—</span></div>
+        <div class="meter m-m"><span class="lab">m</span><div class="track"><div class="fill" id="bar-m"></div></div><span class="val" id="h-m">—</span></div>
+        <div class="meter m-a"><span class="lab">a</span><div class="track"><div class="fill" id="bar-a"></div></div><span class="val" id="h-a">—</span></div>
+        <div class="eq" id="h-eq">a = ΣF/m = —</div>
+        <div class="flag" id="h-flag"></div>
+      </div>
+    </div>
+  </div>
+  <div id="err" role="status"></div>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const VOID = 0x140818;
+const params = new URLSearchParams(location.search);
+const embed = params.has('embed');
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let still = reduced || params.has('still');
+
+const stage = document.getElementById('stage');
+const errEl = document.getElementById('err');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+
+const ua = navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+const SEG = isMobile ? 16 : 28;
+
+try {
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, alpha: embed,
+  powerPreference: isIOS ? 'default' : 'high-performance',
+});
+if (!renderer.getContext()) throw new Error('WebGL context failed to create.');
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setClearColor(VOID, embed ? 0 : 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+stage.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+if (!embed) {
+  scene.background = new THREE.Color(VOID);
+  scene.fog = new THREE.Fog(VOID, 14, 28);
+}
+
+const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
+const camBase = new THREE.Vector3(0.2, 3.1, 8.4);
+const camLook = new THREE.Vector3(0, 0.35, 0);
+
+const disposables = [];
+const keep = (x) => { disposables.push(x); return x; };
+
+scene.add(new THREE.HemisphereLight(0xd4c4f0, 0x2a1020, 0.85));
+const key = new THREE.PointLight(0xffc090, 42, 20, 1.4);
+key.position.set(0.8, 4.0, 3.0);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xb9a2ff, 0.4);
+rim.position.set(-4, 3, 1);
+scene.add(rim);
+
+const rig = new THREE.Group();
+scene.add(rig);
+
+/* —— materials —— */
+const railMat = keep(new THREE.MeshStandardMaterial({ color: 0x6a4a78, roughness: 0.4, metalness: 0.35, emissive: 0x2a1430, emissiveIntensity: 0.25 }));
+const deckMat = keep(new THREE.MeshStandardMaterial({ color: 0x1c0e24, roughness: 0.85, metalness: 0.05 }));
+const cartMat = keep(new THREE.MeshPhysicalMaterial({
+  color: 0xffb36b, roughness: 0.32, metalness: 0.08, clearcoat: 0.45, clearcoatRoughness: 0.3,
+  emissive: 0x6a2a08, emissiveIntensity: 0.28,
+}));
+const plateMat = keep(new THREE.MeshPhysicalMaterial({
+  color: 0xb9a2ff, roughness: 0.35, metalness: 0.12, clearcoat: 0.35,
+  emissive: 0x2a1850, emissiveIntensity: 0.45,
+}));
+const wheelMat = keep(new THREE.MeshStandardMaterial({ color: 0xefe6f2, roughness: 0.3, metalness: 0.5 }));
+
+/* —— track (clear, high contrast) —— */
+const TRACK_HALF = 4.4;
+const deck = new THREE.Mesh(keep(new THREE.BoxGeometry(TRACK_HALF * 2 + 1.6, 0.12, 1.6)), deckMat);
+deck.position.y = -0.12;
+rig.add(deck);
+const railGeo = keep(new THREE.BoxGeometry(TRACK_HALF * 2 + 0.8, 0.09, 0.1));
+const railL = new THREE.Mesh(railGeo, railMat);
+const railR = railL.clone();
+railL.position.set(0, 0.02, -0.38);
+railR.position.set(0, 0.02, 0.38);
+rig.add(railL, railR);
+const tickGeo = keep(new THREE.BoxGeometry(0.04, 0.02, 1.5));
+const tickMat = keep(new THREE.MeshBasicMaterial({ color: 0x3a2845 }));
+for (let i = -8; i <= 8; i++) {
+  const t = new THREE.Mesh(tickGeo, tickMat);
+  t.position.set(i * 0.55, -0.04, 0);
+  rig.add(t);
+}
+const bumperMat = keep(new THREE.MeshStandardMaterial({ color: 0x5a3058, roughness: 0.45, emissive: 0x3a1838, emissiveIntensity: 0.4 }));
+const bumpGeo = keep(new THREE.BoxGeometry(0.16, 0.7, 1.1));
+const bumpL = new THREE.Mesh(bumpGeo, bumperMat);
+const bumpR = bumpL.clone();
+bumpL.position.set(-TRACK_HALF - 0.2, 0.28, 0);
+bumpR.position.set(TRACK_HALF + 0.2, 0.28, 0);
+rig.add(bumpL, bumpR);
+
+/* —— cart —— */
+const cart = new THREE.Group();
+rig.add(cart);
+const body = new THREE.Mesh(keep(new THREE.BoxGeometry(1.0, 0.42, 0.62)), cartMat);
+body.position.y = 0.36;
+cart.add(body);
+const massBlock = new THREE.Mesh(keep(new THREE.BoxGeometry(0.55, 0.38, 0.5)),
+  keep(new THREE.MeshPhysicalMaterial({
+    color: 0xf0c24b, roughness: 0.38, metalness: 0.06, clearcoat: 0.3,
+    emissive: 0x4a3008, emissiveIntensity: 0.25,
+  })));
+massBlock.position.set(-0.05, 0.72, 0);
+cart.add(massBlock);
+const plate = new THREE.Mesh(keep(new THREE.BoxGeometry(0.12, 0.5, 0.55)), plateMat);
+plate.position.set(-0.58, 0.38, 0);
+cart.add(plate);
+const wheelGeo = keep(new THREE.CylinderGeometry(0.13, 0.13, 0.09, SEG));
+for (const [wx, wz] of [[-0.32, -0.34], [0.32, -0.34], [-0.32, 0.34], [0.32, 0.34]]) {
+  const w = new THREE.Mesh(wheelGeo, wheelMat);
+  w.rotation.x = Math.PI / 2;
+  w.position.set(wx, 0.13, wz);
+  cart.add(w);
+}
+
+/* force handle */
+const handle = new THREE.Mesh(keep(new THREE.SphereGeometry(0.18, SEG, SEG)),
+  keep(new THREE.MeshPhysicalMaterial({
+    color: 0xffb36b, roughness: 0.25, metalness: 0.1, clearcoat: 0.6,
+    emissive: 0xff7030, emissiveIntensity: 0.65,
+  })));
+handle.position.set(1.4, 0.6, 0);
+rig.add(handle);
+
+/* —— BIG teaching arrows (shaft + head, labeled via HTML tags) —— */
+function makeArrow(color, shaftR, headR, headLen) {
+  const g = new THREE.Group();
+  const mat = keep(new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthWrite: false }));
+  const shaft = new THREE.Mesh(keep(new THREE.CylinderGeometry(shaftR, shaftR, 1, 10)), mat);
+  shaft.rotation.z = -Math.PI / 2;
+  shaft.position.x = 0.5;
+  const head = new THREE.Mesh(keep(new THREE.ConeGeometry(headR, headLen, 12)), mat);
+  head.rotation.z = -Math.PI / 2;
+  head.position.x = 1 + headLen * 0.35;
+  g.add(shaft, head);
+  g.userData = { shaft, head, headLen, mat };
+  return g;
+}
+function setArrowLen(g, signedLen) {
+  const L = Math.abs(signedLen);
+  const sign = signedLen >= 0 ? 1 : -1;
+  if (L < 0.12) { g.visible = false; return; }
+  g.visible = true;
+  const headLen = g.userData.headLen;
+  const shaftLen = Math.max(0.15, L - headLen * 0.5);
+  g.userData.shaft.scale.set(1, shaftLen, 1);
+  g.userData.shaft.position.x = shaftLen / 2;
+  g.userData.head.position.x = shaftLen + headLen * 0.35;
+  g.scale.set(sign, 1, 1);
+}
+
+const arrowApp = makeArrow(0xffb36b, 0.055, 0.14, 0.28);
+const arrowFric = makeArrow(0x9ad7c2, 0.045, 0.12, 0.24);
+const arrowNet = makeArrow(0xf0c24b, 0.07, 0.17, 0.32);
+const arrowAcc = makeArrow(0xb9a2ff, 0.05, 0.13, 0.26);
+const arrowReact = makeArrow(0xf0c24b, 0.04, 0.11, 0.22);
+cart.add(arrowApp, arrowFric, arrowNet, arrowAcc, arrowReact);
+
+/* soft ground glow plane */
+const glowMat = keep(new THREE.MeshBasicMaterial({
+  color: 0xffb36b, transparent: true, opacity: 0.06, depthWrite: false,
+}));
+const glow = new THREE.Mesh(keep(new THREE.PlaneGeometry(12, 3)), glowMat);
+glow.rotation.x = -Math.PI / 2;
+glow.position.y = -0.18;
+rig.add(glow);
+
+/* subtle backdrop — few towers only */
+if (!embed) {
+  const bMat = keep(new THREE.MeshBasicMaterial({ color: 0x1a0c20, fog: true }));
+  const bGeo = keep(new THREE.BoxGeometry(1, 1, 1));
+  for (let i = 0; i < 12; i++) {
+    const h = 1.5 + (i % 5) * 0.9;
+    const m = new THREE.Mesh(bGeo, bMat);
+    m.scale.set(1.2 + (i % 3) * 0.4, h, 1);
+    m.position.set(-10 + i * 1.9, -6 + h / 2, -12 - (i % 3));
+    scene.add(m);
+  }
+}
+
+/* —— physics —— */
+const G = 9.81;
+const state = {
+  x: 0, v: 0, a: 0,
+  m: 1.0,
+  Fapp: 3.0,
+  mu: 0,
+  frictionOn: false,
+  Ffric: 0,
+  Fnet: 0,
+};
+const X_MIN = -TRACK_HALF + 0.65;
+const X_MAX = TRACK_HALF - 0.65;
+const M_MIN = 0.5, M_MAX = 8.0;
+const F_MIN = -16, F_MAX = 16;
+const F_BAR = 16; // meter full-scale
+const A_BAR = 12;
+let flagText = '';
+let flagHold = 0;
+let lastInteract = performance.now();
+let lean = new THREE.Vector2();
+let leanGoal = new THREE.Vector2();
+let showReact = false;
+
+function sgn(n, d) {
+  const s = n > 0.005 ? '+' : n < -0.005 ? '' : '';
+  return s + n.toFixed(d);
+}
+
+function computeForces() {
+  const N = state.m * G;
+  const fMax = state.mu * N;
+  if (state.frictionOn && state.mu > 0) {
+    if (Math.abs(state.v) < 0.03 && Math.abs(state.Fapp) <= fMax + 1e-6) {
+      state.Ffric = -state.Fapp;
+      state.v = 0;
+    } else {
+      const dir = Math.abs(state.v) < 0.03 ? -Math.sign(state.Fapp || 1) : -Math.sign(state.v);
+      state.Ffric = dir * fMax;
+    }
+  } else {
+    state.Ffric = 0;
+  }
+  state.Fnet = state.Fapp + state.Ffric;
+  state.a = state.Fnet / state.m;
+}
+
+function stepPhysics(dt) {
+  computeForces();
+  // if stuck (static friction balanced), skip integration
+  if (state.frictionOn && Math.abs(state.v) < 1e-6 && Math.abs(state.Fnet) < 1e-6) {
+    state.a = 0;
+    return;
+  }
+  state.v += state.a * dt;
+  state.x += state.v * dt;
+  if (state.x < X_MIN) { state.x = X_MIN; state.v = Math.abs(state.v) * 0.3; flagText = 'bumper'; flagHold = 0.8; }
+  if (state.x > X_MAX) { state.x = X_MAX; state.v = -Math.abs(state.v) * 0.3; flagText = 'bumper'; flagHold = 0.8; }
+}
+
+/* —— actions (single dispatcher — chips + lesson share this) —— */
+function syncFrictionChip() {
+  const b = document.getElementById('fric-chip');
+  if (!b) return;
+  b.setAttribute('aria-pressed', String(state.frictionOn));
+  b.innerHTML = state.frictionOn
+    ? 'Friction<span class="lg"> on</span><small>μ 0.25</small>'
+    : 'Friction<span class="lg"> off</span><small>μ 0</small>';
+}
+
+function syncHandleFromForce() {
+  const dist = 0.7 + Math.abs(state.Fapp) * 0.14;
+  handle.position.x = state.x + (state.Fapp >= 0 ? dist : -dist);
+  handle.position.y = 0.6;
+}
+
+function syncCartScale() {
+  const t = (state.m - M_MIN) / (M_MAX - M_MIN);
+  const s = 0.75 + t * 0.85;
+  massBlock.scale.set(s, s, s);
+  massBlock.position.y = 0.55 + s * 0.22;
+}
+
+function refreshAfterAction() {
+  computeForces();
+  syncHandleFromForce();
+  syncCartScale();
+  syncVisuals();
+  updateHud();
+  updateLessonLive();
+  syncFrictionChip();
+  if (still) render();
+  lastInteract = performance.now();
+}
+
+function doPush() {
+  // Always set a clear, obvious applied force (not a subtle 1.15× nudge)
+  state.Fapp = state.Fapp >= 0 ? Math.max(3.0, Math.min(F_MAX, state.Fapp < 0.5 ? 3.0 : state.Fapp)) : Math.min(-3.0, state.Fapp);
+  if (Math.abs(state.Fapp) < 2.5) state.Fapp = 3.0;
+  // If friction was holding it, ensure we exceed μmg
+  if (state.frictionOn) {
+    const need = state.mu * state.m * G + 0.5;
+    if (Math.abs(state.Fapp) <= need) state.Fapp = Math.sign(state.Fapp || 1) * Math.max(need, 3.0);
+  }
+  flagText = `push · F_app = ${sgn(state.Fapp, 1)} N`;
+  flagHold = 1.4;
+  refreshAfterAction();
+}
+
+function doDoubleF() {
+  if (Math.abs(state.Fapp) < 0.2) state.Fapp = 2.0;
+  else {
+    const next = state.Fapp * 2;
+    if (Math.abs(next) > F_MAX) {
+      state.Fapp = Math.sign(state.Fapp) * F_MAX;
+      flagText = `F at max · ${sgn(state.Fapp, 1)} N`;
+    } else {
+      state.Fapp = next;
+      flagText = `F doubled · ${sgn(state.Fapp, 1)} N`;
+    }
+  }
+  flagHold = 1.4;
+  refreshAfterAction();
+}
+
+function doDoubleM() {
+  const next = state.m * 2;
+  if (next > M_MAX + 1e-6) {
+    state.m = M_MAX;
+    flagText = `m at max · ${state.m.toFixed(1)} kg`;
+  } else {
+    state.m = next;
+    flagText = `m doubled · ${state.m.toFixed(1)} kg`;
+  }
+  flagHold = 1.4;
+  refreshAfterAction();
+}
+
+function doFrictionToggle() {
+  state.frictionOn = !state.frictionOn;
+  state.mu = state.frictionOn ? 0.25 : 0;
+  flagText = state.frictionOn ? 'friction ON · μ = 0.25' : 'friction OFF';
+  flagHold = 1.4;
+  refreshAfterAction();
+}
+
+function doFrictionOff() {
+  state.frictionOn = false;
+  state.mu = 0;
+  flagText = 'friction OFF';
+  flagHold = 1.0;
+  refreshAfterAction();
+}
+
+function doCoast() {
+  state.Fapp = 0;
+  if (Math.abs(state.v) < 0.15) state.v = 1.2;
+  state.frictionOn = false;
+  state.mu = 0;
+  flagText = 'coasting · F_app = 0';
+  flagHold = 1.4;
+  refreshAfterAction();
+}
+
+function doReset() {
+  state.x = 0;
+  state.v = 0;
+  state.m = 1.0;
+  state.Fapp = 3.0;
+  state.frictionOn = false;
+  state.mu = 0;
+  flagText = 'reset';
+  flagHold = 1.0;
+  refreshAfterAction();
+}
+
+function doHalveF() {
+  state.Fapp = state.Fapp / 2;
+  if (Math.abs(state.Fapp) < 0.15) state.Fapp = 0;
+  flagText = `F halved · ${sgn(state.Fapp, 1)} N`;
+  flagHold = 1.2;
+  refreshAfterAction();
+}
+
+function doZeroF() {
+  state.Fapp = 0;
+  flagText = 'F_app = 0';
+  flagHold = 1.0;
+  refreshAfterAction();
+}
+
+function dispatchAct(act) {
+  if (!act) return false;
+  if (act === 'push') doPush();
+  else if (act === 'double-f') doDoubleF();
+  else if (act === 'double-m') doDoubleM();
+  else if (act === 'friction') doFrictionToggle();
+  else if (act === 'friction-off') doFrictionOff();
+  else if (act === 'coast') doCoast();
+  else if (act === 'reset') doReset();
+  else if (act === 'halve-f') doHalveF();
+  else if (act === 'zero-f') doZeroF();
+  else return false;
+  return true;
+}
+
+/* —— visuals —— */
+function syncVisuals() {
+  cart.position.x = state.x;
+  computeForces();
+  // scale factors: make doubling visually obvious
+  const fScale = 0.22;   // N → metres of arrow
+  const aScale = 0.38;
+  setArrowLen(arrowApp, state.Fapp * fScale);
+  arrowApp.position.set(0.15, 1.05, 0);
+  setArrowLen(arrowFric, state.Ffric * fScale);
+  arrowFric.position.set(0.15, 0.78, 0);
+  arrowFric.visible = arrowFric.visible && Math.abs(state.Ffric) > 0.08;
+  setArrowLen(arrowNet, state.Fnet * fScale * 1.05);
+  arrowNet.position.set(0.15, 1.38, 0);
+  setArrowLen(arrowAcc, state.a * aScale);
+  arrowAcc.position.set(0.15, 1.68, 0);
+  // 3rd-law reaction on plate (shown on third-law / both focus)
+  setArrowLen(arrowReact, -state.Fapp * fScale * 0.85);
+  arrowReact.position.set(-0.62, 0.55, 0);
+  arrowReact.visible = showReact && Math.abs(state.Fapp) > 0.2;
+  if (drag.target !== 'handle') syncHandleFromForce();
+  syncCartScale();
+}
+
+function setBar(el, value, full, bipolar) {
+  const mag = Math.min(1, Math.abs(value) / full);
+  el.style.width = `${mag * 50}%`;
+  if (bipolar) {
+    el.classList.toggle('neg', value < -0.01);
+    if (value >= -0.01) el.classList.remove('neg');
+  }
+}
+
+function updateHud() {
+  computeForces();
+  document.getElementById('h-fapp').textContent = `${sgn(state.Fapp, 2)} N`;
+  document.getElementById('h-ff').textContent = `${sgn(state.Ffric, 2)} N`;
+  document.getElementById('h-fnet').textContent = `${sgn(state.Fnet, 2)} N`;
+  document.getElementById('h-m').textContent = `${state.m.toFixed(2)} kg`;
+  document.getElementById('h-a').textContent = `${sgn(state.a, 2)} m/s²`;
+  document.getElementById('h-eq').textContent =
+    `a = ΣF/m = ${sgn(state.Fnet, 2)} / ${state.m.toFixed(2)} = ${sgn(state.a, 2)} m/s²`;
+  document.getElementById('h-flag').textContent = flagHold > 0 ? flagText : `v = ${sgn(state.v, 2)} m/s`;
+  setBar(document.getElementById('bar-fapp'), state.Fapp, F_BAR, true);
+  setBar(document.getElementById('bar-ffric'), state.Ffric, F_BAR, true);
+  setBar(document.getElementById('bar-fnet'), state.Fnet, F_BAR, true);
+  const bm = document.getElementById('bar-m');
+  bm.style.width = `${((state.m - M_MIN) / (M_MAX - M_MIN)) * 100}%`;
+  bm.classList.remove('neg');
+  setBar(document.getElementById('bar-a'), state.a, A_BAR, true);
+}
+
+/* tags */
+const tagFapp = document.getElementById('tag-fapp');
+const tagFfric = document.getElementById('tag-ffric');
+const tagFnet = document.getElementById('tag-fnet');
+const tagA = document.getElementById('tag-a');
+const tagM = document.getElementById('tag-m');
+const _pr = new THREE.Vector3();
+function projectTag(el, wx, wy, wz, ox = 0, oy = 0) {
+  _pr.set(wx, wy, wz).project(camera);
+  if (_pr.z > 1) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const x = (_pr.x * 0.5 + 0.5) * innerWidth + ox;
+  const y = (-_pr.y * 0.5 + 0.5) * innerHeight + oy;
+  el.style.transform = `translate(${x}px, ${y}px)`;
+}
+function syncTags() {
+  if (embed) return;
+  const sx = Math.sign(state.Fapp || 1);
+  const ax = Math.sign(state.a || state.Fnet || 1);
+  projectTag(tagFapp, state.x + sx * Math.max(0.5, Math.abs(state.Fapp) * 0.12), 1.05, 0, 10, -18);
+  tagFapp.textContent = `Fapp ${sgn(state.Fapp, 1)} N`;
+  projectTag(tagFfric, state.x + Math.sign(state.Ffric || -sx) * 0.6, 0.78, 0, 10, -18);
+  tagFfric.style.opacity = Math.abs(state.Ffric) > 0.08 ? '1' : '0.25';
+  tagFfric.textContent = `Ffric ${sgn(state.Ffric, 1)} N`;
+  projectTag(tagFnet, state.x + ax * Math.max(0.6, Math.abs(state.Fnet) * 0.12), 1.38, 0, 10, -18);
+  tagFnet.textContent = `ΣF ${sgn(state.Fnet, 1)} N`;
+  projectTag(tagA, state.x + ax * Math.max(0.5, Math.abs(state.a) * 0.15), 1.68, 0, 10, -18);
+  tagA.textContent = `a ${sgn(state.a, 1)} m/s²`;
+  projectTag(tagM, state.x - 0.05, 0.95, 0, -28, -22);
+  tagM.textContent = `m ${state.m.toFixed(1)} kg`;
+}
+
+/* pointer */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const drag = { target: null };
+const _hit = new THREE.Vector3();
+const pickables = [handle, body, massBlock, plate];
+
+function setPointer(e) {
+  const r = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+}
+function worldOnY(y) {
+  raycaster.setFromCamera(pointer, camera);
+  const o = raycaster.ray.origin, d = raycaster.ray.direction;
+  if (Math.abs(d.y) < 1e-6) return null;
+  return _hit.copy(o).addScaledVector(d, (y - o.y) / d.y);
+}
+function onDown(e) {
+  if (e.button !== undefined && e.button !== 0) return;
+  canvas.setPointerCapture(e.pointerId);
+  setPointer(e);
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(pickables, false);
+  lastInteract = performance.now();
+  if (hits.length) {
+    const obj = hits[0].object;
+    if (obj === handle) {
+      drag.target = 'handle';
+      const w = worldOnY(0.6);
+      drag.offsetX = w ? handle.position.x - w.x : 0;
+    } else {
+      drag.target = 'mass';
+      const w = worldOnY(0.5);
+      drag.offsetX = w ? state.x - w.x : 0;
+    }
+    canvas.classList.add('grabbing');
+  } else {
+    drag.target = 'lean';
+    drag.sx = e.clientX; drag.sy = e.clientY;
+  }
+}
+function onMove(e) {
+  setPointer(e);
+  if (!drag.target) {
+    raycaster.setFromCamera(pointer, camera);
+    canvas.classList.toggle('can-grab', raycaster.intersectObjects(pickables, false).length > 0);
+    return;
+  }
+  lastInteract = performance.now();
+  if (drag.target === 'handle') {
+    const w = worldOnY(0.6);
+    if (!w) return;
+    const hx = w.x + drag.offsetX;
+    const dx = hx - state.x;
+    const mag = Math.max(0, (Math.abs(dx) - 0.7) / 0.14);
+    state.Fapp = Math.max(F_MIN, Math.min(F_MAX, Math.sign(dx || 1) * mag));
+    handle.position.x = state.x + Math.sign(dx || 1) * (0.7 + Math.abs(state.Fapp) * 0.14);
+    computeForces(); syncVisuals(); updateHud(); updateLessonLive();
+    if (still) render();
+  } else if (drag.target === 'mass') {
+    const w = worldOnY(0.5);
+    if (!w) return;
+    if (Math.abs(state.v) < 0.1 && Math.abs(state.Fapp) < 0.5) {
+      const t = (w.x + TRACK_HALF) / (TRACK_HALF * 2);
+      state.m = M_MIN + Math.max(0, Math.min(1, t)) * (M_MAX - M_MIN);
+    } else {
+      state.x = Math.max(X_MIN, Math.min(X_MAX, w.x + drag.offsetX));
+      state.v = 0;
+    }
+    computeForces(); syncVisuals(); updateHud(); updateLessonLive();
+    if (still) render();
+  } else if (drag.target === 'lean') {
+    leanGoal.set(
+      Math.max(-0.3, Math.min(0.3, (e.clientX - drag.sx) * 0.001)),
+      Math.max(-0.18, Math.min(0.18, (e.clientY - drag.sy) * -0.0008))
+    );
+  }
+}
+function onUp(e) {
+  drag.target = null;
+  canvas.classList.remove('grabbing');
+  leanGoal.set(0, 0);
+  try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+
+/* chips — same data-act as lesson */
+document.getElementById('chips').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  dispatchAct(btn.dataset.act);
+});
+
+/* camera / resize */
+const narrowMq = matchMedia('(max-width: 720px), (max-aspect-ratio: 5/6)');
+function chromeLeftEdge() {
+  if (embed || narrowMq.matches || !lsOpen) return 0;
+  return lessonEl.getBoundingClientRect().right;
+}
+function placeCamera(t) {
+  const left = chromeLeftEdge();
+  const shift = left > 40 ? (left / innerWidth) * 2.0 : 0;
+  camera.position.set(
+    camBase.x + lean.x * 1.2 + shift * 0.25,
+    camBase.y + lean.y + Math.sin(t * 0.12) * 0.015,
+    camBase.z
+  );
+  camera.lookAt(camLook.x + shift * 0.4 + state.x * 0.06, camLook.y, camLook.z);
+}
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  camera.aspect = w / Math.max(1, h);
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+}
+
+/* ================= lesson (11 steps) ================= */
+const lessonEl = document.getElementById('lesson');
+const lsBody = document.getElementById('ls-body');
+const lsKicker = document.getElementById('ls-kicker');
+const lsDots = document.getElementById('ls-dots');
+const lsToggle = document.getElementById('ls-toggle');
+const labelEl = document.querySelector('.label');
+const footEl = document.querySelector('.foot');
+const metersEl = document.getElementById('meters');
+
+const LS = [
+  { topic: 'Meet the cart', focus: 'intro', html: `
+    <h3>Meet the cart</h3>
+    <p>This is a teaching track. One cart, one applied force, optional friction. Every number on the right is computed live — nothing is canned.</p>
+    <p><b>Orange arrow</b> = applied force F<sub>app</sub>. <b>Teal</b> = friction. <b>Gold (thick)</b> = net force ΣF. <b>Lilac</b> = acceleration a. The gold block on the cart is mass m.</p>
+    <p class="watch"><b>Watch</b>Look at the meter bars on the right. F<sub>app</sub>, ΣF, and a should all point the same way when friction is off.</p>
+    <p class="live"><b>Now</b>F<sub>app</sub> = <span data-live="Fapp">—</span> · m = <span data-live="m">—</span> · a = <span data-live="a">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset to start</button><button type="button" data-act="push">Apply push</button></div>` },
+  { topic: '1st law · inertia', focus: 'inertia', html: `
+    <h3>1st law · inertia</h3>
+    <p class="formula">If ΣF = 0, then a = 0 → v stays constant</p>
+    <p>Things keep doing what they are doing unless a <b>net</b> force changes them. At rest stays at rest. Moving at constant speed keeps that speed. That stubbornness is <b>inertia</b>. Mass measures how much inertia an object has.</p>
+    <p class="watch"><b>Watch</b>Tap <b>Coast</b>. F<sub>app</sub> goes to 0 and friction is off. The cart keeps sliding. ΣF ≈ 0 and a ≈ 0 while v stays nearly steady.</p>
+    <p class="live"><b>Now</b>ΣF = <span data-live="Fnet">—</span> · a = <span data-live="a">—</span> · v = <span data-live="v">—</span></p>
+    <div class="acts"><button type="button" data-act="coast">Coast (F→0)</button><button type="button" data-act="zero-f">Set F = 0</button></div>` },
+  { topic: 'What force means', focus: 'force', html: `
+    <h3>What a force is</h3>
+    <p class="formula">Force has size and direction · unit: newton (N)</p>
+    <p>A force is a push or a pull. In this scene the warm handle sets F<sub>app</sub>. Drag it farther from the cart to make a bigger force. The orange arrow grows with F<sub>app</sub>.</p>
+    <p class="watch"><b>Watch</b>Tap <b>Apply push</b>, then <b>Double F</b>. The orange arrow and the F<sub>app</sub> meter bar should roughly double.</p>
+    <p class="live"><b>Now</b>F<sub>app</sub> = <span data-live="Fapp">—</span> (drag the handle to change it)</p>
+    <div class="acts"><button type="button" data-act="push">Apply push</button><button type="button" data-act="double-f">Double F</button><button type="button" data-act="halve-f">Halve F</button></div>` },
+  { topic: '2nd law · F = ma', focus: 'second', html: `
+    <h3>2nd law · ΣF = m · a</h3>
+    <p class="formula">a = ΣF / m</p>
+    <p>Acceleration is net force per kilogram. Same push, heavier cart → smaller a. Same mass, bigger push → bigger a. The lilac arrow is a; it always matches the direction of ΣF.</p>
+    <p class="watch"><b>Watch</b>Read the equation line under the meters: it always shows a = ΣF / m with the live numbers. Change F or m and watch a update.</p>
+    <p class="live"><b>Now</b>ΣF = <span data-live="Fnet">—</span> · m = <span data-live="m">—</span> → a = <span data-live="a">—</span></p>
+    <div class="acts"><button type="button" data-act="push">Apply push</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Net force ΣF', focus: 'net', html: `
+    <h3>Net force is what counts</h3>
+    <p class="formula">ΣF = F<sub>app</sub> + F<sub>fric</sub> + …</p>
+    <p>Many forces can act at once. Only their <b>vector sum</b> sets acceleration. The thick gold arrow is ΣF — that is the arrow that matches a.</p>
+    <p class="watch"><b>Watch</b>With friction off, F<sub>app</sub> and ΣF are equal (orange and gold arrows match). Turn friction on later to see them differ.</p>
+    <p class="live"><b>Now</b>F<sub>app</sub> = <span data-live="Fapp">—</span> · F<sub>fric</sub> = <span data-live="Ffric">—</span> · ΣF = <span data-live="Fnet">—</span></p>
+    <div class="acts"><button type="button" data-act="friction-off">Friction off</button><button type="button" data-act="push">Apply push</button></div>` },
+  { topic: 'Friction', focus: 'friction', html: `
+    <h3>Friction opposes slip</h3>
+    <p class="formula">|F<sub>fric</sub>| = μ · m · g &nbsp;(kinetic) · g = 9.81</p>
+    <p>Friction pushes opposite the motion (teal arrow). Here μ = 0.25 when friction is on. From rest, the cart stays stuck until |F<sub>app</sub>| exceeds μmg (static friction balances the push).</p>
+    <p class="watch"><b>Watch</b>Reset, turn friction on, try a small F. If a stays 0, raise F with Apply push until it breaks free — teal arrow appears opposite v.</p>
+    <p class="live"><b>Now</b>μmg = <span data-live="fmax">—</span> · F<sub>app</sub> = <span data-live="Fapp">—</span> · F<sub>fric</sub> = <span data-live="Ffric">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="friction">Toggle friction</button><button type="button" data-act="push">Apply push</button></div>` },
+  { topic: 'Double the force', focus: 'second', html: `
+    <h3>What if F doubles?</h3>
+    <p class="formula">a′ = (2 ΣF) / m = 2a &nbsp;(m fixed)</p>
+    <p>With mass fixed and friction off, acceleration is proportional to force. Double ΣF → double a. The gold and lilac arrows should both grow.</p>
+    <p class="watch"><b>Watch</b>Friction off → note a → <b>Double F</b> → a should be about 2×. The F<sub>app</sub> and a meter bars jump together.</p>
+    <p class="live"><b>Now</b>F<sub>app</sub> = <span data-live="Fapp">—</span> · m = <span data-live="m">—</span> · a = <span data-live="a">—</span></p>
+    <div class="acts"><button type="button" data-act="friction-off">Friction off</button><button type="button" data-act="double-f">Double F</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Double the mass', focus: 'second', html: `
+    <h3>What if m doubles?</h3>
+    <p class="formula">a′ = ΣF / (2m) = ½a &nbsp;(ΣF fixed)</p>
+    <p>More mass means more inertia. Same net force → half the acceleration. The gold mass block on the cart grows so you can see m change.</p>
+    <p class="watch"><b>Watch</b>Reset, Apply push, note a, then <b>Double m</b>. a should drop to about half. F<sub>app</sub> stays the same; the m meter grows.</p>
+    <p class="live"><b>Now</b>m = <span data-live="m">—</span> · F<sub>app</sub> = <span data-live="Fapp">—</span> · a = <span data-live="a">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="push">Apply push</button><button type="button" data-act="double-m">Double m</button></div>` },
+  { topic: '3rd law · pairs', focus: 'third', html: `
+    <h3>3rd law · action–reaction</h3>
+    <p class="formula">F<sub>A on B</sub> = − F<sub>B on A</sub></p>
+    <p>Forces come in pairs on <b>two different objects</b>. The hand pushes the cart (+F<sub>app</sub>); the cart pushes the hand (−F<sub>app</sub>). Equal size, opposite direction.</p>
+    <p>These do <i>not</i> cancel on the cart — the reaction acts on the <b>hand</b>. ΣF on the cart is still what sets a.</p>
+    <p class="watch"><b>Watch</b>The honey arrow on the lilac plate is the reaction on the pusher. It always mirrors F<sub>app</sub>.</p>
+    <p class="live"><b>Now</b>F<sub>on cart</sub> = <span data-live="Fapp">—</span> · F<sub>on hand</sub> = <span data-live="Freact">—</span></p>
+    <div class="acts"><button type="button" data-act="push">Apply push</button><button type="button" data-act="double-f">Double F</button></div>` },
+  { topic: 'Put it together', focus: 'both', html: `
+    <h3>Put it together</h3>
+    <p class="formula">1st: ΣF=0 → a=0 &nbsp;·&nbsp; 2nd: a=ΣF/m &nbsp;·&nbsp; 3rd: pairs on two bodies</p>
+    <p>Try a short lab sequence: Reset → Apply push → read a → Double F → read a → Double m → read a → toggle friction.</p>
+    <p class="watch"><b>Watch</b>After each button, check that the thick gold ΣF arrow and lilac a arrow still agree in direction, and that the equation line matches.</p>
+    <p class="live"><b>Now</b>ΣF = <span data-live="Fnet">—</span> · m = <span data-live="m">—</span> · a = <span data-live="a">—</span> · check <span data-live="aCalc">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="push">Apply push</button><button type="button" data-act="double-f">Double F</button><button type="button" data-act="double-m">Double m</button><button type="button" data-act="friction">Friction</button></div>` },
+  { topic: 'Try it · questions', focus: 'both', html: `
+    <h3>Questions to try</h3>
+    <p>Use the scene, then open each hint.</p>
+    <details><summary>If ΣF = 0 and the cart is moving, what is a? What happens to v?</summary><p>a = 0. Velocity stays constant (1st law). Coast with F = 0 and friction off to see it.</p></details>
+    <details><summary>F_app = 4 N, m = 2 kg, friction off. Predict a, then set it.</summary><p>a = 4/2 = 2 m/s². Use the handle / Double buttons and read the meters.</p></details>
+    <details><summary>You double F and double m together. What happens to a?</summary><p>It stays the same: a′ = 2F/(2m) = F/m.</p></details>
+    <details><summary>Why doesn’t the 3rd-law pair cancel the cart’s acceleration?</summary><p>The reaction acts on the hand, not on the cart. Only forces on the cart enter that cart’s ΣF.</p></details>
+    <details><summary>μ = 0.25, m = 1 kg. How large must F_app be to start from rest?</summary><p>Must exceed μmg = 0.25×1×9.81 ≈ 2.45 N. Below that, a stays 0.</p></details>
+    <details><summary>Live check: does a equal ΣF/m right now?</summary><p>ΣF = <span data-live="Fnet">—</span>, m = <span data-live="m">—</span>, ΣF/m = <span data-live="aCalc">—</span>, meter a = <span data-live="a">—</span>. They match.</p></details>
+    <details><summary>Friction on, cart moving: which way does F_fric point?</summary><p>Opposite v (teal arrow). It reduces |ΣF| compared with F_app alone.</p></details>
+    <details><summary>If a is zero but F_app is not zero, what else must be true?</summary><p>Another force cancels it — here, static friction with F_fric = −F_app, so ΣF = 0.</p></details>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="coast">Coast</button><button type="button" data-act="friction">Toggle friction</button></div>` },
+];
+
+let lsStep = 0;
+let lsOpen = !params.has('nolesson');
+let mMode = 'learn';
+const lsLive = [];
+
+for (let i = 0; i < LS.length; i++) {
+  const d = document.createElement('button');
+  d.type = 'button';
+  d.dataset.go = String(i);
+  d.setAttribute('aria-label', `Step ${i + 1}: ${LS[i].topic}`);
+  lsDots.appendChild(d);
+}
+
+function renderLesson() {
+  const st = LS[lsStep];
+  lsKicker.innerHTML = `Lesson ${lsStep + 1}/${LS.length} · <b>${st.topic}</b>`;
+  lsBody.innerHTML = st.html;
+  lsBody.scrollTop = 0;
+  lsLive.length = 0;
+  for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
+  for (const d of lsDots.children) d.toggleAttribute('aria-current', false);
+  lsDots.children[lsStep].setAttribute('aria-current', 'step');
+  lessonEl.querySelector('[data-step="prev"]').disabled = lsStep === 0;
+  lessonEl.querySelector('[data-step="next"]').disabled = lsStep === LS.length - 1;
+  document.body.dataset.focus = lsOpen ? st.focus : 'both';
+  showReact = st.focus === 'third' || st.focus === 'both';
+  updateLessonLive();
+}
+
+function updateLessonLive() {
+  if (!lsLive.length) return;
+  computeForces();
+  const fmax = state.mu * state.m * G;
+  const vals = {
+    Fnet: `${sgn(state.Fnet, 2)} N`,
+    Fapp: `${sgn(state.Fapp, 2)} N`,
+    Ffric: `${sgn(state.Ffric, 2)} N`,
+    Freact: `${sgn(-state.Fapp, 2)} N`,
+    m: `${state.m.toFixed(2)} kg`,
+    a: `${sgn(state.a, 2)} m/s²`,
+    aCalc: `${sgn(state.Fnet / state.m, 2)} m/s²`,
+    v: `${sgn(state.v, 2)} m/s`,
+    x: `${sgn(state.x, 2)} m`,
+    fmax: `${fmax.toFixed(2)} N`,
+  };
+  for (const el of lsLive) el.textContent = vals[el.dataset.live] ?? '—';
+}
+
+function goStep(i) {
+  lsStep = Math.max(0, Math.min(LS.length - 1, i));
+  renderLesson();
+}
+
+function onLessonClick(e) {
+  const btn = e.target.closest('button');
+  if (!btn || !lessonEl.contains(btn)) return;
+  if (btn.dataset.step === 'prev') goStep(lsStep - 1);
+  else if (btn.dataset.step === 'next') goStep(lsStep + 1);
+  else if (btn.dataset.go) goStep(+btn.dataset.go);
+  else if (btn.dataset.mode) setMobileMode(btn.dataset.mode);
+  else if (btn === lsToggle) setLessonOpen(!lsOpen);
+  else if (btn.dataset.act) dispatchAct(btn.dataset.act);
+}
+
+function setLessonOpen(open) {
+  lsOpen = open;
+  document.body.classList.toggle('lesson-closed', !open);
+  lsToggle.setAttribute('aria-expanded', String(open));
+  lsToggle.textContent = open ? 'Hide' : 'Open lesson';
+  document.body.dataset.focus = open ? LS[lsStep].focus : 'both';
+  showReact = !open || LS[lsStep].focus === 'third' || LS[lsStep].focus === 'both';
+  fitLesson();
+  resize();
+}
+function setMobileMode(mode) {
+  mMode = mode;
+  document.body.classList.toggle('m-learn', mode === 'learn');
+  document.body.classList.toggle('m-numbers', mode === 'numbers');
+  for (const b of lessonEl.querySelectorAll('[data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === mode));
+}
+function placeLesson() {
+  if (narrowMq.matches) {
+    if (lessonEl.parentElement !== footEl) footEl.insertBefore(lessonEl, metersEl);
+    if (!lsOpen) setLessonOpen(true);
+  } else if (lessonEl.parentElement !== labelEl) {
+    labelEl.appendChild(lessonEl);
+  }
+  fitLesson();
+}
+function fitLesson() {
+  if (narrowMq.matches) { lessonEl.style.maxHeight = ''; return; }
+  const top = lessonEl.getBoundingClientRect().top;
+  const footH = footEl.getBoundingClientRect().height;
+  const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 16;
+  lessonEl.style.maxHeight = `${Math.max(160, innerHeight - padB - footH - 20 - top)}px`;
+}
+function onLessonKey(e) {
+  if (e.target.closest && e.target.closest('input, textarea')) return;
+  if (e.key === 'ArrowRight') goStep(lsStep + 1);
+  else if (e.key === 'ArrowLeft') goStep(lsStep - 1);
+}
+
+/* loop */
+const H = 1 / 240;
+let acc = 0, simT = 0, hudAcc = 0, raf = 0;
+const clock = new THREE.Clock();
+
+function simulate(dt) {
+  acc += dt;
+  let n = 0;
+  while (acc >= H && n < 16) { stepPhysics(H); acc -= H; n++; simT += H; }
+  if (n === 16) acc = 0;
+}
+function render() { renderer.render(scene, camera); }
+
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (performance.now() - lastInteract > 12000 && Math.abs(state.v) < 0.05 && Math.abs(state.Fapp) < 0.3) {
+    doPush();
+  }
+  simulate(dt);
+  flagHold = Math.max(0, flagHold - dt);
+  lean.lerp(leanGoal, 1 - Math.exp(-dt * 5));
+  placeCamera(simT);
+  syncVisuals();
+  syncTags();
+  hudAcc += dt;
+  if (hudAcc > 0.08) { hudAcc = 0; updateHud(); updateLessonLive(); }
+  render();
+}
+
+function warmStill() {
+  doReset();
+  state.Fapp = 4;
+  state.m = 1.5;
+  for (let i = 0; i < Math.round(1.4 / H); i++) stepPhysics(H);
+  refreshAfterAction();
+}
+function holdStill() {
+  cancelAnimationFrame(raf); raf = 0;
+  lean.set(0, 0); leanGoal.set(0, 0);
+  placeCamera(0); syncVisuals(); syncTags(); updateHud(); updateLessonLive(); render();
+}
+function start() {
+  if (still) { holdStill(); return; }
+  if (raf || document.hidden) return;
+  clock.getDelta();
+  raf = requestAnimationFrame(frame);
+}
+
+/* boot */
+doReset();
+document.body.classList.add('has-lesson');
+setMobileMode('learn');
+lessonEl.addEventListener('click', onLessonClick);
+addEventListener('keydown', onLessonKey);
+narrowMq.addEventListener('change', () => { placeLesson(); resize(); });
+placeLesson();
+renderLesson();
+if (!lsOpen) setLessonOpen(false);
+const ro = new ResizeObserver(() => { fitLesson(); resize(); });
+ro.observe(stage);
+resize();
+if (still) warmStill();
+start();
+
+motionQuery.addEventListener('change', (e) => {
+  reduced = e.matches;
+  still = reduced || params.has('still');
+  if (still) { warmStill(); holdStill(); } else start();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else start();
+});
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault(); cancelAnimationFrame(raf); raf = 0;
+  showErr('WebGL context lost — reload to resume.');
+});
+
+function teardown() {
+  cancelAnimationFrame(raf); raf = 0;
+  ro.disconnect();
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup', onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  lessonEl.removeEventListener('click', onLessonClick);
+  for (const d of disposables) d.dispose();
+  renderer.dispose();
+  canvas.remove();
+}
+addEventListener('pagehide', (e) => { if (!e.persisted) teardown(); });
+
+window.__newtonLawsTeardown = teardown;
+window.__newtonLaws = {
+  renderer, state,
+  get still() { return still; },
+  act: dispatchAct,
+  goStep,
+};
+window.__newtonLawsReady = true;
+
+} catch (e) {
+  showErr((e && e.message) ? e.message : String(e));
+  console.error('[newton-laws]', e);
+}
+</script>
+</body>
+</html>

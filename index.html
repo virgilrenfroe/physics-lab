@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>Physics Lab</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.52);
+    --faint: rgba(239, 230, 242, 0.28);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+    --line: rgba(239, 230, 242, 0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+  }
+  body {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255, 150, 80, 0.06), transparent 42%),
+      radial-gradient(ellipse at 80% 60%, rgba(185, 162, 255, 0.04), transparent 40%),
+      var(--void);
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 40px 24px 64px; }
+  .kicker {
+    margin: 0 0 10px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.85);
+  }
+  h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(2.4rem, 6vw, 4.2rem); letter-spacing: -0.04em; line-height: 0.95;
+  }
+  h1 em { font-style: normal; font-weight: 250; color: var(--mute); }
+  .intro {
+    margin: 16px 0 0; max-width: 54ch;
+    font-size: 1.02rem; line-height: 1.5; color: var(--mute);
+  }
+  .meta { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .pill b { color: var(--accent); font-weight: 400; }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px; margin-top: 36px;
+  }
+  .card {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 18px 16px 16px; min-height: 148px;
+    border: 1px solid var(--line); border-radius: 16px;
+    background: rgba(26, 10, 32, 0.55);
+    color: inherit; text-decoration: none;
+    transition: border-color 0.2s ease-out, background 0.2s ease-out, transform 0.2s ease-out;
+  }
+  a.card:hover {
+    border-color: rgba(255, 179, 107, 0.45);
+    background: rgba(255, 179, 107, 0.06);
+    transform: translateY(-1px);
+  }
+  .card.soon {
+    opacity: 0.48; pointer-events: none;
+    background: rgba(20, 8, 24, 0.35);
+  }
+  .num {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--lilac);
+  }
+  .card.live .num { color: var(--accent); }
+  .t {
+    font-family: var(--font-display); font-weight: 600; font-size: 1.2rem;
+    letter-spacing: -0.02em; line-height: 1.15;
+  }
+  .d { font-size: 0.86rem; line-height: 1.4; color: var(--mute); flex: 1; }
+  .tag {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+    color: var(--faint); margin-top: 4px;
+  }
+  footer {
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--mute);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="kicker">Classroom exhibits</p>
+    <h1>Physics Lab</h1>
+    <p class="intro">Classroom WebGL exhibits for teaching mechanics — Hooke, orbits, Newton’s laws, and more. Soft night-city craft, live numbers, guided lesson panels. Built for HS / intro college.</p>
+    <div class="meta">
+      <span class="pill"><b>three r170</b> local</span>
+      <span class="pill">Lesson · Watch · Now</span>
+      <span class="pill">?embed · ?still · ?nolesson</span>
+      <span class="pill">Virgil Renfroe</span>
+    </div>
+
+    <div class="grid">
+      <a class="card live" href="./spring-orbit-sketch.html">
+        <span class="num">01 · live</span>
+        <span class="t">Hooke’s law &amp; orbital motion</span>
+        <span class="d">HS / intro college — F = −kx, damping, gravity ellipses, Kepler III. Pull the mass, fling a planet.</span>
+        <span class="tag">oscillation · gravitation</span>
+      </a>
+      <a class="card live" href="./newton-laws-sketch.html">
+        <span class="num">02 · live</span>
+        <span class="t">Newton’s laws of motion</span>
+        <span class="d">HS / intro college — inertia, ΣF = ma, action–reaction. Drag force or mass; live ΣF, m, a.</span>
+        <span class="tag">force · mass · acceleration</span>
+      </a>
+      <div class="card soon"><span class="num">03 · coming</span><span class="t">Energy · work &amp; KE</span><span class="d">Work–energy theorem, potential wells.</span><span class="tag">mechanics</span></div>
+      <div class="card soon"><span class="num">04 · coming</span><span class="t">Momentum &amp; collisions</span><span class="d">1D elastic / inelastic, impulse.</span><span class="tag">mechanics</span></div>
+      <div class="card soon"><span class="num">05 · coming</span><span class="t">Circular motion</span><span class="d">Centripetal a, banked curves.</span><span class="tag">mechanics</span></div>
+      <div class="card soon"><span class="num">06 · coming</span><span class="t">Simple harmonic motion</span><span class="d">Phase space, energy exchange.</span><span class="tag">oscillation</span></div>
+      <div class="card soon"><span class="num">07 · coming</span><span class="t">Waves on a string</span><span class="d">Standing waves, harmonics.</span><span class="tag">waves</span></div>
+      <div class="card soon"><span class="num">08 · coming</span><span class="t">Sound · Doppler</span><span class="d">Source / observer relative motion.</span><span class="tag">waves</span></div>
+      <div class="card soon"><span class="num">09 · coming</span><span class="t">Electrostatics</span><span class="d">Coulomb field lines, potential.</span><span class="tag">E&amp;M</span></div>
+      <div class="card soon"><span class="num">10 · coming</span><span class="t">Circuits · Ohm</span><span class="d">Series / parallel, Kirchhoff.</span><span class="tag">E&amp;M</span></div>
+      <div class="card soon"><span class="num">11 · coming</span><span class="t">Magnetic force</span><span class="d">v × B on a charge / wire.</span><span class="tag">E&amp;M</span></div>
+      <div class="card soon"><span class="num">12 · coming</span><span class="t">Induction · Faraday</span><span class="d">Flux change, induced emf.</span><span class="tag">E&amp;M</span></div>
+      <div class="card soon"><span class="num">13 · coming</span><span class="t">Geometric optics</span><span class="d">Mirrors, thin lenses, ray traces.</span><span class="tag">optics</span></div>
+      <div class="card soon"><span class="num">14 · coming</span><span class="t">Interference</span><span class="d">Double slit, path difference.</span><span class="tag">optics</span></div>
+      <div class="card soon"><span class="num">15 · coming</span><span class="t">Thermodynamics</span><span class="d">PV diagrams, first law.</span><span class="tag">thermo</span></div>
+      <div class="card soon"><span class="num">16 · coming</span><span class="t">Ideal gas · kinetic</span><span class="d">P from molecular collisions.</span><span class="tag">thermo</span></div>
+      <div class="card soon"><span class="num">17 · coming</span><span class="t">Buoyancy</span><span class="d">Archimedes, floating / sinking.</span><span class="tag">fluids</span></div>
+      <div class="card soon"><span class="num">18 · coming</span><span class="t">Bernoulli</span><span class="d">Pressure vs speed in a streamline.</span><span class="tag">fluids</span></div>
+      <div class="card soon"><span class="num">19 · coming</span><span class="t">Torque &amp; equilibrium</span><span class="d">Στ = 0, center of mass.</span><span class="tag">mechanics</span></div>
+      <div class="card soon"><span class="num">20 · coming</span><span class="t">Angular momentum</span><span class="d">Iω, ice-skater effect.</span><span class="tag">mechanics</span></div>
+      <div class="card soon"><span class="num">21 · coming</span><span class="t">Projectile motion</span><span class="d">Range, trajectory, components.</span><span class="tag">mechanics</span></div>
+      <div class="card soon"><span class="num">22 · coming</span><span class="t">Inclined plane</span><span class="d">Components of mg, friction.</span><span class="tag">mechanics</span></div>
+      <div class="card soon"><span class="num">23 · coming</span><span class="t">Atwood machine</span><span class="d">Two masses, one string, a shared.</span><span class="tag">mechanics</span></div>
+      <div class="card soon"><span class="num">24 · coming</span><span class="t">Universal gravitation</span><span class="d">Field, potential, escape speed.</span><span class="tag">gravitation</span></div>
+      <div class="card soon"><span class="num">25 · coming</span><span class="t">Special relativity</span><span class="d">Time dilation, length contraction.</span><span class="tag">modern</span></div>
+      <div class="card soon"><span class="num">26 · coming</span><span class="t">Photoelectric effect</span><span class="d">E = hf, work function, stopping V.</span><span class="tag">modern</span></div>
+      <div class="card soon"><span class="num">27 · coming</span><span class="t">Bohr atom</span><span class="d">Levels, transitions, spectrum.</span><span class="tag">modern</span></div>
+      <div class="card soon"><span class="num">28 · coming</span><span class="t">Radioactive decay</span><span class="d">Half-life, activity curves.</span><span class="tag">modern</span></div>
+      <div class="card soon"><span class="num">29 · coming</span><span class="t">SHM · pendulums</span><span class="d">Simple vs physical pendulum.</span><span class="tag">oscillation</span></div>
+      <div class="card soon"><span class="num">30 · coming</span><span class="t">Resonance</span><span class="d">Driven damped oscillator.</span><span class="tag">oscillation</span></div>
+      <div class="card soon"><span class="num">31 · coming</span><span class="t">Snell’s law</span><span class="d">Refraction, total internal reflection.</span><span class="tag">optics</span></div>
+      <div class="card soon"><span class="num">32 · coming</span><span class="t">Capacitors</span><span class="d">Series / parallel, RC charging.</span><span class="tag">E&amp;M</span></div>
+    </div>
+
+    <footer>
+      Notes: <a href="./spring-orbit-sketch-NOTES.md">spring-orbit</a> · <a href="./newton-laws-sketch-NOTES.md">newton-laws</a> · <a href="./README.md">README</a>
+    </footer>
+  </div>
+</body>
+</html>
