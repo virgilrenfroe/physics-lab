@@ -13,6 +13,7 @@ python3 -m http.server 8770
 - Hooke’s law & orbits: http://127.0.0.1:8770/spring-orbit-sketch.html
 - Newton’s laws: http://127.0.0.1:8770/newton-laws-sketch.html
 - Work & energy: http://127.0.0.1:8770/work-energy-sketch.html
+- Momentum & collisions: http://127.0.0.1:8770/momentum-collisions-sketch.html
 
 Query flags: `?embed` · `?still` · `?nolesson`.
 
@@ -24,6 +25,7 @@ Query flags: `?embed` · `?still` · `?nolesson`.
 | `spring-orbit-sketch.html` + `-NOTES.md` | Demo 01 |
 | `newton-laws-sketch.html` + `-NOTES.md` | Demo 02 |
 | `work-energy-sketch.html` + `-NOTES.md` | Demo 03 · work–energy theorem |
+| `momentum-collisions-sketch.html` + `-NOTES.md` | Demo 04 · momentum & collisions |
 | `vendor/three/` | three r170 (local) |
 
 Separate from noctuary-corridor / NestLight / OneShop / BarPal / Harbor / flow-atelier.
