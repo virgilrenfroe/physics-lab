@@ -374,7 +374,7 @@
     </div>
     <div class="foot">
       <div>
-        <div class="chips" id="chips" role="group" aria-label="Simulation controls">
+        <div class="chips" id="chips" role="group" aria-label="Actions">
           <button type="button" data-act="push">Apply push</button>
           <button type="button" data-act="double-f">Double F</button>
           <button type="button" data-act="double-m">Double m</button>
@@ -383,7 +383,7 @@
         </div>
         <div class="hint">
           <span><i style="background:#ffb36b"></i>drag force handle · set F<sub>app</sub></span><br />
-          <span><i style="background:#efe6f2"></i>drag cart when still · set mass</span><span class="long"> · empty space leans camera</span>
+          <span><i style="background:#efe6f2"></i>drag the cart at rest · set mass</span><span class="long"> · empty space tilts the view</span>
         </div>
       </div>
       <div class="meters" id="meters" aria-live="off">
@@ -416,6 +416,13 @@ let still = reduced || params.has('still');
 const stage = document.getElementById('stage');
 const errEl = document.getElementById('err');
 function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+function studentDisplayMessage(raw) {
+  const s = String(raw || '');
+  if (/fail|failed to create|not supported|unavailable/i.test(s)) {
+    return 'This exhibit needs a graphics display — try another browser or device.';
+  }
+  return 'The display paused — reload the page to continue.';
+}
 
 const ua = navigator.userAgent || '';
 const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -1017,7 +1024,7 @@ const metersEl = document.getElementById('meters');
 const LS = [
   { topic: 'Meet the cart', focus: 'intro', html: `
     <h3>Meet the cart</h3>
-    <p>This is a teaching track. One cart, one applied force, optional friction. Every number on the right is computed live — nothing is canned.</p>
+    <p>This is a teaching track. One cart, one applied force, optional friction. Every number on the right comes from the cart’s motion.</p>
     <p><b>Orange arrow</b> = applied force F<sub>app</sub>. <b>Teal</b> = friction. <b>Gold (thick)</b> = net force ΣF. <b>Lilac</b> = acceleration a. The gold block on the cart is mass m.</p>
     <p class="watch"><b>Watch</b>Look at the meter bars on the right. F<sub>app</sub>, ΣF, and a should all point the same way when friction is off.</p>
     <p class="live"><b>Now</b>F<sub>app</sub> = <span data-live="Fapp">—</span> · m = <span data-live="m">—</span> · a = <span data-live="a">—</span></p>
@@ -1283,7 +1290,7 @@ document.addEventListener('visibilitychange', () => {
 });
 canvas.addEventListener('webglcontextlost', (e) => {
   e.preventDefault(); cancelAnimationFrame(raf); raf = 0;
-  showErr('WebGL context lost — reload to resume.');
+  showErr('The display paused — reload the page to continue.');
 });
 
 function teardown() {
@@ -1310,7 +1317,7 @@ window.__newtonLaws = {
 window.__newtonLawsReady = true;
 
 } catch (e) {
-  showErr((e && e.message) ? e.message : String(e));
+  showErr(studentDisplayMessage(e && e.message));
   console.error('[newton-laws]', e);
 }
 </script>

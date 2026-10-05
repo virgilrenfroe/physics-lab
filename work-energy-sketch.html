@@ -349,7 +349,7 @@
     </div>
     <div class="foot">
       <div>
-        <div class="chips" id="chips" role="group" aria-label="Simulation controls">
+        <div class="chips" id="chips" role="group" aria-label="Actions">
           <button type="button" data-act="push">Apply force</button>
           <button type="button" data-act="drop">Drop</button>
           <button type="button" data-act="friction" aria-pressed="false" id="fric-chip">Friction<span class="lg"> off</span><small>μ 0</small></button>
@@ -358,7 +358,7 @@
         </div>
         <div class="hint">
           <span><i></i>drag the handle · set F along the track</span><br />
-          <span><i style="background:#f0c24b"></i>drag the block · place it, books re-zero</span><span class="long"> · empty space leans the camera · ← → steps</span>
+          <span><i style="background:#f0c24b"></i>drag the block · place it · meters reset from here</span><span class="long"> · empty space tilts the view · ← → steps</span>
         </div>
       </div>
       <div class="meters" id="meters" aria-live="off">
@@ -393,6 +393,13 @@ let still = reduced || params.has('still');
 const stage = document.getElementById('stage');
 const errEl = document.getElementById('err');
 function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+function studentDisplayMessage(raw) {
+  const s = String(raw || '');
+  if (/fail|failed to create|not supported|unavailable/i.test(s)) {
+    return 'This exhibit needs a graphics display — try another browser or device.';
+  }
+  return 'The display paused — reload the page to continue.';
+}
 
 const ua = navigator.userAgent || '';
 const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -787,7 +794,7 @@ function doZeroF() {
     const faster = Math.abs(state.v) < 0.5 ? 1.65 : Math.abs(state.v) + 0.5;
     placeToCoast(faster);
     rebaseline();
-    flagText = 'F = 0 · coasting · books zeroed';
+    flagText = 'F = 0 · coasting · ΔKE and W start from this moment';
   }
   flagHold = 1.3;
   refreshAfterAction();
@@ -799,7 +806,7 @@ function doCoast() {
   const faster = Math.abs(state.v) < 0.55 ? 1.8 : Math.abs(state.v) + 0.45;
   placeToCoast(faster);
   rebaseline();
-  flagText = 'coast · flat · F = 0 · books zeroed';
+  flagText = 'coasting · flat track · F = 0 · ΔKE and W start from this moment';
   flagHold = 1.4;
   refreshAfterAction();
 }
@@ -819,7 +826,7 @@ function doFrictionOff() {
   if (!state.frictionOn) {
     const sign = state.Fapp < -0.05 ? -1 : 1;
     state.Fapp = Math.abs(state.Fapp) < 0.4 ? 6 : clamp(state.Fapp + sign * 2, F_MIN, F_MAX);
-    flagText = 'friction already off · F bumped';
+    flagText = 'friction is already off · the push is stronger';
   } else {
     state.frictionOn = false;
     state.mu = 0;
@@ -833,7 +840,7 @@ function doMass() {
   state.m = M_CYCLE[(i + 1 + M_CYCLE.length) % M_CYCLE.length] || 2;
   if (Math.abs(state.v) < 0.2 && Math.abs(state.Fapp) < 0.4) state.Fapp = 6;
   rebaseline();
-  flagText = `m = ${state.m.toFixed(0)} kg · books zeroed`;
+  flagText = `m = ${state.m.toFixed(0)} kg · meters reset from here`;
   flagHold = 1.4;
   refreshAfterAction();
 }
@@ -895,7 +902,7 @@ function doFlat() {
     if (Math.abs(state.Fapp) < 0.4) state.Fapp = 5;
   }
   rebaseline();
-  flagText = already ? 'flat · block shifted · books zeroed' : 'flat track · books zeroed';
+  flagText = already ? 'flat track · block moved · meters reset from here' : 'flat track · meters reset from here';
   flagHold = 1.2;
   refreshAfterAction();
 }
@@ -912,7 +919,7 @@ function doReset() {
   state.Fapp = canonical ? 8 : 5;
   state.s = canonical ? 2.15 : 1.35;
   rebaseline();
-  flagText = canonical ? 'reset · shifted' : 'reset · books zeroed';
+  flagText = canonical ? 'reset · start moved over' : 'reset · meters reset from here';
   flagHold = 1.1;
   refreshAfterAction();
 }
@@ -1132,7 +1139,7 @@ function onMove(e) {
     state.s = clamp(p.x, S_MIN, S_MAX);
     state.v = 0;
     rebaseline();
-    flagText = 'placed · books zeroed';
+    flagText = 'placed · meters reset from here';
     flagHold = 0.8;
     syncVisuals();
     updateHud();
@@ -1195,8 +1202,8 @@ const metersEl = document.getElementById('meters');
 const LS = [
   { topic: 'Meet the block', html: `
     <h3>Meet the block</h3>
-    <p>One block on a track. You will use it for <b>work</b>, <b>kinetic energy</b>, the <b>work–energy theorem</b>, and <b>gravitational PE</b>. Every number is computed from the live motion — nothing is canned.</p>
-    <p><b>Orange</b> arrow = applied force F, along the track. <b>Gold bar</b> on the track = displacement Δs since the books were zeroed. The two columns behind the track are <b>W_net</b> (honey) and <b>ΔKE</b> (lilac). Same scale, so equal joules are equal height.</p>
+    <p>One block on a track. You will use it for <b>work</b>, <b>kinetic energy</b>, the <b>work–energy theorem</b>, and <b>gravitational PE</b>. Every number comes from the motion you see.</p>
+    <p><b>Orange</b> arrow = applied force F, along the track. <b>Gold bar</b> on the track = displacement Δs since ΔKE and W were reset. The two columns behind the track are <b>W_net</b> (honey) and <b>ΔKE</b> (lilac). Same scale, so equal joules are equal height.</p>
     <p class="watch"><b>Watch</b>The meter pair and the trace. After you push, honey and lilac should climb together.</p>
     <p class="live"><b>Now</b>F = <span data-live="F">—</span> · m = <span data-live="m">—</span> · v = <span data-live="v">—</span></p>
     <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="push">Apply force</button></div>` },
@@ -1204,7 +1211,7 @@ const LS = [
     <h3>What work means</h3>
     <p class="formula">W = F · d = F d cosθ &nbsp;(here θ is between F and the path)</p>
     <p>Work is not “effort.” It is force <b>along the displacement</b>. On this track the push is parallel to the path, so cosθ = 1 and W = F Δs while F stays constant. The normal force from the track is perpendicular to the motion, so it does <b>zero</b> work.</p>
-    <p>If F changes, the meter uses the integral ∫ F ds, not one snapshot of F times the whole Δs.</p>
+    <p>If F changes, add F along the path (∫ F ds). Do not multiply one reading of F by the whole Δs.</p>
     <p class="watch"><b>Watch</b>Apply force and keep it steady. The gold Δs bar grows. W_net should grow by about F × Δs.</p>
     <p class="live"><b>Now</b>F = <span data-live="F">—</span> · Δs = <span data-live="dS">—</span> · F·Δs ≈ <span data-live="Fds">—</span> · W_app = <span data-live="Wapp">—</span></p>
     <div class="acts"><button type="button" data-act="flat">Flat track</button><button type="button" data-act="push">Apply force</button></div>
@@ -1220,14 +1227,14 @@ const LS = [
     <h3>Kinetic energy</h3>
     <p class="formula">KE = ½ m v²</p>
     <p>Kinetic energy is the energy of motion. It depends on mass and on speed squared — double v and KE becomes four times, double m and KE doubles if v stays the same.</p>
-    <p class="watch"><b>Watch</b>Read the live line. It is ½mv² from the sim, not a canned example. Then change mass. The block grows. If it was moving, KE changes with m and the books re-zero so the theorem stays a fair check from this moment.</p>
+    <p class="watch"><b>Watch</b>Read the live line. It is ½mv² from the speed and mass right now. Then change mass. The block grows. If it was moving, KE changes with m, and ΔKE and W start again from this moment so the theorem stays a fair check.</p>
     <p class="live"><b>Now</b><span data-live="KEeq">—</span></p>
     <div class="acts"><button type="button" data-act="push">Apply force</button><button type="button" data-act="mass">Change mass</button></div>
     <details><summary>2 kg at 3 m/s. What is KE?</summary><p>KE = ½ × 2 × 3² = 9 J. Speed matters more than mass because it is squared.</p></details>` },
   { topic: 'Work–energy theorem', html: `
     <h3>Work–energy theorem</h3>
     <p class="formula">ΔKE = W_net</p>
-    <p>The net work done on the block equals its change in kinetic energy, measured from the moment the books were zeroed. W_net adds every force along the track: your push, friction, gravity’s component down the ramp, and a stop at the bumper.</p>
+    <p>The net work done on the block equals its change in kinetic energy, measured from the moment ΔKE and W were reset. W_net adds every force along the track: your push, friction, gravity’s component down the ramp, and a stop at the bumper.</p>
     <p class="watch"><b>Watch</b>The honey and lilac bars, and the two traces. They should lie on top of each other. The equation line is ΔKE − W_net and should stay near 0 J.</p>
     <p class="live"><b>Now</b>W_net = <span data-live="Wnet">—</span> · ΔKE = <span data-live="dKE">—</span> · gap = <span data-live="gap">—</span></p>
     <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="push">Apply force</button></div>` },
@@ -1235,7 +1242,7 @@ const LS = [
     <h3>Coasting, net work zero</h3>
     <p class="formula">F = 0, flat, no friction → W_net stays 0 → ΔKE stays 0</p>
     <p>If nothing does work, kinetic energy does not change. On a flat track with no friction, the block keeps a constant speed. That is the work–energy form of inertia.</p>
-    <p class="watch"><b>Watch</b>Coast zeros the books at the moment you release it, on purpose, so you can see both bars stay at zero while v stays steady. KE itself is not zero — it is constant.</p>
+    <p class="watch"><b>Watch</b>Coast starts ΔKE and W from zero at the moment you release the block, so you can see both bars stay at zero while v stays steady. KE itself is not zero — it is constant.</p>
     <p class="live"><b>Now</b>F = <span data-live="F">—</span> · W_net = <span data-live="Wnet">—</span> · ΔKE = <span data-live="dKE">—</span> · KE = <span data-live="KE">—</span> · v = <span data-live="v">—</span></p>
     <div class="acts"><button type="button" data-act="coast">Coast</button><button type="button" data-act="zero-f">Zero F</button></div>` },
   { topic: 'Negative work', html: `
@@ -1251,7 +1258,7 @@ const LS = [
     <h3>Gravitational potential energy</h3>
     <p class="formula">PE = m g h &nbsp;·&nbsp; g = 9.81 N/kg</p>
     <p>Height stores energy. h is measured from the lab zero at the low end of the track. Lifting the block — a steeper ramp, or a higher start — raises PE = mgh. The ruler at the left marks h.</p>
-    <p class="watch"><b>Watch</b>Raise PE. The block jumps up the ramp and the PE meter jumps. The books zero at the new start so you can follow what happens next.</p>
+    <p class="watch"><b>Watch</b>Raise PE. The block jumps up the ramp and the PE meter jumps. ΔKE and W start again at the new height so you can follow what happens next.</p>
     <p class="live"><b>Now</b><span data-live="PEeq">—</span></p>
     <div class="acts"><button type="button" data-act="raise">Raise PE</button><button type="button" data-act="drop">Drop from height</button></div>` },
   { topic: 'PE trades with KE', html: `
@@ -1262,7 +1269,7 @@ const LS = [
     <p class="watch"><b>Watch</b>After Drop, PE falls, KE rises, and the honey and lilac bars still match. KE+PE should hold steady until a bumper or friction.</p>
     <p class="live"><b>Now</b>PE = <span data-live="PE">—</span> · KE = <span data-live="KE">—</span> · KE+PE = <span data-live="ME">—</span> · W_grav = <span data-live="Wgrav">—</span></p>
     <div class="acts"><button type="button" data-act="drop">Drop from height</button><button type="button" data-act="friction-off">Friction off</button></div>
-    <details><summary>Where did the “lost” PE go if friction is off?</summary><p>Into KE. W_grav is positive on the way down and equals the gain in KE (from the zeroed start). The normal force still does no work.</p></details>` },
+    <details><summary>Where did the “lost” PE go if friction is off?</summary><p>Into KE. W_grav is positive on the way down and equals the gain in KE from this start. The normal force still does no work.</p></details>` },
   { topic: 'Check both sides', html: `
     <h3>Check both sides</h3>
     <p class="formula">Compute ΔKE and W_net. Subtract.</p>
@@ -1278,11 +1285,11 @@ const LS = [
     <details><summary>Steady 4 N through 3 m along the flat track, friction off. Predict W.</summary><p>W = 4 × 3 = 12 J. While F is constant, W_app matches F·Δs.</p></details>
     <details><summary>m = 1 kg, v = 4 m/s. Predict KE.</summary><p>KE = ½ × 1 × 16 = 8 J. Check the live ½mv² line after you get near that speed.</p></details>
     <details><summary>Why do the two bars match even with friction?</summary><p>Friction is inside W_net as negative work. The theorem is ΔKE = W_net for all forces along the path, not “energy is conserved.”</p></details>
-    <details><summary>Coast: F = 0, flat, no friction. What happens to KE? To ΔKE?</summary><p>KE stays constant (whatever value it had). After Coast re-zeros the books, ΔKE stays 0 because W_net stays 0.</p></details>
+    <details><summary>Coast: F = 0, flat, no friction. What happens to KE? To ΔKE?</summary><p>KE stays constant (whatever value it had). After Coast, ΔKE and W start from zero, and ΔKE stays 0 because W_net stays 0.</p></details>
     <details><summary>Friction on and the block is sliding. What is the sign of W_fric? What happens to KE+PE?</summary><p>W_fric is negative. Mechanical energy KE+PE falls. That energy leaves as thermal energy. It is not destroyed, and it is not still mechanical.</p></details>
     <details><summary>How much work does the normal force do?</summary><p>Zero. It is perpendicular to the displacement along the track, so F·d = 0.</p></details>
     <details><summary>Drop, friction off. PE falls and KE rises. Does ΔKE still equal W_net?</summary><p>Yes. Gravity’s work is part of W_net. If you prefer PE, then KE+PE is the constant (until friction or a stop).</p></details>
-    <details><summary>Same speed, double the mass. What happens to KE?</summary><p>KE doubles, because KE = ½mv² is proportional to m. The mass button re-zeros the books so the theorem is scored from the new mass.</p></details>
+    <details><summary>Same speed, double the mass. What happens to KE?</summary><p>KE doubles, because KE = ½mv² is proportional to m. Changing the mass starts ΔKE and W again, so the check is fair for the new mass.</p></details>
     <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="coast">Coast</button><button type="button" data-act="drop">Drop</button><button type="button" data-act="friction">Friction</button></div>` },
 ];
 
@@ -1475,7 +1482,7 @@ document.addEventListener('visibilitychange', () => {
 function onLost(e) {
   e.preventDefault();
   cancelAnimationFrame(raf); raf = 0;
-  showErr('WebGL context lost — reload to resume.');
+  showErr('The display paused — reload the page to continue.');
 }
 canvas.addEventListener('webglcontextlost', onLost);
 
@@ -1511,7 +1518,7 @@ window.__workEnergy = {
 window.__workEnergyReady = true;
 
 } catch (e) {
-  showErr((e && e.message) ? e.message : String(e));
+  showErr(studentDisplayMessage(e && e.message));
   console.error('[work-energy]', e);
 }
 </script>

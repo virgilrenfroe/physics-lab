@@ -344,7 +344,7 @@
     <div class="label">
       <p class="tag">Physics lab · mechanics · oscillation + gravitation</p>
       <h1>Hooke&rsquo;s law <em>&amp;</em><br />orbital motion</h1>
-      <p class="sub">Stretch the spring: it pulls back with F = −kx, and damping bleeds the energy away. Fling the planet: gravity bends it into an ellipse — Kepler&rsquo;s laws, live. Every number is computed, softly lit.</p>
+      <p class="sub">Stretch the spring: it pulls back with F = −kx, and damping bleeds the energy away. Fling the planet: gravity bends it into an ellipse — Kepler&rsquo;s laws you can check against the numbers.</p>
       <section class="lesson" id="lesson" aria-label="Lesson: how it works">
         <header class="lesson-head">
           <div class="lesson-tabs" role="tablist" aria-label="Panel">
@@ -421,6 +421,13 @@ let still = reduced || params.has('still');
 const stage = document.getElementById('stage');
 const errEl = document.getElementById('err');
 function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+function studentDisplayMessage(raw) {
+  const s = String(raw || '');
+  if (/fail|failed to create|not supported|unavailable/i.test(s)) {
+    return 'This exhibit needs a graphics display — try another browser or device.';
+  }
+  return 'The display paused — reload the page to continue.';
+}
 
 const ua = navigator.userAgent || '';
 const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -1070,7 +1077,7 @@ function updateHud() {
   hud.x.textContent = `${sgn(axialX(), 3)} m`;
   const A = bodies[0].el, B = bodies[1].el;
   hud.gm.textContent = `${fmt(MU, 1)} u³/s²`;
-  hud.a.textContent = A.bound ? `${fmt(A.a, 2)} u` : 'unbound';
+  hud.a.textContent = A.bound ? `${fmt(A.a, 2)} u` : 'escaped';
   hud.e.textContent = fmt(A.e, 3);
   hud.t.textContent = A.bound ? `${fmt(A.T, 2)} s` : '—';
   hud.rv.textContent = `${fmt(A.r, 2)} u · ${fmt(A.v, 2)} u/s`;
@@ -1315,7 +1322,7 @@ const LS = [
     <details><summary>Why does heavy damping stop the swing sooner? Where does the energy go?</summary><p>More drag (bigger c) takes more energy each swing. It turns into heat in the damper and the air.</p></details>
     <details><summary>Where on its orbit does the pearl planet move fastest?</summary><p>At its closest point to the sun. It speeds up as it falls in and slows as it climbs out (Kepler&rsquo;s second law).</p></details>
     <details><summary>Make the pearl orbit bigger. Does T²/a³ change?</summary><p>No. a and T change, but the ratio stays 4π²/GM because the sun is the same.</p></details>
-    <details><summary>How fast must a planet go to escape?</summary><p>v<sub>esc</sub> = √(2GM/r). Now, at r = <span data-live="r">—</span>, that is <span data-live="vesc">—</span>. Fling faster than that and the HUD says it escapes.</p></details>
+    <details><summary>How fast must a planet go to escape?</summary><p>v<sub>esc</sub> = √(2GM/r). Now, at r = <span data-live="r">—</span>, that is <span data-live="vesc">—</span>. Fling faster than that and the numbers say it escapes.</p></details>
     <details><summary>Swing the spring mass into a planet. What changes?</summary><p>They share momentum. The planet gets a new speed, so it moves to a new ellipse.</p></details>` },
 ];
 let lsStep = 0;
@@ -1356,7 +1363,7 @@ function updateLessonLive() {
   if (!lsLive.length) return;
   const A = bodies[0].el, B = bodies[1].el;
   const x = axialX();
-  const k3 = (el) => (el.bound ? (el.T * el.T / (el.a * el.a * el.a)).toFixed(3) : '— (unbound)');
+  const k3 = (el) => (el.bound ? (el.T * el.T / (el.a * el.a * el.a)).toFixed(3) : '— (escaped)');
   const w0 = Math.sqrt(spring.k / spring.m);
   const vals = {
     x: `${sgn(x, 3)} m`,
@@ -1593,7 +1600,7 @@ function onVisibility() {
 }
 document.addEventListener('visibilitychange', onVisibility);
 
-canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); cancelAnimationFrame(raf); raf = 0; showErr('WebGL context lost — reload to resume.'); });
+canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); cancelAnimationFrame(raf); raf = 0; showErr('The display paused — reload the page to continue.'); });
 
 /* ================= teardown ================= */
 function teardown() {
@@ -1626,8 +1633,7 @@ window.__springOrbit = { renderer, spring, bodies, get still() { return still; }
 window.__springOrbitReady = true;
 
 } catch (e) {
-  const msg = (e && e.message) ? e.message : String(e);
-  showErr(msg);
+  showErr(studentDisplayMessage(e && e.message));
   console.error('[spring-orbit]', e);
 }
 </script>
