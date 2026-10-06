@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>Electrostatics · Physics Lab</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.55);
+    --faint: rgba(239, 230, 242, 0.3);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  #stage canvas.can-grab { cursor: grab; }
+  #stage canvas.grabbing { cursor: grabbing; }
+  .vig {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(ellipse at 50% 58%, transparent 36%, rgba(5, 1, 8, 0.66) 100%),
+      linear-gradient(to top, rgba(255, 150, 80, 0.045), transparent 30%);
+  }
+  .tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .tags span {
+    position: absolute; left: 0; top: 0; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+    color: var(--pearl); background: rgba(20, 8, 24, 0.76);
+    border: 1px solid rgba(239, 230, 242, 0.14); border-radius: 8px;
+    padding: 3px 8px; will-change: transform;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+  }
+  .tags span.pos { border-color: rgba(255,179,107,0.55); color: #ffe2c4; }
+  .tags span.neg { border-color: rgba(185,162,255,0.6); color: #ddd0ff; }
+  .tags span.probe { border-color: rgba(239,230,242,0.4); }
+  .tags span.sel { box-shadow: 0 0 0 1px rgba(255,179,107,0.45); }
+  .chrome {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  .label .tag {
+    margin: 0 0 8px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.8);
+  }
+  .label h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(1.9rem, 4.6vw, 3.6rem); letter-spacing: -0.045em; line-height: 0.94;
+    text-shadow: 0 2px 30px rgba(20, 8, 24, 0.7);
+  }
+  .label h1 em { font-style: normal; font-weight: 250; color: var(--mute); }
+  .label .sub {
+    margin: 10px 0 0; max-width: 40ch;
+    font-size: clamp(0.8rem, 1.2vw, 0.95rem); line-height: 1.4; color: var(--mute);
+  }
+  .foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .hint {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--mute); line-height: 1.7;
+  }
+  .hint i {
+    font-style: normal; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin: 0 5px 0 10px; vertical-align: 0;
+  }
+  .hint i:first-child { margin-left: 0; }
+  .chips { display: flex; gap: 8px; margin: 0 0 10px; pointer-events: auto; flex-wrap: wrap; }
+  .chips button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.18);
+    background: rgba(28, 12, 34, 0.72); color: var(--pearl);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    padding: 10px 14px; min-height: 42px; border-radius: 999px; cursor: pointer;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .chips button small { font-family: var(--font-mono); font-size: 10px; color: var(--mute); margin-left: 6px; }
+  .chips button[aria-pressed="true"] {
+    border-color: rgba(255, 179, 107, 0.7); background: rgba(255, 179, 107, 0.16); color: #ffe2c4;
+  }
+  .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chips button:active { transform: scale(0.98); }
+
+  .meters {
+    pointer-events: none; display: flex; flex-direction: column; gap: 6px;
+    min-width: min(320px, 46vw); padding: 12px 14px;
+    background: rgba(20, 8, 24, 0.76); border: 1px solid rgba(239,230,242,0.14);
+    border-radius: 14px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .meters h2 {
+    margin: 0; font-family: var(--font-mono); font-weight: 400;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,179,107,0.9);
+  }
+  .meters .note {
+    margin: 0 0 2px; font-size: 12.5px; line-height: 1.35; color: var(--mute);
+  }
+  .meter { display: grid; grid-template-columns: 48px 1fr 86px; gap: 8px; align-items: center; }
+  .meter .lab { font-family: var(--font-mono); font-size: 11px; color: var(--mute); }
+  .meter .track {
+    height: 11px; border-radius: 7px; background: rgba(239,230,242,0.08);
+    overflow: hidden; position: relative;
+  }
+  .meter .fill {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+    border-radius: 7px;
+  }
+  .meter.bi .fill { left: 50%; }
+  .meter.bi .fill.neg { transform: translateX(-100%); }
+  .meter.m-qa .fill { background: linear-gradient(90deg, #ff8a3a, #ffb36b); }
+  .meter.m-qb .fill { background: linear-gradient(90deg, #8a72e8, #b9a2ff); }
+  .meter.m-r .fill { background: linear-gradient(90deg, #cfc4d8, #efe6f2); }
+  .meter.m-f .fill { background: linear-gradient(90deg, #e0a820, #f0c24b); }
+  .meter.m-e .track { height: 15px; }
+  .meter.m-e .fill { background: linear-gradient(90deg, #ff8a3a, #f0c24b); }
+  .meter.m-v .fill { background: linear-gradient(90deg, #b9a2ff, #ffe2c4); }
+  .meter .val { font-family: var(--font-mono); font-size: 11px; text-align: right; color: var(--pearl); }
+  .meters .eq {
+    margin-top: 2px; font-family: var(--font-mono); font-size: 11.5px; color: var(--honey);
+    letter-spacing: 0.01em; line-height: 1.45;
+  }
+  .meters .flag {
+    min-height: 2.5em; font-size: 13px; line-height: 1.35; color: var(--pearl);
+  }
+
+  #err {
+    position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 300px;
+    font-family: var(--font-mono); font-size: 10px; color: #ffd6d6;
+    background: rgba(58, 18, 18, 0.82); border-radius: 8px; padding: 8px 10px; display: none;
+  }
+
+  .lesson {
+    pointer-events: auto; margin-top: 14px; width: min(400px, 38vw); min-width: 300px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(26, 10, 32, 0.78); border: 1px solid rgba(239, 230, 242, 0.13);
+    border-radius: 18px; box-shadow: 0 18px 50px rgba(5, 1, 8, 0.5);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  body.has-lesson .label .sub { display: none; }
+  body.lesson-closed .label .sub { display: block; }
+  .lesson-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px;
+    border-bottom: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-kicker {
+    margin: 0; flex: 1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.86);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .lesson-kicker b { color: var(--pearl); font-weight: 400; }
+  .lesson button { font-family: var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .lesson button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lesson-toggle {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: transparent; color: var(--mute);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; min-height: 32px;
+  }
+  .lesson-tabs { display: none; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(239, 230, 242, 0.06); }
+  .lesson-tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--mute);
+    font-size: 12.5px; font-weight: 500; padding: 7px 13px; border-radius: 999px; min-height: 32px;
+  }
+  .lesson-tabs button[aria-selected="true"] { background: rgba(255, 179, 107, 0.16); color: #ffe2c4; }
+  .lesson-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 18px 6px;
+    font-size: 14.5px; line-height: 1.5; color: rgba(239, 230, 242, 0.9);
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .lesson-body h3 {
+    margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 21px;
+    letter-spacing: -0.025em; color: var(--pearl);
+  }
+  .lesson-body p { margin: 0 0 9px; }
+  .lesson-body .formula {
+    font-family: var(--font-mono); font-size: 14px; color: var(--accent); letter-spacing: 0.02em; margin-bottom: 10px;
+  }
+  .lesson-body .watch {
+    padding: 9px 11px; border-radius: 12px; background: rgba(255, 179, 107, 0.08);
+    border: 1px solid rgba(255, 179, 107, 0.22); color: #f6e7d8;
+  }
+  .lesson-body .watch b, .lesson-body .live b {
+    font-family: var(--font-mono); font-weight: 400; font-size: 9.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-right: 6px;
+  }
+  .lesson-body .live { font-family: var(--font-mono); font-size: 12px; color: var(--pearl); line-height: 1.45; }
+  .lesson-body .live span { color: var(--honey); }
+  .lesson-body .acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .lesson-body .acts button {
+    appearance: none; border: 1px solid rgba(255, 179, 107, 0.5); background: rgba(255, 179, 107, 0.12);
+    color: #ffe2c4; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 500; min-height: 36px;
+  }
+  .lesson-body .acts button[aria-pressed="true"] { background: rgba(255, 179, 107, 0.28); border-color: rgba(255, 179, 107, 0.85); }
+  .lesson-body details { border-top: 1px solid rgba(239, 230, 242, 0.08); padding: 8px 0; }
+  .lesson-body summary { cursor: pointer; color: var(--pearl); list-style: none; }
+  .lesson-body summary::before { content: "+ "; font-family: var(--font-mono); color: var(--accent); }
+  .lesson-body details[open] summary::before { content: "− "; }
+  .lesson-body details p { margin: 6px 0 2px; color: var(--mute); font-size: 13.5px; }
+  .lesson-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px 12px; border-top: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-nav > button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: rgba(239, 230, 242, 0.04);
+    color: var(--pearl); border-radius: 999px; padding: 8px 14px; font-size: 13px; min-height: 38px;
+  }
+  .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
+  .lesson-nav .dots { display: flex; flex-wrap: wrap; gap: 1px; justify-content: center; max-width: 196px; }
+  .lesson-nav .dots button {
+    appearance: none; border: 0; background: transparent; width: 16px; height: 28px; padding: 0;
+    display: grid; place-items: center;
+  }
+  .lesson-nav .dots button::after {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(239, 230, 242, 0.25);
+  }
+  .lesson-nav .dots button[aria-current="step"]::after { background: var(--accent); transform: scale(1.35); }
+  body.lesson-closed .lesson-body, body.lesson-closed .lesson-nav { display: none; }
+  body.lesson-closed .lesson { width: auto; min-width: 0; align-self: flex-start; display: inline-flex; }
+  body.lesson-closed .lesson-head { border-bottom: 0; }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(1.7rem, 3.6vw, 2.8rem); }
+    .lesson { margin-top: 10px; }
+    .lesson-body { font-size: 14px; }
+  }
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .label .sub, body.lesson-closed .label .sub { display: none; }
+    .lesson { width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(38vh, 320px); }
+    .lesson-head { padding: 8px 8px 8px 12px; }
+    .lesson-tabs { display: flex; }
+    .lesson-toggle { display: none; }
+    .lesson-kicker { font-size: 9.5px; }
+    .lesson-body { padding: 10px 14px 4px; font-size: 13.5px; }
+    .lesson-body h3 { font-size: 18px; }
+    body.m-learn .meters, body.m-learn .hint { display: none; }
+    body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
+    body.m-numbers .lesson { max-height: none; }
+    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .meters { min-width: 0; width: 100%; }
+    .chips button { font-size: 12px; padding: 8px 12px; min-height: 38px; }
+    .chips .lg { display: none; }
+    .hint .long { display: none; }
+    .tags span { font-size: 10px; padding: 2px 6px; }
+  }
+  html.embed, body.embed { background: transparent !important; }
+  body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
+  body.embed canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.has('embed')) {
+    document.body.classList.add('embed');
+    document.documentElement.classList.add('embed');
+  }
+})();
+</script>
+  <div id="stage"></div>
+  <div class="vig" aria-hidden="true"></div>
+  <div class="tags" aria-hidden="true">
+    <span id="tag-a" class="pos">A</span>
+    <span id="tag-b" class="neg">B</span>
+    <span id="tag-c" class="pos">C</span>
+    <span id="tag-p" class="probe">probe</span>
+  </div>
+  <div class="chrome">
+    <div class="label">
+      <p class="tag">Physics lab · electrostatics · Coulomb’s law</p>
+      <h1>Electrostatics<br /><em>field &amp; potential</em></h1>
+      <p class="sub">Point charges on a table. Drag them, follow the field lines, and read the force, the field, and the potential.</p>
+      <section class="lesson" id="lesson" aria-label="Lesson: Coulomb’s law, electric field, and potential">
+        <header class="lesson-head">
+          <div class="lesson-tabs" role="tablist" aria-label="Panel">
+            <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
+            <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
+          </div>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the charges</b></p>
+          <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
+        </header>
+        <div class="lesson-body" id="ls-body"></div>
+        <nav class="lesson-nav" aria-label="Lesson steps">
+          <button type="button" data-step="prev">← Back</button>
+          <div class="dots" id="ls-dots"></div>
+          <button type="button" data-step="next">Next →</button>
+        </nav>
+      </section>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="chips" id="chips" role="group" aria-label="Simulation controls">
+          <button type="button" data-act="flip">Flip sign</button>
+          <button type="button" data-act="double-q">Double q</button>
+          <button type="button" data-act="halve-q">Halve q</button>
+          <button type="button" data-act="double-r">Double r</button>
+          <button type="button" data-act="third" aria-pressed="false" id="third-chip">Third charge</button>
+          <button type="button" data-act="eq" aria-pressed="true" id="eq-chip">Equipotentials</button>
+          <button type="button" data-act="reset">Reset</button>
+        </div>
+        <div class="hint">
+          <span><i style="background:#ffb36b"></i>positive</span>
+          <span><i style="background:#b9a2ff"></i>negative</span>
+          <span><i style="background:#f0c24b"></i>field line</span>
+          <span><i style="background:#cbbdff"></i>equipotential</span><br />
+          <span>drag a charge to move it · drag the pearl probe to measure</span>
+          <span class="long"> · drag empty space to lean the table</span>
+        </div>
+      </div>
+      <div class="meters" id="meters">
+        <h2>Live · Coulomb, field, potential</h2>
+        <p class="note">These readings are calculated from the charges on the table right now.</p>
+        <div class="meter bi m-qa"><span class="lab">q<sub>A</sub></span><div class="track"><div class="fill" id="bar-qa"></div></div><span class="val" id="h-qa">—</span></div>
+        <div class="meter bi m-qb"><span class="lab">q<sub>B</sub></span><div class="track"><div class="fill" id="bar-qb"></div></div><span class="val" id="h-qb">—</span></div>
+        <div class="meter m-r"><span class="lab">r</span><div class="track"><div class="fill" id="bar-r"></div></div><span class="val" id="h-r">—</span></div>
+        <div class="meter m-f"><span class="lab">F</span><div class="track"><div class="fill" id="bar-f"></div></div><span class="val" id="h-f">—</span></div>
+        <div class="meter m-e"><span class="lab">|E|</span><div class="track"><div class="fill" id="bar-e"></div></div><span class="val" id="h-e">—</span></div>
+        <div class="meter bi m-v"><span class="lab">V</span><div class="track"><div class="fill" id="bar-v"></div></div><span class="val" id="h-v">—</span></div>
+        <div class="eq" id="h-eq">F = k |qA qB| / r²</div>
+        <div class="flag" id="h-flag"></div>
+      </div>
+    </div>
+  </div>
+  <div id="err" role="status"></div>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const VOID = 0x140818;
+const K = 8.9875517923e9;
+const Q_MIN = 0.5e-6;
+const Q_MAX = 6e-6;
+const TABLE_R = 0.72;
+const MIN_SEP = 0.16;
+const FIELD_R = 0.80;
+const STEP = 0.015;
+const MAX_LINES = 48;
+const MAX_PTS = 150;
+const MAX_SEG = 3600;
+const MAX_HEAD = 96;
+
+const params = new URLSearchParams(location.search);
+const embed = params.has('embed');
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let still = reduced || params.has('still');
+
+const stage = document.getElementById('stage');
+const errEl = document.getElementById('err');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+
+const ua = navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+const SEG = isMobile ? 20 : 28;
+
+try {
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, alpha: embed,
+  powerPreference: isIOS ? 'default' : 'high-performance',
+});
+if (!renderer.getContext()) throw new Error('WebGL context failed to create.');
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setClearColor(VOID, embed ? 0 : 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.06;
+stage.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+if (!embed) {
+  scene.background = new THREE.Color(VOID);
+  scene.fog = new THREE.Fog(VOID, 5.5, 12);
+}
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 30);
+const camBase = new THREE.Vector3(0.02, 1.38, 1.78);
+const camLook = new THREE.Vector3(0.0, 0.0, 0.0);
+
+const disposables = [];
+const keep = (x) => { disposables.push(x); return x; };
+
+scene.add(new THREE.HemisphereLight(0xd4c4f0, 0x2a1020, 0.92));
+const key = new THREE.PointLight(0xffc090, 46, 14, 1.5);
+key.position.set(0.35, 1.7, 0.55);
+scene.add(key);
+
+const rig = new THREE.Group();
+scene.add(rig);
+
+const floorMat = keep(new THREE.MeshStandardMaterial({ color: 0x1a0c22, roughness: 0.95, metalness: 0 }));
+const floor = new THREE.Mesh(keep(new THREE.CircleGeometry(3.4, 48)), floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -0.09;
+rig.add(floor);
+
+const tableMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x2a1432, roughness: 0.62, metalness: 0.08,
+  emissive: 0x140810, emissiveIntensity: 0.45,
+}));
+const table = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.92, 0.96, 0.07, isMobile ? 40 : 64)), tableMat);
+table.position.y = -0.035;
+rig.add(table);
+
+const rimMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x6a4a78, roughness: 0.4, metalness: 0.25,
+  emissive: 0x2a1430, emissiveIntensity: 0.3,
+}));
+const rim = new THREE.Mesh(keep(new THREE.TorusGeometry(0.92, 0.012, 8, isMobile ? 40 : 64)), rimMat);
+rim.rotation.x = Math.PI / 2;
+rim.position.y = 0.004;
+rig.add(rim);
+
+/* graph-paper grid, static */
+{
+  const gridPos = [];
+  const gridMat = keep(new THREE.LineBasicMaterial({ color: 0xefe6f2, transparent: true, opacity: 0.09 }));
+  for (let i = -7; i <= 7; i++) {
+    const t = i * 0.1;
+    const h = Math.sqrt(Math.max(0, 0.84 * 0.84 - t * t));
+    gridPos.push(-h, 0.008, t, h, 0.008, t);
+    gridPos.push(t, 0.008, -h, t, 0.008, h);
+  }
+  const g = keep(new THREE.BufferGeometry());
+  g.setAttribute('position', new THREE.Float32BufferAttribute(gridPos, 3));
+  rig.add(new THREE.LineSegments(g, gridMat));
+}
+
+function radiusFor(q) {
+  const u = Math.abs(q) * 1e6;
+  return 0.046 + 0.014 * Math.sqrt(Math.max(u, 0.25));
+}
+
+function makeChargeMaterial(positive) {
+  return keep(new THREE.MeshStandardMaterial({
+    color: positive ? 0xffb36b : 0xb9a2ff,
+    roughness: 0.32,
+    metalness: 0.08,
+    emissive: positive ? 0x8a3a10 : 0x3a2070,
+    emissiveIntensity: 0.55,
+  }));
+}
+const glyphMat = keep(new THREE.MeshStandardMaterial({ color: 0x140818, roughness: 0.55, metalness: 0.05 }));
+const shadowMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x07030a, roughness: 1, metalness: 0, transparent: true, opacity: 0.45,
+}));
+
+const charges = [
+  { id: 'A', x: -0.26, z: 0.0, q: 2e-6 },
+  { id: 'B', x: 0.26, z: 0.0, q: -2e-6 },
+  { id: 'C', x: 0.04, z: -0.46, q: 0 },
+];
+let qCStored = 1e-6;
+let showThird = false;
+let showEq = true;
+let selected = 0;
+const probe = { x: -0.26, z: 0.24 };
+
+const chargeViews = charges.map((c, i) => {
+  const group = new THREE.Group();
+  const mat = makeChargeMaterial(c.q >= 0);
+  const sphere = new THREE.Mesh(keep(new THREE.SphereGeometry(1, SEG, Math.max(14, SEG - 6))), mat);
+  sphere.userData = { kind: 'charge', index: i };
+  const plus = new THREE.Group();
+  plus.add(new THREE.Mesh(keep(new THREE.BoxGeometry(0.62, 0.12, 0.16)), glyphMat));
+  plus.add(new THREE.Mesh(keep(new THREE.BoxGeometry(0.16, 0.12, 0.62)), glyphMat));
+  const minus = new THREE.Mesh(keep(new THREE.BoxGeometry(0.62, 0.12, 0.16)), glyphMat);
+  const shadow = new THREE.Mesh(keep(new THREE.CircleGeometry(1, 20)), shadowMat);
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.006;
+  group.add(sphere, plus, minus, shadow);
+  rig.add(group);
+  return { group, sphere, plus, minus, shadow, mat };
+});
+
+const probeMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xefe6f2, roughness: 0.28, metalness: 0.18,
+  emissive: 0x6a5a78, emissiveIntensity: 0.28,
+}));
+const probeMesh = new THREE.Mesh(keep(new THREE.SphereGeometry(0.04, SEG, Math.max(12, SEG - 8))), probeMat);
+probeMesh.userData = { kind: 'probe' };
+rig.add(probeMesh);
+const probeShadow = new THREE.Mesh(keep(new THREE.CircleGeometry(0.05, 16)), shadowMat);
+probeShadow.rotation.x = -Math.PI / 2;
+probeShadow.position.y = 0.006;
+rig.add(probeShadow);
+
+const ringMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.4, metalness: 0.1,
+  emissive: 0xff8a3a, emissiveIntensity: 0.7,
+}));
+const selectRing = new THREE.Mesh(keep(new THREE.TorusGeometry(1, 0.055, 8, 28)), ringMat);
+selectRing.rotation.x = Math.PI / 2;
+rig.add(selectRing);
+
+function makeArrow(color, shaftR) {
+  const g = new THREE.Group();
+  const mat = keep(new THREE.MeshStandardMaterial({
+    color, roughness: 0.38, metalness: 0.08,
+    emissive: color, emissiveIntensity: 0.4,
+  }));
+  const shaft = new THREE.Mesh(keep(new THREE.CylinderGeometry(shaftR, shaftR, 1, 10)), mat);
+  const head = new THREE.Mesh(keep(new THREE.ConeGeometry(shaftR * 3.1, 0.07, 12)), mat);
+  g.add(shaft, head);
+  g.userData = { shaft, head, headLen: 0.07 };
+  rig.add(g);
+  return g;
+}
+const arrowFA = makeArrow(0xffb36b, 0.012);
+const arrowFB = makeArrow(0xffb36b, 0.012);
+const arrowE = makeArrow(0xf0c24b, 0.016);
+const arrowEA = makeArrow(0xffb36b, 0.008);
+const arrowEB = makeArrow(0xb9a2ff, 0.008);
+const arrowEC = makeArrow(0xefe6f2, 0.008);
+
+const _up = new THREE.Vector3(0, 1, 0);
+const _dir = new THREE.Vector3();
+function setArrow(g, ox, oy, oz, dx, dy, dz, length) {
+  const len = length;
+  if (!(len > 0.04) || !Number.isFinite(dx + dz)) { g.visible = false; return; }
+  _dir.set(dx, dy, dz);
+  if (_dir.lengthSq() < 1e-12) { g.visible = false; return; }
+  _dir.normalize();
+  g.visible = true;
+  const headLen = g.userData.headLen;
+  const shaftLen = Math.max(0.03, len - headLen);
+  g.userData.shaft.scale.set(1, shaftLen, 1);
+  g.userData.shaft.position.y = shaftLen / 2;
+  g.userData.head.position.y = shaftLen + headLen * 0.35;
+  g.userData.head.scale.set(1, 1, 1);
+  g.position.set(ox, oy, oz);
+  g.quaternion.setFromUnitVectors(_up, _dir);
+}
+
+const threadMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffd78a, roughness: 0.4, metalness: 0.04,
+  emissive: 0xffb03a, emissiveIntensity: 0.85,
+}));
+const threadGeo = keep(new THREE.CylinderGeometry(0.008, 0.008, 1, 6));
+const threads = new THREE.InstancedMesh(threadGeo, threadMat, MAX_SEG);
+threads.frustumCulled = false;
+threads.count = 0;
+rig.add(threads);
+
+const headMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.4, metalness: 0.08,
+  emissive: 0xff8a3a, emissiveIntensity: 0.65,
+}));
+const headGeo = keep(new THREE.ConeGeometry(0.02, 0.058, 8));
+headGeo.translate(0, 0.023, 0);
+const heads = new THREE.InstancedMesh(headGeo, headMat, MAX_HEAD);
+heads.frustumCulled = false;
+heads.count = 0;
+rig.add(heads);
+
+const MAX_EQ = 2400;
+const eqMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xd4c6ff, roughness: 0.46, metalness: 0.04,
+  emissive: 0x7a62d6, emissiveIntensity: 0.7,
+}));
+const eqGeo = keep(new THREE.CylinderGeometry(0.0055, 0.0055, 1, 5));
+const eqLines = new THREE.InstancedMesh(eqGeo, eqMat, MAX_EQ);
+eqLines.frustumCulled = false;
+eqLines.count = 0;
+rig.add(eqLines);
+const eqSegs = [];
+
+const lineX = new Float32Array(MAX_LINES * MAX_PTS);
+const lineZ = new Float32Array(MAX_LINES * MAX_PTS);
+const lineN = new Int16Array(MAX_LINES);
+const lineDir = new Int8Array(MAX_LINES);
+let lineCount = 0;
+let showParts = false;
+
+const _dummy = new THREE.Object3D();
+const _col = new THREE.Color(0xf0c24b);
+
+/* —— physics —— */
+function sampleE(x, z) {
+  let Ex = 0, Ez = 0;
+  for (let i = 0; i < charges.length; i++) {
+    const c = charges[i];
+    if (c.q === 0) continue;
+    const dx = x - c.x;
+    const dz = z - c.z;
+    const r2 = dx * dx + dz * dz;
+    const r = Math.sqrt(r2);
+    if (r < 1e-4) return null;
+    const s = K * c.q / (r2 * r);
+    Ex += s * dx;
+    Ez += s * dz;
+  }
+  return { Ex, Ez, mag: Math.hypot(Ex, Ez) };
+}
+function fieldFrom(c, x, z) {
+  if (!c || c.q === 0) return { Ex: 0, Ez: 0, mag: 0 };
+  const dx = x - c.x;
+  const dz = z - c.z;
+  const r2 = dx * dx + dz * dz;
+  const r = Math.sqrt(r2);
+  if (r < 0.045) return null;
+  const s = K * c.q / (r2 * r);
+  return { Ex: s * dx, Ez: s * dz, mag: Math.hypot(s * dx, s * dz) };
+}
+function potentialAt(x, z) {
+  let V = 0;
+  for (let i = 0; i < charges.length; i++) {
+    const c = charges[i];
+    if (c.q === 0) continue;
+    const r = Math.hypot(x - c.x, z - c.z);
+    if (r < 0.045) return null;
+    V += K * c.q / r;
+  }
+  return V;
+}
+function potentialFrom(c, x, z) {
+  if (!c || c.q === 0) return 0;
+  const r = Math.hypot(x - c.x, z - c.z);
+  if (r < 0.045) return null;
+  return K * c.q / r;
+}
+function pairInfo() {
+  const A = charges[0], B = charges[1];
+  const r = Math.hypot(A.x - B.x, A.z - B.z);
+  const F = K * Math.abs(A.q * B.q) / (r * r);
+  const attract = A.q * B.q < 0;
+  return { r, F, attract };
+}
+function probeTooClose() {
+  for (let i = 0; i < charges.length; i++) {
+    if (charges[i].q === 0) continue;
+    if (Math.hypot(probe.x - charges[i].x, probe.z - charges[i].z) < 0.05) return true;
+  }
+  return false;
+}
+function visMag(value, ref) {
+  const a = Math.abs(value);
+  if (!(a > 0) || !Number.isFinite(a)) return 0;
+  const t = Math.log10(a / ref);
+  return Math.max(0.05, Math.min(0.46, 0.2 + 0.11 * t));
+}
+
+function clampXZ(x, z, limit) {
+  const r = Math.hypot(x, z);
+  if (r > limit) {
+    const s = limit / r;
+    return [x * s, z * s];
+  }
+  return [x, z];
+}
+function separateFromOthers(i) {
+  const c = charges[i];
+  for (let j = 0; j < charges.length; j++) {
+    if (j === i || charges[j].q === 0) continue;
+    let dx = c.x - charges[j].x;
+    let dz = c.z - charges[j].z;
+    let d = Math.hypot(dx, dz);
+    if (d < MIN_SEP) {
+      if (d < 1e-6) { dx = 1; dz = 0; d = 1; }
+      const push = (MIN_SEP - d) / d;
+      c.x += dx * push;
+      c.z += dz * push;
+      const cl = clampXZ(c.x, c.z, TABLE_R);
+      c.x = cl[0]; c.z = cl[1];
+    }
+  }
+}
+function clampCharge(i) {
+  const c = charges[i];
+  const cl = clampXZ(c.x, c.z, TABLE_R);
+  c.x = cl[0]; c.z = cl[1];
+  separateFromOthers(i);
+}
+function clampProbe() {
+  const cl = clampXZ(probe.x, probe.z, TABLE_R + 0.02);
+  probe.x = cl[0]; probe.z = cl[1];
+  for (let i = 0; i < charges.length; i++) {
+    const c = charges[i];
+    if (c.q === 0) continue;
+    const min = radiusFor(c.q) + 0.06;
+    let dx = probe.x - c.x;
+    let dz = probe.z - c.z;
+    let d = Math.hypot(dx, dz);
+    if (d < min) {
+      if (d < 1e-6) { dx = 0; dz = 1; d = 1; }
+      probe.x = c.x + (dx / d) * min;
+      probe.z = c.z + (dz / d) * min;
+    }
+  }
+}
+
+function trace(x, z, dir, originIndex) {
+  const pts = [];
+  let left = false;
+  for (let n = 0; n < MAX_PTS; n++) {
+    let hit = -1;
+    for (let i = 0; i < charges.length; i++) {
+      const c = charges[i];
+      if (c.q === 0) continue;
+      const d = Math.hypot(x - c.x, z - c.z);
+      if (d < radiusFor(c.q) + 0.01) hit = i;
+    }
+    if (hit === originIndex && !left) {
+      /* still leaving the charge we started on */
+    } else if (hit >= 0) {
+      const c = charges[hit];
+      const rad = radiusFor(c.q);
+      const px = pts.length ? pts[pts.length - 2] : x;
+      const pz = pts.length ? pts[pts.length - 1] : z;
+      let vx = c.x - px, vz = c.z - pz;
+      const vl = Math.hypot(vx, vz) || 1;
+      pts.push(c.x - (vx / vl) * rad, c.z - (vz / vl) * rad);
+      return { pts, end: 'charge', hit };
+    }
+    if (originIndex >= 0) {
+      const c0 = charges[originIndex];
+      if (Math.hypot(x - c0.x, z - c0.z) > radiusFor(c0.q) + 0.06) left = true;
+    }
+    if (x * x + z * z > FIELD_R * FIELD_R) {
+      pts.push(x, z);
+      return { pts, end: 'edge', hit: -1 };
+    }
+    pts.push(x, z);
+    const e = sampleE(x, z);
+    if (!e || e.mag < 0.5) return { pts, end: 'weak', hit: -1 };
+    const s = STEP / e.mag;
+    x += dir * e.Ex * s;
+    z += dir * e.Ez * s;
+  }
+  return { pts, end: 'max', hit: -1 };
+}
+
+function lineBudget(q) {
+  return Math.max(4, Math.min(16, Math.round(Math.abs(q) / 1e-6 * 6)));
+}
+
+function storeLine(pts, dir) {
+  if (lineCount >= MAX_LINES || pts.length < 4) return;
+  const n = Math.min(MAX_PTS, pts.length >> 1);
+  const base = lineCount * MAX_PTS;
+  for (let i = 0; i < n; i++) {
+    lineX[base + i] = pts[i * 2];
+    lineZ[base + i] = pts[i * 2 + 1];
+  }
+  lineN[lineCount] = n;
+  lineDir[lineCount] = dir;
+  lineCount++;
+}
+
+function rebuildField() {
+  lineCount = 0;
+  const positives = [];
+  const negatives = [];
+  let qPos = 0, qNeg = 0;
+  for (let i = 0; i < charges.length; i++) {
+    const q = charges[i].q;
+    if (q > 0) { positives.push(i); qPos += q; }
+    else if (q < 0) { negatives.push(i); qNeg += -q; }
+  }
+  if (qPos > 0) {
+    for (const i of positives) {
+      const c = charges[i];
+      const n = lineBudget(c.q);
+      const rad = radiusFor(c.q) + 0.02;
+      for (let k = 0; k < n; k++) {
+        const a = ((k + 0.5) / n) * Math.PI * 2;
+        const traced = trace(c.x + Math.cos(a) * rad, c.z + Math.sin(a) * rad, 1, i);
+        storeLine(traced.pts, 1);
+      }
+    }
+    const excess = qNeg - qPos;
+    if (excess > 0.2e-6) {
+      const extraTotal = Math.max(4, Math.min(12, Math.round(excess / 1e-6 * 4)));
+      for (const i of negatives) {
+        const c = charges[i];
+        const share = Math.max(1, Math.round(extraTotal * (-c.q) / qNeg));
+        const rad = radiusFor(c.q) + 0.02;
+        for (let k = 0; k < share; k++) {
+          const a = ((k + 0.5) / share) * Math.PI * 2 + 0.37;
+          const traced = trace(c.x + Math.cos(a) * rad, c.z + Math.sin(a) * rad, -1, i);
+          if (traced.end === 'edge') storeLine(traced.pts, -1);
+        }
+      }
+    }
+  } else {
+    for (const i of negatives) {
+      const c = charges[i];
+      const n = lineBudget(c.q);
+      const rad = radiusFor(c.q) + 0.02;
+      for (let k = 0; k < n; k++) {
+        const a = ((k + 0.5) / n) * Math.PI * 2;
+        const traced = trace(c.x + Math.cos(a) * rad, c.z + Math.sin(a) * rad, -1, i);
+        storeLine(traced.pts, -1);
+      }
+    }
+  }
+
+  let seg = 0;
+  for (let L = 0; L < lineCount; L++) {
+    const n = lineN[L];
+    const base = L * MAX_PTS;
+    for (let i = 0; i < n - 1 && seg < MAX_SEG; i++) {
+      const x0 = lineX[base + i], z0 = lineZ[base + i];
+      const x1 = lineX[base + i + 1], z1 = lineZ[base + i + 1];
+      const dx = x1 - x0, dz = z1 - z0;
+      const len = Math.hypot(dx, dz);
+      if (len < 1e-4) continue;
+      _dummy.position.set((x0 + x1) / 2, 0.028, (z0 + z1) / 2);
+      _dir.set(dx, 0, dz).normalize();
+      _dummy.quaternion.setFromUnitVectors(_up, _dir);
+      _dummy.scale.set(1, len, 1);
+      _dummy.updateMatrix();
+      threads.setMatrixAt(seg, _dummy.matrix);
+      seg++;
+    }
+  }
+  threads.count = seg;
+  threads.instanceMatrix.needsUpdate = true;
+  rebuildEquipotentials();
+  updateHeads(headPhase);
+}
+
+const COLS = 46, ROWS = 46;
+const vGrid = new Float32Array(COLS * ROWS);
+function rebuildEquipotentials() {
+  eqSegs.length = 0;
+  if (!showEq) {
+    eqLines.count = 0;
+    eqLines.visible = false;
+    return;
+  }
+  eqLines.visible = true;
+  const x0 = -0.8, z0 = -0.8, span = 1.6;
+  const dx = span / (COLS - 1), dz = span / (ROWS - 1);
+  for (let j = 0; j < ROWS; j++) {
+    const z = z0 + j * dz;
+    for (let i = 0; i < COLS; i++) {
+      const x = x0 + i * dx;
+      let V = 0, bad = false;
+      if (x * x + z * z > 0.86 * 0.86) bad = true;
+      else {
+        for (let c = 0; c < charges.length; c++) {
+          const ch = charges[c];
+          if (ch.q === 0) continue;
+          const r = Math.hypot(x - ch.x, z - ch.z);
+          if (r < radiusFor(ch.q) * 0.92) { bad = true; break; }
+          V += K * ch.q / r;
+        }
+      }
+      vGrid[j * COLS + i] = bad ? NaN : V;
+    }
+  }
+  const base = K * 1e-6 / 0.30;
+  const levels = [0.4, 0.8, 1.4, 2.4].flatMap((m) => [base * m, -base * m]);
+  function vert(i, j) { return vGrid[j * COLS + i]; }
+  function pushSeg(ax, az, bx, bz) {
+    const dx = bx - ax, dz = bz - az;
+    if (dx * dx + dz * dz < 1e-6) return;
+    eqSegs.push(ax, az, bx, bz);
+  }
+  function edge(x1, z1, v1, x2, z2, v2, level) {
+    const den = v2 - v1;
+    const t = Math.abs(den) < 1e-9 ? 0.5 : (level - v1) / den;
+    const u = Math.min(1, Math.max(0, t));
+    return [x1 + (x2 - x1) * u, z1 + (z2 - z1) * u];
+  }
+  for (const level of levels) {
+    for (let j = 0; j < ROWS - 1; j++) {
+      for (let i = 0; i < COLS - 1; i++) {
+        const v00 = vert(i, j), v10 = vert(i + 1, j), v11 = vert(i + 1, j + 1), v01 = vert(i, j + 1);
+        if (![v00, v10, v11, v01].every(Number.isFinite)) continue;
+        let idx = 0;
+        if (v00 > level) idx |= 1;
+        if (v10 > level) idx |= 2;
+        if (v11 > level) idx |= 4;
+        if (v01 > level) idx |= 8;
+        if (idx === 0 || idx === 15) continue;
+        const xA = x0 + i * dx, zA = z0 + j * dz;
+        const xB = xA + dx, zB = zA;
+        const xC = xB, zC = zA + dz;
+        const xD = xA, zD = zC;
+        const eB = () => edge(xA, zA, v00, xB, zB, v10, level);
+        const eR = () => edge(xB, zB, v10, xC, zC, v11, level);
+        const eT = () => edge(xD, zD, v01, xC, zC, v11, level);
+        const eL = () => edge(xA, zA, v00, xD, zD, v01, level);
+        const pair = (p, q) => pushSeg(p[0], p[1], q[0], q[1]);
+        if (idx === 5 || idx === 10) {
+          const vc = (v00 + v10 + v11 + v01) / 4;
+          const alt = (idx === 5) === (vc > level);
+          if (alt) { pair(eL(), eT()); pair(eB(), eR()); }
+          else { pair(eL(), eB()); pair(eT(), eR()); }
+          continue;
+        }
+        const map = {
+          1: ['L', 'B'], 2: ['B', 'R'], 3: ['L', 'R'], 4: ['R', 'T'],
+          6: ['B', 'T'], 7: ['L', 'T'], 8: ['L', 'T'], 9: ['B', 'T'],
+          11: ['R', 'T'], 12: ['L', 'R'], 13: ['B', 'R'], 14: ['L', 'B'],
+        };
+        const m = map[idx];
+        if (!m) continue;
+        const pick = { L: eL, B: eB, R: eR, T: eT };
+        pair(pick[m[0]](), pick[m[1]]());
+      }
+    }
+  }
+  const segCount = eqSegs.length / 4;
+  const stride = Math.max(1, Math.ceil(segCount / MAX_EQ));
+  let n = 0;
+  for (let s = 0; s < segCount && n < MAX_EQ; s += stride) {
+    const ax = eqSegs[s * 4], az = eqSegs[s * 4 + 1];
+    const bx = eqSegs[s * 4 + 2], bz = eqSegs[s * 4 + 3];
+    const dx = bx - ax, dz = bz - az;
+    const len = Math.hypot(dx, dz);
+    _dummy.position.set((ax + bx) / 2, 0.02, (az + bz) / 2);
+    _dir.set(dx, 0, dz).normalize();
+    _dummy.quaternion.setFromUnitVectors(_up, _dir);
+    _dummy.scale.set(1, len, 1);
+    _dummy.updateMatrix();
+    eqLines.setMatrixAt(n, _dummy.matrix);
+    n++;
+  }
+  eqLines.count = n;
+  eqLines.instanceMatrix.needsUpdate = true;
+}
+
+let headPhase = 0.28;
+function updateHeads(phase) {
+  let h = 0;
+  for (let L = 0; L < lineCount; L++) {
+    const n = lineN[L];
+    if (n < 6) continue;
+    const base = L * MAX_PTS;
+    for (let k = 0; k < 2 && h < MAX_HEAD; k++) {
+      const f = (phase + k * 0.5) % 1;
+      const idx = f * (n - 2);
+      const i0 = Math.min(n - 2, Math.floor(idx));
+      const i1 = i0 + 1;
+      const t = idx - i0;
+      const x = lineX[base + i0] * (1 - t) + lineX[base + i1] * t;
+      const z = lineZ[base + i0] * (1 - t) + lineZ[base + i1] * t;
+      let dx = lineX[base + i1] - lineX[base + i0];
+      let dz = lineZ[base + i1] - lineZ[base + i0];
+      if (lineDir[L] < 0) { dx = -dx; dz = -dz; }
+      if (dx * dx + dz * dz < 1e-8) continue;
+      _dummy.position.set(x, 0.03, z);
+      _dir.set(dx, 0, dz).normalize();
+      _dummy.quaternion.setFromUnitVectors(_up, _dir);
+      _dummy.scale.set(1, 1, 1);
+      _dummy.updateMatrix();
+      heads.setMatrixAt(h, _dummy.matrix);
+      heads.setColorAt(h, _col);
+      h++;
+    }
+  }
+  heads.count = h;
+  heads.instanceMatrix.needsUpdate = true;
+  if (heads.instanceColor) heads.instanceColor.needsUpdate = true;
+}
+
+/* —— actions —— */
+let flagText = 'The charges attract each other.';
+let flagHold = 2.2;
+let fieldDirty = true;
+let lastInteract = performance.now();
+
+const NAME = ['A', 'B', 'C'];
+function qLabel(q) {
+  const u = q * 1e6;
+  const sign = u > 0.0005 ? '+' : u < -0.0005 ? '−' : '';
+  const body = Math.abs(u).toFixed(2);
+  return sign ? `${sign}${body} μC` : `${body} μC`;
+}
+function fmtR(r) { return `${r.toFixed(2)} m`; }
+function fmtF(F) {
+  if (!Number.isFinite(F)) return '—';
+  const a = Math.abs(F);
+  if (a >= 1) return `${F.toFixed(2)} N`;
+  if (a >= 0.01) return `${(F * 1e3).toFixed(1)} mN`;
+  return `${(F * 1e6).toFixed(1)} μN`;
+}
+function fmtE(e) {
+  if (e == null || !Number.isFinite(e)) return '—';
+  const a = Math.abs(e);
+  if (a >= 1e6) return `${(e / 1e6).toFixed(2)} MN/C`;
+  if (a >= 1e3) return `${(e / 1e3).toFixed(1)} kN/C`;
+  return `${e.toFixed(0)} N/C`;
+}
+function fmtV(v) {
+  if (v == null || !Number.isFinite(v)) return '—';
+  const sign = v > 0.5 ? '+' : v < -0.5 ? '−' : '';
+  const a = Math.abs(v);
+  if (a >= 1e6) return `${sign}${(a / 1e6).toFixed(2)} MV`;
+  if (a >= 1e3) return `${sign}${(a / 1e3).toFixed(1)} kV`;
+  return `${sign}${a.toFixed(0)} V`;
+}
+function relationPhrase() {
+  if (charges[0].q === 0 || charges[1].q === 0) return 'do not push on each other, because one of them has zero charge';
+  if (charges[0].q * charges[1].q > 0) return 'repel each other, because they have the same sign';
+  return 'attract each other, because they have opposite signs';
+}
+
+function syncChips() {
+  const t = document.getElementById('third-chip');
+  t.setAttribute('aria-pressed', String(showThird));
+  t.innerHTML = showThird
+    ? 'Third charge<small>on</small>'
+    : 'Third charge<small>off</small>';
+  document.getElementById('eq-chip').setAttribute('aria-pressed', String(showEq));
+}
+
+function refreshAfterAction() {
+  clampCharge(0); clampCharge(1); if (showThird) clampCharge(2);
+  clampProbe();
+  fieldDirty = true;
+  syncChips();
+  syncVisuals();
+  updateHud();
+  updateLessonLive();
+  if (still) {
+    if (fieldDirty) { rebuildField(); fieldDirty = false; }
+    placeCamera(0);
+    syncTags();
+    render();
+  }
+  lastInteract = performance.now();
+}
+
+function setChargeQ(i, q) {
+  const clamped = Math.max(-Q_MAX, Math.min(Q_MAX, q));
+  const sign = Math.sign(clamped) || 1;
+  const mag = Math.abs(clamped);
+  charges[i].q = mag < Q_MIN * 0.5 ? 0 : sign * Math.max(Q_MIN, Math.min(Q_MAX, mag));
+  if (i === 2) {
+    showThird = charges[2].q !== 0;
+    if (showThird) qCStored = charges[2].q;
+  }
+}
+
+function doFlip() {
+  const c = charges[selected];
+  if (c.q === 0) {
+    setChargeQ(selected, selected === 1 ? -1e-6 : 1e-6);
+  } else {
+    c.q = -c.q;
+    if (selected === 2) { showThird = true; qCStored = c.q; }
+  }
+  flagText = `The sign of charge ${NAME[selected]} flipped, so it is now ${qLabel(charges[selected].q)}.`;
+  flagHold = 2.4;
+  refreshAfterAction();
+}
+function doDoubleQ() {
+  const c = charges[selected];
+  if (c.q === 0) setChargeQ(selected, selected === 1 ? -1e-6 : 1e-6);
+  else setChargeQ(selected, c.q * 2);
+  flagText = `Charge ${NAME[selected]} is now ${qLabel(charges[selected].q)}.`;
+  flagHold = 2.2;
+  refreshAfterAction();
+}
+function doHalveQ() {
+  const c = charges[selected];
+  if (c.q === 0) {
+    flagText = `Charge ${NAME[selected]} is already zero, so there is nothing to halve.`;
+    flagHold = 2.2;
+    refreshAfterAction();
+    return;
+  }
+  setChargeQ(selected, c.q / 2);
+  flagText = `Charge ${NAME[selected]} is now ${qLabel(charges[selected].q)}.`;
+  flagHold = 2.2;
+  refreshAfterAction();
+}
+function scaleSeparation(factor) {
+  const A = charges[0], B = charges[1];
+  const before = Math.hypot(A.x - B.x, A.z - B.z);
+  const mx = (A.x + B.x) / 2, mz = (A.z + B.z) / 2;
+  A.x = mx + (A.x - mx) * factor;
+  A.z = mz + (A.z - mz) * factor;
+  B.x = mx + (B.x - mx) * factor;
+  B.z = mz + (B.z - mz) * factor;
+  clampCharge(0);
+  clampCharge(1);
+  const after = Math.hypot(A.x - B.x, A.z - B.z);
+  return { before, after };
+}
+function doDoubleR() {
+  const { before, after } = scaleSeparation(2);
+  const ratio = before > 1e-6 ? after / before : 1;
+  flagText = ratio > 1.8
+    ? 'The gap between A and B doubled. The force should fall to about one quarter.'
+    : 'The table edge stopped the charges before the gap could fully double.';
+  flagHold = 2.6;
+  refreshAfterAction();
+}
+function doHalfR() {
+  const { before, after } = scaleSeparation(0.5);
+  const ratio = before > 1e-6 ? after / before : 1;
+  flagText = ratio < 0.6
+    ? 'The gap between A and B was cut in half. The force should rise to about four times.'
+    : 'The charges are already as close as this table allows.';
+  flagHold = 2.6;
+  refreshAfterAction();
+}
+function setThird(on) {
+  showThird = on;
+  if (on) {
+    charges[2].q = qCStored || 1e-6;
+    if (Math.abs(charges[2].q) < Q_MIN) charges[2].q = 1e-6;
+    qCStored = charges[2].q;
+    clampCharge(2);
+    flagText = `Charge C is on the table at ${qLabel(charges[2].q)}. Its field adds to the others as a vector.`;
+  } else {
+    if (charges[2].q !== 0) qCStored = charges[2].q;
+    charges[2].q = 0;
+    if (selected === 2) selected = 0;
+    flagText = 'Charge C is off, so only A and B make the field and the potential.';
+  }
+  flagHold = 2.6;
+  refreshAfterAction();
+}
+function doSameSign() {
+  charges[0].q = Math.abs(charges[0].q) || 2e-6;
+  charges[1].q = Math.abs(charges[1].q) || 2e-6;
+  flagText = 'Both charges are positive now, so they repel.';
+  flagHold = 2.4;
+  refreshAfterAction();
+}
+function doOpposite() {
+  charges[0].q = Math.abs(charges[0].q) || 2e-6;
+  charges[1].q = -(Math.abs(charges[1].q) || 2e-6);
+  flagText = 'The charges have opposite signs now, so they attract.';
+  flagHold = 2.4;
+  refreshAfterAction();
+}
+function doDipole() {
+  charges[0].q = 2e-6;
+  charges[1].q = -2e-6;
+  charges[0].x = -0.26; charges[0].z = 0;
+  charges[1].x = 0.26; charges[1].z = 0;
+  probe.x = 0; probe.z = 0;
+  flagText = 'A and B are an equal and opposite pair, and the probe sits on the midpoint.';
+  flagHold = 2.6;
+  refreshAfterAction();
+}
+function doProbeMid() {
+  probe.x = (charges[0].x + charges[1].x) / 2;
+  probe.z = (charges[0].z + charges[1].z) / 2;
+  clampProbe();
+  flagText = 'The probe is on the midpoint between charge A and charge B.';
+  flagHold = 2.4;
+  refreshAfterAction();
+}
+function placeProbeNear(i) {
+  const c = charges[i];
+  const other = charges[i === 0 ? 1 : 0];
+  let dx = c.x - other.x, dz = c.z - other.z;
+  const len = Math.hypot(dx, dz) || 1;
+  probe.x = c.x + (dx / len) * 0.2;
+  probe.z = c.z + (dz / len) * 0.2 + 0.12;
+  clampProbe();
+  flagText = `The probe is near charge ${NAME[i]}.`;
+  flagHold = 2.2;
+  refreshAfterAction();
+}
+function doSelect(i) {
+  selected = i;
+  if (i === 2 && charges[2].q === 0) {
+    setThird(true);
+    return;
+  }
+  flagText = `You are changing charge ${NAME[i]}, which is ${qLabel(charges[i].q)}.`;
+  flagHold = 2.2;
+  refreshAfterAction();
+}
+function doReset(fromUser = true) {
+  charges[0].x = -0.26; charges[0].z = 0; charges[0].q = 2e-6;
+  charges[1].x = 0.26; charges[1].z = 0; charges[1].q = -2e-6;
+  charges[2].x = 0.04; charges[2].z = -0.46; charges[2].q = 0;
+  qCStored = 1e-6;
+  showThird = false;
+  showEq = true;
+  selected = 0;
+  probe.x = -0.26; probe.z = 0.24;
+  if (fromUser) {
+    flagText = 'The table is back to the starting pair: positive A, negative B, and the probe near A.';
+    flagHold = 2.6;
+  } else {
+    flagText = '';
+    flagHold = 0;
+  }
+  refreshAfterAction();
+}
+function doToggleEq() {
+  showEq = !showEq;
+  flagText = showEq
+    ? 'The lilac curves are on. Each curve is an equipotential, a path of constant V.'
+    : 'The equipotential curves are hidden. The field lines and the meters are still live.';
+  flagHold = 2.4;
+  refreshAfterAction();
+}
+
+function dispatchAct(act) {
+  if (!act) return false;
+  if (act === 'flip') doFlip();
+  else if (act === 'double-q') doDoubleQ();
+  else if (act === 'halve-q') doHalveQ();
+  else if (act === 'double-r') doDoubleR();
+  else if (act === 'half-r') doHalfR();
+  else if (act === 'third') setThird(!showThird);
+  else if (act === 'third-on') setThird(true);
+  else if (act === 'third-off') setThird(false);
+  else if (act === 'eq') doToggleEq();
+  else if (act === 'reset') doReset();
+  else if (act === 'same-sign') doSameSign();
+  else if (act === 'opposite') doOpposite();
+  else if (act === 'dipole') doDipole();
+  else if (act === 'probe-mid') doProbeMid();
+  else if (act === 'probe-a') placeProbeNear(0);
+  else if (act === 'probe-b') placeProbeNear(1);
+  else if (act === 'select-a') doSelect(0);
+  else if (act === 'select-b') doSelect(1);
+  else if (act === 'select-c') doSelect(2);
+  else return false;
+  return true;
+}
+
+/* —— visuals —— */
+let dragging = null;
+function syncChargeViews() {
+  for (let i = 0; i < charges.length; i++) {
+    const c = charges[i];
+    const v = chargeViews[i];
+    const on = c.q !== 0;
+    v.group.visible = on;
+    if (!on) continue;
+    const rad = radiusFor(c.q);
+    const lifted = dragging === i;
+    v.sphere.scale.setScalar(rad);
+    v.sphere.position.y = lifted ? rad + 0.035 : rad;
+    const pos = c.q > 0;
+    v.mat.color.setHex(pos ? 0xffb36b : 0xb9a2ff);
+    v.mat.emissive.setHex(pos ? 0x8a3a10 : 0x3a2070);
+    v.plus.visible = pos;
+    v.minus.visible = !pos;
+    v.plus.position.y = v.sphere.position.y + rad * 0.72;
+    v.minus.position.y = v.sphere.position.y + rad * 0.72;
+    const gs = rad * 0.9;
+    v.plus.scale.setScalar(gs);
+    v.minus.scale.set(gs, gs, gs);
+    v.shadow.position.set(0, 0.006, 0);
+    v.shadow.scale.setScalar(lifted ? rad * 0.7 : rad * 1.15);
+    v.group.position.set(c.x, 0, c.z);
+  }
+  const sel = charges[selected];
+  if (sel.q !== 0) {
+    selectRing.visible = true;
+    const rad = radiusFor(sel.q);
+    selectRing.scale.setScalar(rad * 1.55);
+    selectRing.position.set(sel.x, 0.01, sel.z);
+  } else selectRing.visible = false;
+
+  const pr = 0.04;
+  probeMesh.position.set(probe.x, dragging === 'probe' ? pr + 0.03 : pr, probe.z);
+  probeShadow.position.set(probe.x, 0.006, probe.z);
+  probeShadow.scale.setScalar(dragging === 'probe' ? 0.65 : 1);
+}
+
+function syncArrows() {
+  const info = pairInfo();
+  const A = charges[0], B = charges[1];
+  const dx = A.x - B.x, dz = A.z - B.z;
+  const r = info.r;
+  if (r > 1e-4 && A.q !== 0 && B.q !== 0) {
+    const sign = Math.sign(A.q * B.q) || 1;
+    const ux = dx / r, uz = dz / r;
+    const len = visMag(info.F, 0.08);
+    const y = 0.16;
+    setArrow(arrowFA, A.x, y, A.z, sign * ux, 0, sign * uz, len);
+    setArrow(arrowFB, B.x, y, B.z, -sign * ux, 0, -sign * uz, len);
+  } else {
+    arrowFA.visible = false;
+    arrowFB.visible = false;
+  }
+  const close = probeTooClose();
+  const e = close ? null : sampleE(probe.x, probe.z);
+  if (e) setArrow(arrowE, probe.x, 0.12, probe.z, e.Ex, 0, e.Ez, visMag(e.mag, 1.2e5));
+  else arrowE.visible = false;
+  const parts = [arrowEA, arrowEB, arrowEC];
+  for (let i = 0; i < 3; i++) {
+    if (!showParts || close || charges[i].q === 0) { parts[i].visible = false; continue; }
+    const fi = fieldFrom(charges[i], probe.x, probe.z);
+    if (!fi) { parts[i].visible = false; continue; }
+    setArrow(parts[i], probe.x, 0.09 + i * 0.015, probe.z, fi.Ex, 0, fi.Ez, visMag(fi.mag, 1.2e5) * 0.92);
+  }
+}
+
+function syncVisuals() {
+  syncChargeViews();
+  syncArrows();
+  const focusPot = document.body.dataset.focus === 'potential' || document.body.dataset.focus === 'equip';
+  eqMat.emissiveIntensity = focusPot ? 0.95 : 0.55;
+}
+
+function setBarUni(el, t) {
+  el.style.width = `${Math.max(0, Math.min(1, t)) * 100}%`;
+  el.classList.remove('neg');
+}
+function setBarBi(el, value, full) {
+  const mag = Math.min(1, Math.abs(value) / full);
+  el.style.width = `${mag * 50}%`;
+  el.classList.toggle('neg', value < -1e-12);
+}
+function setBarLog(el, value, minExp, maxExp) {
+  const a = Math.abs(value);
+  const t = a <= 0 || !Number.isFinite(a) ? 0 : Math.min(1, Math.max(0, (Math.log10(a) - minExp) / (maxExp - minExp)));
+  setBarUni(el, t);
+}
+function setBarSignedLog(el, value, minExp, maxExp) {
+  const a = Math.abs(value);
+  if (!Number.isFinite(value) || a < 10 ** minExp) {
+    el.style.width = '0%';
+    el.classList.remove('neg');
+    return;
+  }
+  const t = Math.min(1, (Math.log10(a) - minExp) / (maxExp - minExp));
+  el.style.width = `${t * 50}%`;
+  el.classList.toggle('neg', value < 0);
+}
+
+function updateHud() {
+  const info = pairInfo();
+  const close = probeTooClose();
+  const E = close ? null : sampleE(probe.x, probe.z);
+  const V = close ? null : potentialAt(probe.x, probe.z);
+  document.getElementById('h-qa').textContent = qLabel(charges[0].q);
+  document.getElementById('h-qb').textContent = qLabel(charges[1].q);
+  document.getElementById('h-r').textContent = fmtR(info.r);
+  document.getElementById('h-f').textContent = fmtF(info.F);
+  document.getElementById('h-e').textContent = fmtE(E ? E.mag : null);
+  document.getElementById('h-v').textContent = fmtV(V);
+  document.getElementById('h-eq').textContent =
+    `F = k |qA qB| / r² = ${fmtF(info.F)}`;
+  const flag = document.getElementById('h-flag');
+  if (close) flag.textContent = 'Move the probe a little away from the charge to read the field and the potential.';
+  else if (flagHold > 0) flag.textContent = flagText;
+  else flag.textContent = `The charges ${relationPhrase()}.`;
+  setBarBi(document.getElementById('bar-qa'), charges[0].q, Q_MAX);
+  setBarBi(document.getElementById('bar-qb'), charges[1].q, Q_MAX);
+  setBarUni(document.getElementById('bar-r'), info.r / 1.3);
+  setBarLog(document.getElementById('bar-f'), info.F, -3, 1);
+  setBarLog(document.getElementById('bar-e'), E ? E.mag : 0, 3, 7);
+  setBarSignedLog(document.getElementById('bar-v'), V == null ? 0 : V, 2, 6);
+}
+
+const tagA = document.getElementById('tag-a');
+const tagB = document.getElementById('tag-b');
+const tagC = document.getElementById('tag-c');
+const tagP = document.getElementById('tag-p');
+const _pr = new THREE.Vector3();
+function projectTag(el, wx, wy, wz) {
+  _pr.set(wx, wy, wz).project(camera);
+  if (_pr.z > 1) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const x = (_pr.x * 0.5 + 0.5) * innerWidth;
+  const y = (-_pr.y * 0.5 + 0.5) * innerHeight;
+  el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -130%)`;
+}
+function syncTags() {
+  if (embed) return;
+  const labels = [tagA, tagB, tagC];
+  for (let i = 0; i < 3; i++) {
+    const c = charges[i];
+    const el = labels[i];
+    if (c.q === 0) { el.style.display = 'none'; continue; }
+    el.className = c.q > 0 ? 'pos' : 'neg';
+    el.classList.toggle('sel', selected === i);
+    el.textContent = `${NAME[i]}  ${qLabel(c.q)}`;
+    projectTag(el, c.x, radiusFor(c.q) * 2 + 0.08, c.z);
+  }
+  const E = probeTooClose() ? null : sampleE(probe.x, probe.z);
+  tagP.textContent = E ? `probe  |E| ${fmtE(E.mag)}` : 'probe';
+  projectTag(tagP, probe.x, 0.16, probe.z);
+}
+
+/* —— pointer —— */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const drag = { kind: null, index: -1, ox: 0, oz: 0, sx: 0, sy: 0, lx: 0, ly: 0 };
+const _hit = new THREE.Vector3();
+const pickables = [probeMesh, ...chargeViews.map((v) => v.sphere)];
+
+function setPointer(e) {
+  const r = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+}
+function worldOnTable() {
+  raycaster.setFromCamera(pointer, camera);
+  const o = raycaster.ray.origin, d = raycaster.ray.direction;
+  if (Math.abs(d.y) < 1e-6) return null;
+  return _hit.copy(o).addScaledVector(d, (0 - o.y) / d.y);
+}
+function onDown(e) {
+  if (e.button !== undefined && e.button !== 0) return;
+  canvas.setPointerCapture(e.pointerId);
+  setPointer(e);
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(pickables, false);
+  lastInteract = performance.now();
+  const hit = hits.find((h) => {
+    const ud = h.object.userData;
+    if (ud.kind === 'charge' && charges[ud.index].q === 0) return false;
+    return true;
+  });
+  if (hit) {
+    const ud = hit.object.userData;
+    const w = worldOnTable();
+    if (ud.kind === 'probe') {
+      drag.kind = 'probe';
+      dragging = 'probe';
+      drag.ox = w ? probe.x - w.x : 0;
+      drag.oz = w ? probe.z - w.z : 0;
+    } else {
+      drag.kind = 'charge';
+      drag.index = ud.index;
+      dragging = ud.index;
+      selected = ud.index;
+      const c = charges[ud.index];
+      drag.ox = w ? c.x - w.x : 0;
+      drag.oz = w ? c.z - w.z : 0;
+      flagText = `You are moving charge ${NAME[ud.index]}.`;
+      flagHold = 1.2;
+    }
+    canvas.classList.add('grabbing');
+    canvas.classList.remove('can-grab');
+  } else {
+    drag.kind = 'lean';
+    drag.sx = e.clientX; drag.sy = e.clientY;
+    drag.lx = lean.x; drag.ly = lean.y;
+  }
+}
+function onMove(e) {
+  setPointer(e);
+  if (!drag.kind) {
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(pickables, false);
+    const hot = hits.some((h) => h.object.userData.kind === 'probe' || charges[h.object.userData.index]?.q !== 0);
+    canvas.classList.toggle('can-grab', hot);
+    return;
+  }
+  lastInteract = performance.now();
+  if (drag.kind === 'charge' || drag.kind === 'probe') {
+    const w = worldOnTable();
+    if (!w) return;
+    if (drag.kind === 'probe') {
+      probe.x = w.x + drag.ox;
+      probe.z = w.z + drag.oz;
+      clampProbe();
+    } else {
+      const c = charges[drag.index];
+      c.x = w.x + drag.ox;
+      c.z = w.z + drag.oz;
+      clampCharge(drag.index);
+    }
+    fieldDirty = true;
+    syncVisuals();
+    updateHud();
+    updateLessonLive();
+    if (still) {
+      rebuildField();
+      fieldDirty = false;
+      placeCamera(0);
+      syncTags();
+      render();
+    }
+  } else if (drag.kind === 'lean') {
+    leanGoal.x = Math.max(-0.28, Math.min(0.28, drag.lx + (e.clientX - drag.sx) * 0.0016));
+    leanGoal.y = Math.max(-0.16, Math.min(0.16, drag.ly + (e.clientY - drag.sy) * -0.0011));
+    if (still) {
+      lean.x = leanGoal.x; lean.y = leanGoal.y;
+      placeCamera(0); syncTags(); render();
+    }
+  }
+}
+function onUp(e) {
+  drag.kind = null;
+  dragging = null;
+  canvas.classList.remove('grabbing');
+  leanGoal.x = 0; leanGoal.y = 0;
+  if (still) { lean.x = 0; lean.y = 0; syncVisuals(); placeCamera(0); syncTags(); render(); }
+  try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+
+document.getElementById('chips').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  dispatchAct(btn.dataset.act);
+});
+
+/* camera lean — a damped return so an empty drag has weight */
+const lean = { x: 0, y: 0, vx: 0, vy: 0 };
+const leanGoal = { x: 0, y: 0 };
+function stepLean(dt) {
+  if (still) return;
+  const k = 36, damp = 8.5;
+  lean.vx += (k * (leanGoal.x - lean.x) - damp * lean.vx) * dt;
+  lean.vy += (k * (leanGoal.y - lean.y) - damp * lean.vy) * dt;
+  lean.x += lean.vx * dt;
+  lean.y += lean.vy * dt;
+}
+
+const narrowMq = matchMedia('(max-width: 720px), (max-aspect-ratio: 5/6)');
+function chromeLeftEdge() {
+  if (embed || narrowMq.matches || !lsOpen) return 0;
+  return lessonEl.getBoundingClientRect().right;
+}
+function placeCamera(t) {
+  const left = chromeLeftEdge();
+  // Lesson card sits on the left, so look a little left of the charges and the table sits in the open space.
+  const shift = left > 40 ? (left / innerWidth) * 0.95 : 0;
+  const breathe = still ? 0 : Math.sin(t * 0.35) * 0.008;
+  camera.position.set(
+    camBase.x - shift * 0.2 + lean.x * 0.85,
+    camBase.y + lean.y + breathe,
+    camBase.z - lean.y * 0.15
+  );
+  camera.lookAt(camLook.x - shift + lean.x * 0.35, camLook.y, camLook.z + lean.x * 0.05);
+}
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  camera.aspect = w / Math.max(1, h);
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+}
+
+/* ================= lesson (12 steps) ================= */
+const lessonEl = document.getElementById('lesson');
+const lsBody = document.getElementById('ls-body');
+const lsKicker = document.getElementById('ls-kicker');
+const lsDots = document.getElementById('ls-dots');
+const lsToggle = document.getElementById('ls-toggle');
+const labelEl = document.querySelector('.label');
+const footEl = document.querySelector('.foot');
+const metersEl = document.getElementById('meters');
+
+const LS = [
+  { topic: 'Meet the charges', focus: 'intro', html: `
+    <h3>Meet the charges</h3>
+    <p class="formula">F = k |q<sub>A</sub> q<sub>B</sub>| / r²</p>
+    <p>Two point charges sit on the table. Amber is positive and lilac is negative. The pearl sphere is a probe you drag to a place you want to measure. It is not a source charge. Coulomb’s law gives the size of the force between A and B. The constant k is 8.99 × 10⁹ N·m²/C².</p>
+    <p>The force grows when either charge grows, and it shrinks quickly when you pull the charges apart. Drag a charge to move it. Press a charge, or use Select, to choose which charge the sign and size buttons change.</p>
+    <p class="watch"><b>Watch</b> Look at the tags on the spheres and the meters at the lower right. They should name q<sub>A</sub>, q<sub>B</sub>, the gap r, the force F, the field strength |E|, and the potential V.</p>
+    <p class="live" aria-live="polite"><b>Now</b> Charge A is <span data-live="qA">—</span> and charge B is <span data-live="qB">—</span>. They are <span data-live="r">—</span> apart, so the force between them is <span data-live="F">—</span>.</p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="select-a">Select A</button><button type="button" data-act="select-b">Select B</button></div>` },
+  { topic: 'Attract or repel', focus: 'coulomb', html: `
+    <h3>Attract or repel</h3>
+    <p class="formula">same signs repel · opposite signs attract</p>
+    <p>The sign of the product q<sub>A</sub> q<sub>B</sub> decides the direction. A positive product means the charges repel. A negative product means they attract. The warm arrows on A and B show that push or pull. Their length is drawn so the direction is easy to see, and the meter shows the true size of F.</p>
+    <p class="watch"><b>Watch</b> Flip the sign of the selected charge and look at the arrows. Opposite signs point the arrows toward each other, and matching signs point them apart.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The charges <span data-live="relation">—</span>. The force between them is <span data-live="F">—</span>.</p>
+    <div class="acts"><button type="button" data-act="flip">Flip sign</button><button type="button" data-act="same-sign">Same signs</button><button type="button" data-act="opposite">Opposite signs</button></div>` },
+  { topic: 'What a field is', focus: 'field', html: `
+    <h3>What an electric field is</h3>
+    <p class="formula">E = F / q<sub>0</sub></p>
+    <p>An electric field is the force a small positive test charge would feel, divided by that test charge. The field belongs to the source charges. It is in the space around them even when you are only measuring. The gold arrow on the pearl probe points in the direction of E, and the meter reads the strength |E|.</p>
+    <p>We treat the probe as so small that its own field can be ignored. That is the test-charge idea. The arrow length is a drawing scale. Trust the meter for the number.</p>
+    <p class="watch"><b>Watch</b> Drag the pearl probe closer to a charge, then farther away. The gold arrow and the |E| meter should grow when you get close, and they should shrink when you move away.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The field strength at the probe is <span data-live="Emag">—</span>, and the potential there is <span data-live="V">—</span>.</p>
+    <div class="acts"><button type="button" data-act="probe-a">Probe near A</button><button type="button" data-act="probe-b">Probe near B</button><button type="button" data-act="probe-mid">Probe to midpoint</button></div>` },
+  { topic: 'Field lines', focus: 'lines', html: `
+    <h3>How to read field lines</h3>
+    <p class="formula">the line shows the direction of E</p>
+    <p>The honey threads are electric field lines. At each point the thread points the way E points. Lines leave positive charges and end on negative charges, or they run off the table when there is not enough opposite charge to catch them. Lines do not cross, because the field has one direction at each point.</p>
+    <p>Where threads sit closer together, the field is stronger. That part of the picture is qualitative. A larger charge also gets more threads. The |E| meter is the number you should quote.</p>
+    <p class="watch"><b>Watch</b> Press Same signs and look at the threads. They should stop joining the two charges and instead leave both spheres. Press Opposite signs and the threads should connect them again.</p>
+    <p class="live" aria-live="polite"><b>Now</b> Charge A is <span data-live="qA">—</span> and charge B is <span data-live="qB">—</span>, so the threads <span data-live="lineWord">—</span>.</p>
+    <div class="acts"><button type="button" data-act="opposite">Opposite signs</button><button type="button" data-act="same-sign">Same signs</button></div>` },
+  { topic: 'Superposition', focus: 'super', html: `
+    <h3>Fields add as vectors</h3>
+    <p class="formula">E = E<sub>A</sub> + E<sub>B</sub> + E<sub>C</sub></p>
+    <p>Each charge makes its own field. The total field is the vector sum, so the arrows add tip to tail. They do not add as plain numbers. Turn on charge C and the thick gold arrow at the probe becomes the sum of the thinner arrows, one from each charge that is on.</p>
+    <p class="watch"><b>Watch</b> Turn on the third charge and keep your eye on the probe. The thinner arrows are the separate fields. The thicker gold arrow is their sum, and it should agree with the direction of the field the meter is reading.</p>
+    <p class="live" aria-live="polite"><b>Now</b> At the probe, the field from A is <span data-live="EA">—</span>, the field from B is <span data-live="EB">—</span>, the field from C is <span data-live="EC">—</span>, and the total field is <span data-live="Emag">—</span>.</p>
+    <div class="acts"><button type="button" data-act="third-on">Turn on charge C</button><button type="button" data-act="probe-mid">Probe to midpoint</button><button type="button" data-act="third-off">Turn C off</button></div>` },
+  { topic: 'Potential V', focus: 'potential', html: `
+    <h3>Electric potential</h3>
+    <p class="formula">V = k q / r · for a point charge, with V = 0 far away</p>
+    <p>Potential is electric potential energy per unit charge. For one point charge we choose V = 0 very far away, so V = kq/r. A positive charge makes positive V. A negative charge makes negative V. Potentials from several charges add as ordinary numbers. That is different from the field, which adds as arrows.</p>
+    <p>The change in potential energy of a small test charge q<sub>0</sub> is ΔU = q<sub>0</sub> ΔV. The field does work q<sub>0</sub> (V<sub>start</sub> − V<sub>end</sub>) as that charge moves. A positive test charge loses potential energy as it moves toward lower V, which is the way the field arrow points. This page stays with static charges. It does not include batteries, circuits, or changing magnetic fields.</p>
+    <p class="watch"><b>Watch</b> Drag the probe from a spot near the positive charge to a spot near the negative charge. The potential reading should fall, because the probe is moving from higher V toward lower V.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The potential at the probe is <span data-live="V">—</span>. Charge A contributes <span data-live="VA">—</span>, charge B contributes <span data-live="VB">—</span>, and charge C contributes <span data-live="VC">—</span>. Those contributions add to the total.</p>
+    <div class="acts"><button type="button" data-act="probe-a">Probe near A</button><button type="button" data-act="probe-b">Probe near B</button><button type="button" data-act="opposite">Opposite signs</button></div>` },
+  { topic: 'Equipotentials', focus: 'equip', html: `
+    <h3>Equipotential curves</h3>
+    <p class="formula">on one curve, V stays the same · E points toward lower V</p>
+    <p>The lilac curves are equipotentials. Every point on one curve has the same potential, so a charge that slides along the curve has ΔV = 0 and the field does no work along that path. The field points from higher potential toward lower potential, and it crosses the curves at a right angle when the drawing is careful.</p>
+    <p>Where the curves pack closer together, V is changing over a short distance, so |E| is larger. That is the honest intro-college link. You do not need a derivative on this page. Use the curves and the meters together.</p>
+    <p class="watch"><b>Watch</b> Turn the curves on and move the probe along one lilac curve. The potential should stay nearly steady, while the field arrow stays roughly across the curve rather than along it.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The potential at the probe is <span data-live="V">—</span>, and the field strength there is <span data-live="Emag">—</span>.</p>
+    <div class="acts"><button type="button" data-act="eq">Equipotentials</button><button type="button" data-act="dipole">Equal dipole</button></div>` },
+  { topic: 'Double the charge', focus: 'doubleq', html: `
+    <h3>What if a charge doubles?</h3>
+    <p class="formula">F, and the |E| and V that come from that charge, all double</p>
+    <p>Coulomb’s law is linear in each charge. If you double only q<sub>A</sub>, the force between A and B doubles. The field and the potential that come from A also double. The field from B does not change. If you doubled both charges, the force would become four times larger, because both q<sub>A</sub> and q<sub>B</sub> sit in the numerator.</p>
+    <p class="watch"><b>Watch</b> Note the force, then double the selected charge. The force should about double if you doubled A or B and left the other one fixed. The sphere grows so you can see the larger charge.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The selected charge, <span data-live="selName">—</span>, is <span data-live="qSel">—</span>. The force between A and B is <span data-live="F">—</span>, and the field strength at the probe is <span data-live="Emag">—</span>.</p>
+    <div class="acts"><button type="button" data-act="select-a">Select A</button><button type="button" data-act="double-q">Double q</button><button type="button" data-act="halve-q">Halve q</button></div>` },
+  { topic: 'Double the distance', focus: 'doubler', html: `
+    <h3>What if the distance doubles?</h3>
+    <p class="formula">F and |E| follow 1/r² · V from a point charge follows 1/r</p>
+    <p>Distance is not linear. Double the gap between A and B and the force becomes about one quarter, because of 1/r². The field of a single point charge also follows 1/r². The potential of that point charge follows 1/r, so it becomes about one half when the distance doubles. Those two rules are easy to mix up, so check them one at a time.</p>
+    <p class="watch"><b>Watch</b> Press Double distance and read the force. It should drop to about a quarter when the gap really doubles. Then put the probe on the midpoint and compare the field strength with the potential.</p>
+    <p class="live" aria-live="polite"><b>Now</b> A and B are <span data-live="r">—</span> apart. The force is <span data-live="F">—</span>. At the probe, the field strength is <span data-live="Emag">—</span> and the potential is <span data-live="V">—</span>.</p>
+    <div class="acts"><button type="button" data-act="double-r">Double distance</button><button type="button" data-act="half-r">Half distance</button><button type="button" data-act="probe-mid">Probe to midpoint</button></div>` },
+  { topic: 'Arrow convention', focus: 'convention', html: `
+    <h3>Which way the arrows point</h3>
+    <p class="formula">arrows follow a positive test charge</p>
+    <p>Field direction is a convention with a reason. We draw E in the direction a small positive test charge would be pushed. That is why arrows leave positive charges and enter negative charges. A negative test charge would be pushed the opposite way.</p>
+    <p>A neutral object has equal positive and negative charge, so the net Coulomb force on it is zero. The field does not shove a neutral scrap along the arrow. The pearl probe is a measuring point. It is not a neutral object being pushed across the table.</p>
+    <p class="watch"><b>Watch</b> Set A and B to opposite signs and follow one thread. It should leave the amber charge and enter the lilac charge. That is the positive-test-charge direction.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The probe reads a field of <span data-live="Emag">—</span>. The gold arrow is the way a positive test charge would be pushed, and a neutral object would not be pushed along it.</p>
+    <div class="acts"><button type="button" data-act="opposite">Opposite signs</button><button type="button" data-act="same-sign">Same signs</button></div>` },
+  { topic: 'In the real world', focus: 'world', html: `
+    <h3>In the real world</h3>
+    <p>These same rules decide whether a spark can jump. Dry air in a uniform gap ionizes at about 3 million volts per meter, which is 3 million newtons per coulomb. This table does not draw a spark. It shows the field people compare with that limit. Real hardware has sharp edges, so the local field is stronger than the average and engineers leave a margin.</p>
+    <p>An electrical engineer who sizes clearances for a high-voltage line or a substation uses the electric field to choose how far apart the conductors must sit, so the field in the air stays below the strength that starts an arc.</p>
+    <p>An ESD engineer who protects computer chips treats a charged person, a plastic tray, or a tool as a real charge. A few thousand volts across a tiny gap is a very large field, large enough to puncture a transistor, so the engineer uses a grounded wrist strap, a dissipative mat, and controlled humidity.</p>
+    <p>A weather scientist, and a lightning-safety planner, think about charge separation in a storm. Ice and water particles carry charge to different heights until the field is strong enough for lightning. Going inside a closed building, or a hard-topped metal vehicle, is the safety step that follows from how charge sits on a conductor.</p>
+    <p class="watch"><b>Watch</b> Spread A and B farther apart and watch the field at the midpoint fall. Distance is the same idea an engineer uses when a high-voltage gap has to stay safe.</p>
+    <p class="live" aria-live="polite"><b>Now</b> A and B are <span data-live="r">—</span> apart, the force between them is <span data-live="F">—</span>, and the field at the probe is <span data-live="Emag">—</span>.</p>
+    <div class="acts"><button type="button" data-act="double-r">Double distance</button><button type="button" data-act="dipole">Equal dipole</button><button type="button" data-act="probe-mid">Probe to midpoint</button></div>` },
+  { topic: 'Questions to try', focus: 'questions', html: `
+    <h3>Questions to try</h3>
+    <p>Use the table, then open a hint after you have a prediction.</p>
+    <details><summary>Do A and B attract or repel right now, and what in the picture tells you?</summary><p>Read the sign of each charge. Same signs repel, and opposite signs attract. The arrows on the charges point apart when they repel and toward each other when they attract. The sentence under the meters names it. Right now the charges <span data-live="relation">—</span>.</p></details>
+    <details><summary>Predict the new force if you double only charge A. Then do it.</summary><p>F = k|q<sub>A</sub> q<sub>B</sub>|/r². Only q<sub>A</sub> doubles, and r and q<sub>B</sub> stay the same, so F doubles. Read the force, press Select A, then press Double q, and read the force again.</p></details>
+    <details><summary>You double the distance between A and B. What happens to F? What happens to V of one point charge if the distance from it doubles?</summary><p>Force and field follow 1/r², so F becomes about one quarter. Potential of a point charge follows 1/r, so that contribution becomes about one half. Press Double distance and compare the force meter with the reading you had before.</p></details>
+    <details><summary>Equal and opposite charges: at the midpoint, is V about zero? Is |E| about zero?</summary><p>Potentials are ordinary numbers. +V and −V cancel at the midpoint, so V is about zero. The two fields point the same way, from the positive charge toward the negative charge, so they add and |E| is not zero. Press Equal dipole. The probe moves to the midpoint for you.</p></details>
+    <details><summary>Why do field lines never cross?</summary><p>The field has one direction at each point. Two crossing lines would mean two directions. On this table the threads stay in one plane, and they should not cross.</p></details>
+    <details><summary>Why do the arrows leave positive charges and enter negative charges?</summary><p>The direction is the push on a positive test charge. A positive test charge is repelled by a positive source and attracted by a negative source.</p></details>
+    <details><summary>Would a neutral scrap of paper be pushed along the gold arrow?</summary><p>No. A neutral object has zero net charge, so the net Coulomb force on it is zero. The arrow shows the force per unit positive charge. It is not a push on a neutral object.</p></details>
+    <details><summary>Where should an engineer expect the strongest field around a charged piece of metal?</summary><p>Near sharp points and across small gaps. |E| grows quickly as r gets small. Drag the probe close to a charge and watch the meter climb. Real hardware is kept smooth and spaced out so the field in air stays below about 3 million volts per meter.</p></details>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="dipole">Equal dipole</button><button type="button" data-act="double-q">Double q</button></div>` },
+];
+
+let lsStep = 0;
+let lsOpen = !params.has('nolesson');
+let mMode = 'learn';
+const lsLive = [];
+
+for (let i = 0; i < LS.length; i++) {
+  const d = document.createElement('button');
+  d.type = 'button';
+  d.dataset.go = String(i);
+  d.setAttribute('aria-label', `Step ${i + 1}: ${LS[i].topic}`);
+  lsDots.appendChild(d);
+}
+
+function renderLesson() {
+  const st = LS[lsStep];
+  lsKicker.innerHTML = `Lesson ${lsStep + 1}/${LS.length} · <b>${st.topic}</b>`;
+  lsBody.innerHTML = st.html;
+  lsBody.scrollTop = 0;
+  lsLive.length = 0;
+  for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
+  for (const d of lsDots.children) d.toggleAttribute('aria-current', false);
+  lsDots.children[lsStep].setAttribute('aria-current', 'step');
+  lessonEl.querySelector('[data-step="prev"]').disabled = lsStep === 0;
+  lessonEl.querySelector('[data-step="next"]').disabled = lsStep === LS.length - 1;
+  document.body.dataset.focus = lsOpen ? st.focus : 'both';
+  showParts = !!lsOpen && st.focus === 'super';
+  syncLessonPressed();
+  updateLessonLive();
+  syncVisuals();
+}
+function syncLessonPressed() {
+  for (const b of lsBody.querySelectorAll('button[data-act]')) {
+    const a = b.dataset.act;
+    let on = false;
+    if (a === 'third' || a === 'third-on') on = showThird;
+    else if (a === 'eq') on = showEq;
+    else if (a === 'select-a') on = selected === 0;
+    else if (a === 'select-b') on = selected === 1;
+    else if (a === 'select-c') on = selected === 2;
+    else continue;
+    b.setAttribute('aria-pressed', String(on));
+  }
+}
+function updateLessonLive() {
+  if (!lsLive.length) return;
+  const info = pairInfo();
+  const close = probeTooClose();
+  const E = close ? null : sampleE(probe.x, probe.z);
+  const V = close ? null : potentialAt(probe.x, probe.z);
+  const EA = close ? null : fieldFrom(charges[0], probe.x, probe.z);
+  const EB = close ? null : fieldFrom(charges[1], probe.x, probe.z);
+  const EC = close ? null : fieldFrom(charges[2], probe.x, probe.z);
+  const VA = close ? null : potentialFrom(charges[0], probe.x, probe.z);
+  const VB = close ? null : potentialFrom(charges[1], probe.x, probe.z);
+  const same = charges[0].q * charges[1].q > 0;
+  const vals = {
+    qA: qLabel(charges[0].q),
+    qB: qLabel(charges[1].q),
+    qC: charges[2].q === 0 ? 'off' : qLabel(charges[2].q),
+    qSel: qLabel(charges[selected].q),
+    selName: NAME[selected],
+    r: fmtR(info.r),
+    F: fmtF(info.F),
+    Emag: fmtE(E ? E.mag : null),
+    V: fmtV(V),
+    EA: fmtE(EA ? EA.mag : (charges[0].q === 0 ? 0 : null)),
+    EB: fmtE(EB ? EB.mag : (charges[1].q === 0 ? 0 : null)),
+    EC: charges[2].q === 0 ? '0 N/C' : fmtE(EC ? EC.mag : null),
+    VA: fmtV(VA),
+    VB: fmtV(VB),
+    VC: charges[2].q === 0 ? '0 V' : fmtV(close ? null : potentialFrom(charges[2], probe.x, probe.z)),
+    relation: relationPhrase(),
+    lineWord: same ? 'leave both charges instead of joining them' : 'run from the positive charge toward the negative charge',
+  };
+  for (const el of lsLive) el.textContent = vals[el.dataset.live] ?? '—';
+}
+
+function goStep(i) {
+  lsStep = Math.max(0, Math.min(LS.length - 1, i));
+  renderLesson();
+}
+function onLessonClick(e) {
+  const btn = e.target.closest('button');
+  if (!btn || !lessonEl.contains(btn)) return;
+  if (btn.dataset.step === 'prev') goStep(lsStep - 1);
+  else if (btn.dataset.step === 'next') goStep(lsStep + 1);
+  else if (btn.dataset.go) goStep(+btn.dataset.go);
+  else if (btn.dataset.mode) setMobileMode(btn.dataset.mode);
+  else if (btn === lsToggle) setLessonOpen(!lsOpen);
+  else if (btn.dataset.act) dispatchAct(btn.dataset.act);
+}
+function setLessonOpen(open) {
+  lsOpen = open;
+  document.body.classList.toggle('lesson-closed', !open);
+  lsToggle.setAttribute('aria-expanded', String(open));
+  lsToggle.textContent = open ? 'Hide' : 'Open lesson';
+  document.body.dataset.focus = open ? LS[lsStep].focus : 'both';
+  showParts = open && LS[lsStep].focus === 'super';
+  fitLesson();
+  resize();
+  syncVisuals();
+}
+function setMobileMode(mode) {
+  mMode = mode;
+  document.body.classList.toggle('m-learn', mode === 'learn');
+  document.body.classList.toggle('m-numbers', mode === 'numbers');
+  for (const b of lessonEl.querySelectorAll('[data-mode]')) {
+    b.setAttribute('aria-selected', String(b.dataset.mode === mode));
+  }
+}
+function placeLesson() {
+  if (narrowMq.matches) {
+    if (lessonEl.parentElement !== footEl) footEl.insertBefore(lessonEl, metersEl);
+    if (!lsOpen) setLessonOpen(true);
+  } else if (lessonEl.parentElement !== labelEl) {
+    labelEl.appendChild(lessonEl);
+  }
+  fitLesson();
+}
+function fitLesson() {
+  if (narrowMq.matches) { lessonEl.style.maxHeight = ''; return; }
+  const top = lessonEl.getBoundingClientRect().top;
+  const footH = footEl.getBoundingClientRect().height;
+  const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 16;
+  lessonEl.style.maxHeight = `${Math.max(180, innerHeight - padB - footH - 20 - top)}px`;
+}
+function onLessonKey(e) {
+  if (e.target.closest && e.target.closest('input, textarea, summary')) return;
+  if (e.key === 'ArrowRight') goStep(lsStep + 1);
+  else if (e.key === 'ArrowLeft') goStep(lsStep - 1);
+}
+
+const leanClock = { t: 0 };
+function render() { renderer.render(scene, camera); }
+
+let raf = 0;
+const clock = new THREE.Clock();
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  leanClock.t += dt;
+  stepLean(dt);
+  if (!still) {
+    headPhase = (headPhase + dt * 0.12) % 1;
+    const pulse = 0.78 + 0.22 * Math.sin(leanClock.t * 1.6);
+    for (const v of chargeViews) v.mat.emissiveIntensity = 0.45 + 0.2 * pulse;
+    threadMat.emissiveIntensity = 0.7 + 0.25 * pulse;
+  }
+  if (fieldDirty) { rebuildField(); fieldDirty = false; }
+  else updateHeads(headPhase);
+  placeCamera(leanClock.t);
+  syncVisuals();
+  syncTags();
+  flagHold = Math.max(0, flagHold - dt);
+  updateHud();
+  updateLessonLive();
+  render();
+}
+function holdStill() {
+  cancelAnimationFrame(raf); raf = 0;
+  lean.x = 0; lean.y = 0; lean.vx = 0; lean.vy = 0;
+  leanGoal.x = 0; leanGoal.y = 0;
+  headPhase = 0.33;
+  if (fieldDirty) { rebuildField(); fieldDirty = false; }
+  else updateHeads(headPhase);
+  for (const v of chargeViews) v.mat.emissiveIntensity = 0.55;
+  threadMat.emissiveIntensity = 0.9;
+  placeCamera(0);
+  syncVisuals();
+  syncTags();
+  updateHud();
+  updateLessonLive();
+  render();
+}
+function start() {
+  if (still) { holdStill(); return; }
+  if (raf || document.hidden) return;
+  clock.getDelta();
+  raf = requestAnimationFrame(frame);
+}
+
+document.body.classList.add('has-lesson');
+setMobileMode('learn');
+lessonEl.addEventListener('click', onLessonClick);
+addEventListener('keydown', onLessonKey);
+narrowMq.addEventListener('change', () => { placeLesson(); resize(); });
+placeLesson();
+renderLesson();
+if (!lsOpen) setLessonOpen(false);
+syncChips();
+doReset(false);
+const ro = new ResizeObserver(() => { fitLesson(); resize(); });
+ro.observe(stage);
+resize();
+start();
+
+motionQuery.addEventListener('change', (e) => {
+  reduced = e.matches;
+  still = reduced || params.has('still');
+  if (still) holdStill();
+  else start();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else start();
+});
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  cancelAnimationFrame(raf); raf = 0;
+  showErr('The picture stopped. Reload the page to bring it back.');
+});
+
+function teardown() {
+  cancelAnimationFrame(raf); raf = 0;
+  ro.disconnect();
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup', onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  lessonEl.removeEventListener('click', onLessonClick);
+  removeEventListener('keydown', onLessonKey);
+  for (const d of disposables) {
+    if (d && d.dispose) d.dispose();
+  }
+  renderer.dispose();
+  renderer.forceContextLoss();
+  canvas.remove();
+}
+addEventListener('pagehide', (e) => { if (!e.persisted) teardown(); });
+
+function snapshot() {
+  const info = pairInfo();
+  const close = probeTooClose();
+  const E = close ? null : sampleE(probe.x, probe.z);
+  const V = close ? null : potentialAt(probe.x, probe.z);
+  const parts = charges.map((c) => fieldFrom(c, probe.x, probe.z));
+  return {
+    qA: charges[0].q, qB: charges[1].q, qC: charges[2].q,
+    r: info.r, F: info.F, attract: info.attract,
+    E: E ? E.mag : null,
+    Ex: E ? E.Ex : null,
+    Ez: E ? E.Ez : null,
+    V,
+    parts: parts.map((p) => (p ? { Ex: p.Ex, Ez: p.Ez, mag: p.mag } : null)),
+    lineCount,
+    showEq, showThird, selected, still,
+    step: lsStep,
+    probe: { x: probe.x, z: probe.z },
+  };
+}
+
+window.__electrostaticsTeardown = teardown;
+window.__electrostatics = {
+  renderer,
+  get still() { return still; },
+  get step() { return lsStep; },
+  act: dispatchAct,
+  goStep,
+  snapshot,
+  K,
+};
+window.__electrostaticsReady = true;
+
+} catch (e) {
+  const raw = e && e.message ? e.message : String(e);
+  showErr(/webgl/i.test(raw)
+    ? 'The picture could not start in this browser. Reload the page, or open the lesson in a current browser.'
+    : raw);
+  console.error('[electrostatics]', e);
+}
+</script>
+</body>
+</html>
