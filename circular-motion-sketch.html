@@ -293,7 +293,7 @@
             <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
             <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
           </div>
-          <p class="lesson-kicker" id="ls-kicker">Lesson 1/11 · <b>Meet the mass</b></p>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the mass</b></p>
           <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
         </header>
         <div class="lesson-body" id="ls-body" aria-live="polite"></div>
@@ -1058,7 +1058,7 @@ function resize() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 }
 
-/* ================= lesson · 11 steps ================= */
+/* ================= lesson · 12 steps ================= */
 const lsBody = document.getElementById('ls-body');
 const lsKicker = document.getElementById('ls-kicker');
 const lsDots = document.getElementById('ls-dots');
@@ -1139,6 +1139,14 @@ const LS = [
     <p class="watch"><b>Watch</b>Reset, note a<sub>c</sub>, tap <b>Double r</b>. a<sub>c</sub> should halve. Reset, note F<sub>c</sub>, tap <b>Double m</b>. a<sub>c</sub> stays; F<sub>c</sub> doubles.</p>
     <p class="live"><b>Now</b>r = <span data-live="r">—</span> · m = <span data-live="m">—</span> · a<sub>c</sub> = <span data-live="ac">—</span> · F<sub>c</sub> = <span data-live="Fc">—</span></p>
     <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="double-r">Double r</button><button type="button" data-act="double-m">Double m</button></div>` },
+  { topic: 'In the real world', focus: 'both', html: `
+    <h3>In the real world</h3>
+    <p class="formula">a<sub>c</sub> = v²/r &nbsp;·&nbsp; the inward force has to match the curve</p>
+    <p>Mechanical engineers at a ride manufacturer such as Bolliger &amp; Mabillard design roller-coaster loops so the track pushes the train inward and keeps it on the curve. They make the radius larger at the bottom, where the train is fastest, so a<sub>c</sub> = v²/r stays inside the g-force limit set for riders.</p>
+    <p>On a rotor ride such as the Gravitron from Wisdom Rides, the spinning wall is that inward push. Engineers choose the wall’s radius and spin rate so riders stay safely pressed in place when the floor drops, and so the force does not exceed the ride’s limit.</p>
+    <p class="watch"><b>Watch</b>The string is doing the job of the track or the wall. Wider, at the same speed, is a gentler turn. Double v on the same radius is a much harder one.</p>
+    <p class="live"><b>Now</b>r = <span data-live="r">—</span> · v = <span data-live="v">—</span> · a<sub>c</sub> = <span data-live="ac">—</span> · F<sub>c</sub> = <span data-live="Fc">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="wider">Wider</button><button type="button" data-act="double-v">Double v</button></div>` },
   { topic: 'Questions', focus: 'both', html: `
     <h3>Questions to try</h3>
     <p>Use the live scene, then open a hint.</p>

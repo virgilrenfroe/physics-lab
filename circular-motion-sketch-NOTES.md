@@ -7,7 +7,7 @@ A mass on a string, whirling in a horizontal circle around a fixed peg. The floo
 
 **a<sub>c</sub> = v²/r** &nbsp;&nbsp; **F<sub>c</sub> = mv²/r** &nbsp;(also **a<sub>c</sub> = ω²r**, **F<sub>c</sub> = mω²r**)
 
-Guided **11-step** lesson (Watch / Now on every step, try-it questions with hints):
+Guided **12-step** lesson (Watch / Now on every step, try-it questions with hints):
 
 1. **Meet the mass** — lilac v tangent, honey a<sub>c</sub> toward the peg, string = F<sub>c</sub>. Right angle at the mass.
 2. **Uniform circular motion** — speed constant, direction of v changes.
@@ -19,7 +19,8 @@ Guided **11-step** lesson (Watch / Now on every step, try-it questions with hint
 8. **Centripetal force** — F<sub>c</sub> = ma<sub>c</sub> = mv²/r = mω²r. The string. No outward force in this lab frame.
 9. **Double v** — a<sub>c</sub> and F<sub>c</sub> ×4 (v²), r and m fixed.
 10. **Change r or m** — double r at fixed v → a<sub>c</sub> halves. Double m at fixed v and r → a<sub>c</sub> unchanged, F<sub>c</sub> doubles. The ball grows with m.
-11. **Questions** — eight hints, including a live check that a<sub>c</sub> equals both v²/r and ω²r.
+11. **In the real world** — coaster loops (mechanical engineers at a manufacturer such as Bolliger & Mabillard size radius and speed so g-forces stay inside the rider limit) and a rotor ride such as Wisdom Rides’ Gravitron (the wall is the inward force).
+12. **Questions** — eight hints, including a live check that a<sub>c</sub> equals both v²/r and ω²r.
 
 Chips and lesson buttons share one dispatcher: Faster · Slower · Double v · Halve v · Double r · Halve r · Wider · Tighter · Double m · Halve m · Reset.
 
