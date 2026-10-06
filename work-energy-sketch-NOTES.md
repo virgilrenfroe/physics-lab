@@ -3,7 +3,7 @@
 ## Education use
 **High school / intro college physics: work W = F·d, kinetic energy KE = ½mv², the work–energy theorem ΔKE = W_net, and gravitational potential energy PE = mgh.**
 
-Guided **11-step** lesson (slower pace, Watch / Now on every step, try-it questions with hints):
+Guided **12-step** lesson (slower pace, Watch / Now on every step, try-it questions with hints):
 
 1. **Meet the block** — orange F along the track, gold Δs, honey W_net and lilac ΔKE on the same scale (bars + trace).
 2. **What work means** — W = F·d, force along the displacement. Normal force does no work. While F is steady, W_app matches F·Δs.
@@ -15,7 +15,8 @@ Guided **11-step** lesson (slower pace, Watch / Now on every step, try-it questi
 8. **Gravitational PE** — PE = mgh, g = 9.81. Raise the block; h is height above the low end.
 9. **PE ↔ KE** — drop with friction off. PE falls, KE rises. Gravity as work: ΔKE = W_net. Gravity as PE: KE + PE holds.
 10. **Check both sides** — add W_app + W_fric + W_grav + W_stop and compare with ΔKE.
-11. **Questions** — eight hints (steady W = Fd, ½mv², why friction still matches, coast, sign of W_fric, normal force, drop, double m).
+11. **In the real world** — roller-coaster hills and brakes (mechanical engineer); electric-car motors and regenerative braking, and elevator lifts (energy systems engineer).
+12. **Questions** — eight hints (steady W = Fd, ½mv², why friction still matches, coast, sign of W_fric, normal force, drop, double m).
 
 Chips and lesson buttons share one dispatcher: Apply force · Drop · Friction · Mass · Reset · Coast · Zero F · Raise PE · Pull · Halve F · Flat.
 

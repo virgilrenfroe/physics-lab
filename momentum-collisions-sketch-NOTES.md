@@ -3,7 +3,7 @@
 ## Education use
 **High school / intro college physics: momentum p = mv, impulse J = FΔt = Δp, and conservation of momentum in collisions.**
 
-Guided **11-step** lesson (Watch / Now on every step, try-it questions with hints):
+Guided **12-step** lesson (Watch / Now on every step, try-it questions with hints):
 
 1. **Meet the carts** — orange A, lilac B, thin velocity arrows, thick momentum arrows, a flash at impact.
 2. **Momentum** — p = mv. Mass and speed each count once. Contrast with KE = ½mv².
@@ -15,7 +15,8 @@ Guided **11-step** lesson (Watch / Now on every step, try-it questions with hint
 8. **Equal masses, target at rest** — bounce trades velocities. Stick leaves them at half speed and half KE.
 9. **Unequal masses** — light A into heavy B (3 kg). A can rebound. p total still matches the incoming pA.
 10. **Check both sides** — the line p − p₀ − J stays near 0. KE is what tells bounce from stick.
-11. **Questions** — eight hints (p vs KE, the 3 N·s push, equal-mass trade, stick and half KE, head-on zero, why the end stop counts, light-into-heavy, push then collide).
+11. **In the real world** — crumple zones (crash-test engineer) and helmet liners or tackles (sports scientist): a longer impact means a smaller average force for the same change in momentum.
+12. **Questions** — eight hints (p vs KE, the 3 N·s push, equal-mass trade, stick and half KE, head-on zero, why the end stop counts, light-into-heavy, push then collide).
 
 Chips and lesson buttons share one dispatcher: Launch · Bounce/Stick · Mass A · Mass B · Reset · Push A · Push B · Heavy · Equal · Head-on.
 

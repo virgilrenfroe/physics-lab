@@ -336,7 +336,7 @@
             <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
             <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
           </div>
-          <p class="lesson-kicker" id="ls-kicker">Lesson 1/11 · <b>Meet the block</b></p>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the block</b></p>
           <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
         </header>
         <div class="lesson-body" id="ls-body" aria-live="polite"></div>
@@ -1277,6 +1277,13 @@ const LS = [
     <p class="watch"><b>Watch</b>The equation line and the overlapping traces. W_app, W_fric, and W_grav are listed so you can add them yourself.</p>
     <p class="live"><b>Now</b>W_app <span data-live="Wapp">—</span> + W_fric <span data-live="Wfric">—</span> + W_grav <span data-live="Wgrav">—</span> + W_stop <span data-live="Wstop">—</span> = W_net <span data-live="Wnet">—</span> · ΔKE <span data-live="dKE">—</span></p>
     <div class="acts"><button type="button" data-act="push">Apply force</button><button type="button" data-act="friction">Friction</button><button type="button" data-act="drop">Drop</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'In the real world', html: `
+    <h3>In the real world</h3>
+    <p>A mechanical engineer designing a roller coaster treats the height of a hill as stored energy, mgh. On the way down, that potential energy becomes kinetic energy, aside from friction, and the brakes do negative work to take that kinetic energy away before the station.</p>
+    <p>An energy systems engineer uses the same balance when a motor speeds up an electric car or lifts an elevator cab: that work shows up as kinetic energy or as mgh. In many electric cars the motor also brakes, doing negative work so much of that kinetic energy goes back into the battery.</p>
+    <p class="watch"><b>Watch</b>Drop the block with friction off. The fall in PE and the rise in KE are the same trade a ride engineer checks from the top of a hill to the bottom.</p>
+    <p class="live"><b>Now</b>PE = <span data-live="PE">—</span> · KE = <span data-live="KE">—</span> · W_grav = <span data-live="Wgrav">—</span></p>
+    <div class="acts"><button type="button" data-act="drop">Drop from height</button><button type="button" data-act="friction-off">Friction off</button></div>` },
   { topic: 'Questions', html: `
     <h3>Questions to try</h3>
     <p>Use the scene, then open a hint. Work in joules, force in newtons, mass in kilograms, speed in m/s.</p>
