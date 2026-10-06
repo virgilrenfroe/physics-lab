@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>Magnetism · Physics Lab</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.55);
+    --faint: rgba(239, 230, 242, 0.3);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  #stage canvas.can-grab { cursor: grab; }
+  #stage canvas.grabbing { cursor: grabbing; }
+  .vig {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(ellipse at 50% 58%, transparent 36%, rgba(5, 1, 8, 0.66) 100%),
+      linear-gradient(to top, rgba(255, 150, 80, 0.045), transparent 30%);
+  }
+  .tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .tags span {
+    position: absolute; left: 0; top: 0; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+    color: var(--pearl); background: rgba(20, 8, 24, 0.76);
+    border: 1px solid rgba(239, 230, 242, 0.14); border-radius: 8px;
+    padding: 3px 8px; will-change: transform;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+  }
+  .tags span.pos { border-color: rgba(255,179,107,0.55); color: #ffe2c4; }
+  .tags span.neg { border-color: rgba(185,162,255,0.6); color: #ddd0ff; }
+  .tags span.probe { border-color: rgba(239,230,242,0.4); }
+  .chrome {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  .label .tag {
+    margin: 0 0 8px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.8);
+  }
+  .label h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(1.9rem, 4.6vw, 3.6rem); letter-spacing: -0.045em; line-height: 0.94;
+    text-shadow: 0 2px 30px rgba(20, 8, 24, 0.7);
+  }
+  .label h1 em { font-style: normal; font-weight: 250; color: var(--mute); }
+  .label .sub {
+    margin: 10px 0 0; max-width: 42ch;
+    font-size: clamp(0.8rem, 1.2vw, 0.95rem); line-height: 1.4; color: var(--mute);
+  }
+  .foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .hint {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--mute); line-height: 1.7;
+  }
+  .hint i {
+    font-style: normal; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin: 0 5px 0 10px; vertical-align: 0;
+  }
+  .hint i:first-child { margin-left: 0; }
+  .chips { display: flex; gap: 8px; margin: 0 0 10px; pointer-events: auto; flex-wrap: wrap; }
+  .chips button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.18);
+    background: rgba(28, 12, 34, 0.72); color: var(--pearl);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    padding: 10px 14px; min-height: 42px; border-radius: 999px; cursor: pointer;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .chips button[aria-pressed="true"] {
+    border-color: rgba(255, 179, 107, 0.7); background: rgba(255, 179, 107, 0.16); color: #ffe2c4;
+  }
+  .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chips button:active { transform: scale(0.98); }
+  .meters {
+    pointer-events: none; display: flex; flex-direction: column; gap: 6px;
+    min-width: min(340px, 46vw); padding: 12px 14px;
+    background: rgba(20, 8, 24, 0.76); border: 1px solid rgba(239,230,242,0.14);
+    border-radius: 14px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .meters h2 {
+    margin: 0; font-family: var(--font-mono); font-weight: 400;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,179,107,0.9);
+  }
+  .meters .note { margin: 0 0 2px; font-size: 12.5px; line-height: 1.35; color: var(--mute); }
+  .meter { display: grid; grid-template-columns: 52px 1fr 92px; gap: 8px; align-items: center; }
+  .meter .lab { font-family: var(--font-mono); font-size: 11px; color: var(--mute); }
+  .meter .track {
+    height: 11px; border-radius: 7px; background: rgba(239,230,242,0.08);
+    overflow: hidden; position: relative;
+  }
+  .meter .fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 7px; }
+  .meter.m-b .fill { background: linear-gradient(90deg, #e0a820, #f0c24b); }
+  .meter.m-th .fill { background: linear-gradient(90deg, #b9a2ff, #efe6f2); }
+  .meter.m-fq .fill { background: linear-gradient(90deg, #ff8a3a, #ffb36b); }
+  .meter.m-fs .fill { background: linear-gradient(90deg, #8a72e8, #b9a2ff); }
+  .meter.m-phi .fill { background: linear-gradient(90deg, #cfc4d8, #efe6f2); }
+  .meter.m-emf .fill { background: linear-gradient(90deg, #ffb36b, #b9a2ff); }
+  .meter .val { font-family: var(--font-mono); font-size: 11px; text-align: right; color: var(--pearl); }
+  .meters .eq {
+    margin-top: 2px; font-family: var(--font-mono); font-size: 11.5px; color: var(--honey);
+    letter-spacing: 0.01em; line-height: 1.45;
+  }
+  .meters .flag { min-height: 2.6em; font-size: 13px; line-height: 1.35; color: var(--pearl); }
+  #err {
+    position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 300px;
+    font-family: var(--font-mono); font-size: 10px; color: #ffd6d6;
+    background: rgba(58, 18, 18, 0.82); border-radius: 8px; padding: 8px 10px; display: none;
+  }
+  .lesson {
+    pointer-events: auto; margin-top: 14px; width: min(420px, 40vw); min-width: 300px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(26, 10, 32, 0.78); border: 1px solid rgba(239, 230, 242, 0.13);
+    border-radius: 18px; box-shadow: 0 18px 50px rgba(5, 1, 8, 0.5);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  body.has-lesson .label .sub { display: none; }
+  body.lesson-closed .label .sub { display: block; }
+  .lesson-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px;
+    border-bottom: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-kicker {
+    margin: 0; flex: 1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.86);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .lesson-kicker b { color: var(--pearl); font-weight: 400; }
+  .lesson button { font-family: var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .lesson button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lesson-toggle {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: transparent; color: var(--mute);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; min-height: 32px;
+  }
+  .lesson-tabs { display: none; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(239, 230, 242, 0.06); }
+  .lesson-tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--mute);
+    font-size: 12.5px; font-weight: 500; padding: 7px 13px; border-radius: 999px; min-height: 32px;
+  }
+  .lesson-tabs button[aria-selected="true"] { background: rgba(255, 179, 107, 0.16); color: #ffe2c4; }
+  .lesson-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 18px 6px;
+    font-size: 14.5px; line-height: 1.5; color: rgba(239, 230, 242, 0.9);
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .lesson-body h3 {
+    margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 21px;
+    letter-spacing: -0.025em; color: var(--pearl);
+  }
+  .lesson-body p { margin: 0 0 9px; }
+  .lesson-body .formula {
+    font-family: var(--font-mono); font-size: 13.5px; color: var(--accent); letter-spacing: 0.02em; margin-bottom: 10px;
+  }
+  .lesson-body .watch {
+    padding: 9px 11px; border-radius: 12px; background: rgba(255, 179, 107, 0.08);
+    border: 1px solid rgba(255, 179, 107, 0.22); color: #f6e7d8;
+  }
+  .lesson-body .watch b, .lesson-body .live b {
+    font-family: var(--font-mono); font-weight: 400; font-size: 9.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-right: 6px;
+  }
+  .lesson-body .live { font-family: var(--font-mono); font-size: 12px; color: var(--pearl); line-height: 1.45; }
+  .lesson-body .live span { color: var(--honey); }
+  .lesson-body .acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .lesson-body .acts button {
+    appearance: none; border: 1px solid rgba(255, 179, 107, 0.5); background: rgba(255, 179, 107, 0.12);
+    color: #ffe2c4; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 500; min-height: 36px;
+  }
+  .lesson-body .acts button[aria-pressed="true"] { background: rgba(255, 179, 107, 0.28); border-color: rgba(255, 179, 107, 0.85); }
+  .lesson-body details { border-top: 1px solid rgba(239, 230, 242, 0.08); padding: 8px 0; }
+  .lesson-body summary { cursor: pointer; color: var(--pearl); list-style: none; }
+  .lesson-body summary::before { content: "+ "; font-family: var(--font-mono); color: var(--accent); }
+  .lesson-body details[open] summary::before { content: "− "; }
+  .lesson-body details p { margin: 6px 0 2px; color: var(--mute); font-size: 13.5px; }
+  .lesson-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px 12px; border-top: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-nav > button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: rgba(239, 230, 242, 0.04);
+    color: var(--pearl); border-radius: 999px; padding: 8px 14px; font-size: 13px; min-height: 38px;
+  }
+  .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
+  .lesson-nav .dots { display: flex; flex-wrap: wrap; gap: 1px; justify-content: center; max-width: 210px; }
+  .lesson-nav .dots button {
+    appearance: none; border: 0; background: transparent; width: 16px; height: 28px; padding: 0;
+    display: grid; place-items: center;
+  }
+  .lesson-nav .dots button::after {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(239, 230, 242, 0.25);
+  }
+  .lesson-nav .dots button[aria-current="step"]::after { background: var(--accent); transform: scale(1.35); }
+  body.lesson-closed .lesson-body, body.lesson-closed .lesson-nav { display: none; }
+  body.lesson-closed .lesson { width: auto; min-width: 0; align-self: flex-start; display: inline-flex; }
+  body.lesson-closed .lesson-head { border-bottom: 0; }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(1.7rem, 3.6vw, 2.8rem); }
+    .lesson { margin-top: 10px; }
+    .lesson-body { font-size: 14px; }
+  }
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .label .sub, body.lesson-closed .label .sub { display: none; }
+    .lesson { width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(42vh, 360px); }
+    .lesson-head { padding: 8px 8px 8px 12px; }
+    .lesson-tabs { display: flex; }
+    .lesson-toggle { display: none; }
+    .lesson-kicker { font-size: 9.5px; }
+    .lesson-body { padding: 10px 14px 4px; font-size: 13.5px; }
+    .lesson-body h3 { font-size: 18px; }
+    body.m-learn .meters, body.m-learn .hint { display: none; }
+    body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
+    body.m-numbers .lesson { max-height: none; }
+    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .meters { min-width: 0; width: 100%; }
+    .chips button { font-size: 12px; padding: 8px 12px; min-height: 38px; }
+    .hint .long { display: none; }
+    .tags span { font-size: 10px; padding: 2px 6px; }
+  }
+  html.embed, body.embed { background: transparent !important; }
+  body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
+  body.embed canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.has('embed')) {
+    document.body.classList.add('embed');
+    document.documentElement.classList.add('embed');
+  }
+})();
+</script>
+  <div id="stage"></div>
+  <div class="vig" aria-hidden="true"></div>
+  <div class="tags" aria-hidden="true">
+    <span id="tag-n" class="pos">N</span>
+    <span id="tag-s" class="neg">S</span>
+    <span id="tag-q" class="probe">charge</span>
+    <span id="tag-seg" class="neg">segment</span>
+    <span id="tag-coil" class="neg">coil</span>
+    <span id="tag-wire" class="pos">wire</span>
+  </div>
+  <div class="chrome">
+    <div class="label">
+      <p class="tag">Physics lab · magnetism · Faraday</p>
+      <h1>Magnetism<br /><em>fields &amp; forces</em></h1>
+      <p class="sub">A bar magnet, a straight wire, and a coil. Drag the charge, and read the field, the force, and the induced emf.</p>
+      <section class="lesson" id="lesson" aria-label="Lesson: magnetic fields, forces, and induction">
+        <header class="lesson-head">
+          <div class="lesson-tabs" role="tablist" aria-label="Panel">
+            <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
+            <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
+          </div>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the magnet</b></p>
+          <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
+        </header>
+        <div class="lesson-body" id="ls-body"></div>
+        <nav class="lesson-nav" aria-label="Lesson steps">
+          <button type="button" data-step="prev">← Back</button>
+          <div class="dots" id="ls-dots"></div>
+          <button type="button" data-step="next">Next →</button>
+        </nav>
+      </section>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="chips" id="chips" role="group" aria-label="Simulation controls">
+          <button type="button" data-act="magnet" id="chip-magnet" aria-pressed="true">Bar magnet</button>
+          <button type="button" data-act="wire" id="chip-wire" aria-pressed="false">Straight wire</button>
+          <button type="button" data-act="across" id="chip-across" aria-pressed="true">Across</button>
+          <button type="button" data-act="along" id="chip-along" aria-pressed="false">Along</button>
+          <button type="button" data-act="faster">Faster</button>
+          <button type="button" data-act="double-i">Double I</button>
+          <button type="button" data-act="move-in">Move closer</button>
+          <button type="button" data-act="reset">Reset</button>
+        </div>
+        <div class="hint">
+          <span><i style="background:#ffb36b"></i>north · force</span>
+          <span><i style="background:#b9a2ff"></i>south · velocity</span>
+          <span><i style="background:#ffb36b"></i>field line</span><br />
+          <span>drag the charge or the segment</span>
+          <span class="long"> · drag the bar along its length · drag empty space to lean</span>
+        </div>
+      </div>
+      <div class="meters" id="meters">
+        <h2>Live · field, force, emf</h2>
+        <p class="note">These readings are calculated from the bench right now. The bars are logarithmic so a weak wire and a strong magnet both stay visible.</p>
+        <div class="meter m-b"><span class="lab">|B|</span><div class="track"><div class="fill" id="bar-b"></div></div><span class="val" id="h-b">—</span></div>
+        <div class="meter m-th"><span class="lab">θ</span><div class="track"><div class="fill" id="bar-th"></div></div><span class="val" id="h-th">—</span></div>
+        <div class="meter m-fq"><span class="lab">|F|<sub>q</sub></span><div class="track"><div class="fill" id="bar-fq"></div></div><span class="val" id="h-fq">—</span></div>
+        <div class="meter m-fs"><span class="lab">|F|<sub>I</sub></span><div class="track"><div class="fill" id="bar-fs"></div></div><span class="val" id="h-fs">—</span></div>
+        <div class="meter m-phi"><span class="lab">Φ</span><div class="track"><div class="fill" id="bar-phi"></div></div><span class="val" id="h-phi">—</span></div>
+        <div class="meter m-emf"><span class="lab">emf</span><div class="track"><div class="fill" id="bar-emf"></div></div><span class="val" id="h-emf">—</span></div>
+        <div class="eq" id="h-eq">|F| = |q| v B sinθ</div>
+        <div class="flag" id="h-flag"></div>
+      </div>
+    </div>
+  </div>
+  <div id="err" role="status"></div>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const VOID = 0x140818;
+const MU0 = 4 * Math.PI * 1e-7;
+const MU0_4PI = 1e-7;
+const MAG_Y = 0.10;
+const POLE = 0.11;
+const HALF = 0.18;
+const AXIS_X = 0.40;
+const COIL_X = 0.70;
+const COIL_Y = 0.14;
+const COIL_A = 0.09;
+const N_TURNS = 200;
+const COIL_R = 5;
+const STORY_DT = 0.40;
+const MAX_PTS = 260;
+const MAG_LINE_N = 20;
+const WIRE_LINE_N = 5;
+
+const params = new URLSearchParams(location.search);
+const embed = params.has('embed');
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let still = reduced || params.has('still');
+
+const stage = document.getElementById('stage');
+const errEl = document.getElementById('err');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+
+const ua = navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+
+function axialPerUnit() {
+  function one(px, q) {
+    const dx = AXIS_X - px;
+    const r2 = dx * dx;
+    const r = Math.abs(dx);
+    return MU0_4PI * q / (r2 * r) * dx;
+  }
+  return one(POLE, 1) + one(-POLE, -1);
+}
+const QM = 0.005 / axialPerUnit();
+
+const state = {
+  source: 'magnet',
+  align: 'across',
+  q: 2e-6,
+  speed: 80,
+  Iwire: 20,
+  Iseg: 5,
+  L: 0.10,
+  shift: 0,
+  shiftGoal: 0,
+  charge: { x: AXIS_X, y: MAG_Y, z: 0 },
+  seg: { x: AXIS_X, y: MAG_Y, z: 0.16 },
+};
+
+let emfSmooth = 0;
+let emfHold = null;
+let prevPhi = null;
+let fluxNow = 0;
+let fieldDirty = true;
+let headPhase = 0.2;
+let beadU = 0.05;
+let flagText = '';
+let flagHold = 0;
+
+try {
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, alpha: embed,
+  powerPreference: isIOS ? 'default' : 'high-performance',
+});
+if (!renderer.getContext()) throw new Error('WebGL context failed to create.');
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+renderer.setClearColor(VOID, embed ? 0 : 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = false;
+stage.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+if (!embed) {
+  scene.background = new THREE.Color(VOID);
+  scene.fog = new THREE.Fog(VOID, 6.2, 14);
+}
+const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 30);
+const camBase = new THREE.Vector3(0.42, 1.08, 1.78);
+const camLook = new THREE.Vector3(0.22, 0.08, 0);
+
+const disposables = [];
+const keep = (x) => { disposables.push(x); return x; };
+
+scene.add(new THREE.HemisphereLight(0xd4c4f0, 0x2a1020, 0.95));
+const key = new THREE.PointLight(0xffc090, 48, 16, 1.6);
+key.position.set(0.4, 1.8, 0.7);
+scene.add(key);
+
+const floorMat = keep(new THREE.MeshStandardMaterial({ color: 0x1a0c22, roughness: 0.95, metalness: 0 }));
+const floor = new THREE.Mesh(keep(new THREE.CircleGeometry(3.6, isMobile ? 40 : 56)), floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -0.08;
+scene.add(floor);
+
+const tableMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x2a1432, roughness: 0.62, metalness: 0.08,
+  emissive: 0x140810, emissiveIntensity: 0.4,
+}));
+const table = new THREE.Mesh(keep(new THREE.CylinderGeometry(1.15, 1.18, 0.06, isMobile ? 40 : 64)), tableMat);
+table.position.y = -0.01;
+scene.add(table);
+
+const rimMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x6a4a78, roughness: 0.4, metalness: 0.25,
+  emissive: 0x2a1430, emissiveIntensity: 0.28,
+}));
+const rim = new THREE.Mesh(keep(new THREE.TorusGeometry(1.15, 0.012, 8, isMobile ? 40 : 64)), rimMat);
+rim.rotation.x = Math.PI / 2;
+rim.position.y = 0.022;
+scene.add(rim);
+
+{
+  const gridPos = [];
+  const gridMat = keep(new THREE.LineBasicMaterial({ color: 0xefe6f2, transparent: true, opacity: 0.09 }));
+  for (let i = -9; i <= 9; i++) {
+    const t = i * 0.1;
+    const h = Math.sqrt(Math.max(0, 1.05 * 1.05 - t * t));
+    gridPos.push(-h, 0.026, t, h, 0.026, t);
+    gridPos.push(t, 0.026, -h, t, 0.026, h);
+  }
+  const g = keep(new THREE.BufferGeometry());
+  g.setAttribute('position', new THREE.Float32BufferAttribute(gridPos, 3));
+  scene.add(new THREE.LineSegments(g, gridMat));
+}
+
+const northMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.38, metalness: 0.18,
+  emissive: 0xffb36b, emissiveIntensity: 0.45,
+}));
+const southMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xb9a2ff, roughness: 0.4, metalness: 0.16,
+  emissive: 0xb9a2ff, emissiveIntensity: 0.38,
+}));
+const bodyMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x3a2844, roughness: 0.48, metalness: 0.22,
+  emissive: 0x1a1020, emissiveIntensity: 0.3,
+}));
+const pearlMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xefe6f2, roughness: 0.32, metalness: 0.2,
+  emissive: 0xefe6f2, emissiveIntensity: 0.18,
+}));
+const segMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xb9a2ff, roughness: 0.35, metalness: 0.25,
+  emissive: 0x6a5490, emissiveIntensity: 0.35,
+}));
+const coilMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xb9a2ff, roughness: 0.35, metalness: 0.3,
+  emissive: 0x4a3870, emissiveIntensity: 0.4,
+}));
+const honeyMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xf0c24b, roughness: 0.35, metalness: 0.2,
+  emissive: 0xf0c24b, emissiveIntensity: 0.7,
+}));
+const forceMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.32, metalness: 0.16,
+  emissive: 0xffb36b, emissiveIntensity: 0.55,
+}));
+const velMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xb9a2ff, roughness: 0.34, metalness: 0.16,
+  emissive: 0xb9a2ff, emissiveIntensity: 0.45,
+}));
+const wireMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.34, metalness: 0.4,
+  emissive: 0x8a5a30, emissiveIntensity: 0.35,
+}));
+const beadMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.3, metalness: 0.2,
+  emissive: 0xffb36b, emissiveIntensity: 0.5,
+}));
+const padMat = keep(new THREE.MeshStandardMaterial({ color: 0x241428, roughness: 0.7, metalness: 0.08 }));
+
+const magnet = new THREE.Group();
+scene.add(magnet);
+const barGeo = keep(new THREE.CylinderGeometry(0.04, 0.04, 0.36, isMobile ? 16 : 24));
+barGeo.rotateZ(Math.PI / 2);
+const barMesh = new THREE.Mesh(barGeo, bodyMat);
+barMesh.position.y = MAG_Y;
+magnet.add(barMesh);
+const capGeo = keep(new THREE.CylinderGeometry(0.048, 0.048, 0.08, isMobile ? 16 : 24));
+capGeo.rotateZ(Math.PI / 2);
+const northCap = new THREE.Mesh(capGeo, northMat);
+northCap.position.set(0.145, MAG_Y, 0);
+magnet.add(northCap);
+const southCap = new THREE.Mesh(capGeo, southMat);
+southCap.position.set(-0.145, MAG_Y, 0);
+magnet.add(southCap);
+const pad = new THREE.Mesh(keep(new THREE.BoxGeometry(0.16, 0.04, 0.1)), padMat);
+pad.position.set(0, 0.04, 0);
+magnet.add(pad);
+
+const wireGroup = new THREE.Group();
+scene.add(wireGroup);
+const wireMesh = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.012, 0.012, 0.7, 16)), wireMat);
+wireMesh.position.y = 0.38;
+wireGroup.add(wireMesh);
+const wireFoot = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.04, 0.05, 0.02, 20)), padMat);
+wireFoot.position.y = 0.03;
+wireGroup.add(wireFoot);
+
+const chargeMesh = new THREE.Mesh(keep(new THREE.SphereGeometry(0.032, isMobile ? 18 : 28, isMobile ? 14 : 20)), pearlMat);
+scene.add(chargeMesh);
+const segMesh = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.012, 0.012, 1, 14)), segMat);
+scene.add(segMesh);
+
+const coilGroup = new THREE.Group();
+scene.add(coilGroup);
+const edgeGeo = keep(new THREE.CylinderGeometry(0.0055, 0.0055, 1, 8));
+const jointGeo = keep(new THREE.SphereGeometry(0.009, 10, 8));
+const _up = new THREE.Vector3(0, 1, 0);
+const _dir = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+
+function coilPoint(u, ox) {
+  let t = u % 1;
+  if (t < 0) t += 1;
+  const s = t * 4;
+  const e = Math.min(3, Math.floor(s));
+  const f = s - e;
+  const a = COIL_A;
+  let y;
+  let z;
+  if (e === 0) { y = -a + 2 * a * f; z = -a; }
+  else if (e === 1) { y = a; z = -a + 2 * a * f; }
+  else if (e === 2) { y = a - 2 * a * f; z = a; }
+  else { y = -a; z = a - 2 * a * f; }
+  return { x: COIL_X + (ox || 0), y: COIL_Y + y, z: z };
+}
+for (let turn = 0; turn < 3; turn++) {
+  const ox = (turn - 1) * 0.015;
+  for (let e = 0; e < 4; e++) {
+    const p0 = coilPoint(e / 4, ox);
+    const p1 = coilPoint((e + 1) / 4, ox);
+    const dx = p1.x - p0.x, dy = p1.y - p0.y, dz = p1.z - p0.z;
+    const len = Math.hypot(dx, dy, dz) || 1;
+    const mesh = new THREE.Mesh(edgeGeo, coilMat);
+    mesh.position.set((p0.x + p1.x) / 2, (p0.y + p1.y) / 2, (p0.z + p1.z) / 2);
+    mesh.scale.y = len;
+    _dir.set(dx / len, dy / len, dz / len);
+    mesh.quaternion.setFromUnitVectors(_up, _dir);
+    coilGroup.add(mesh);
+    const joint = new THREE.Mesh(jointGeo, coilMat);
+    joint.position.set(p0.x, p0.y, p0.z);
+    coilGroup.add(joint);
+  }
+}
+const coilFoot = new THREE.Mesh(keep(new THREE.BoxGeometry(0.08, 0.03, 0.06)), padMat);
+coilFoot.position.set(COIL_X, 0.035, 0);
+coilGroup.add(coilFoot);
+
+const BEADS = 8;
+const beads = [];
+const beadGeo = keep(new THREE.SphereGeometry(0.011, 10, 8));
+for (let i = 0; i < BEADS; i++) {
+  const m = new THREE.Mesh(beadGeo, beadMat);
+  coilGroup.add(m);
+  beads.push(m);
+}
+
+function makeArrow(mat, radius) {
+  const g = new THREE.Group();
+  const shaftGeo = keep(new THREE.CylinderGeometry(radius, radius, 1, 8));
+  shaftGeo.translate(0, 0.5, 0);
+  const headGeo = keep(new THREE.ConeGeometry(radius * 2.6, 0.05, 8));
+  headGeo.translate(0, 0.025, 0);
+  const shaft = new THREE.Mesh(shaftGeo, mat);
+  const head = new THREE.Mesh(headGeo, mat);
+  g.add(shaft, head);
+  g.userData.shaft = shaft;
+  g.userData.head = head;
+  g.visible = false;
+  scene.add(g);
+  return g;
+}
+const bArrow = makeArrow(honeyMat, 0.007);
+const vArrow = makeArrow(velMat, 0.007);
+const fArrow = makeArrow(forceMat, 0.011);
+const fSegArrow = makeArrow(forceMat, 0.011);
+const iSegArrow = makeArrow(velMat, 0.008);
+const iWireArrow = makeArrow(forceMat, 0.014);
+const bIndArrow = makeArrow(honeyMat, 0.01);
+const iCoilArrow = makeArrow(forceMat, 0.01);
+
+const tubeMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.42, metalness: 0.12,
+  emissive: 0xffb36b, emissiveIntensity: 0.62,
+}));
+const magnetLines = [];
+const lineN = new Array(MAG_LINE_N).fill(0);
+const linePts = [];
+for (let i = 0; i < MAG_LINE_N; i++) {
+  const mesh = new THREE.Mesh(new THREE.BufferGeometry(), tubeMat);
+  mesh.frustumCulled = false;
+  mesh.visible = false;
+  scene.add(mesh);
+  magnetLines.push(mesh);
+  linePts.push(new Float32Array(MAX_PTS * 3));
+}
+const wireLines = [];
+const wireRadii = [0.055, 0.10, 0.16, 0.23, 0.31];
+for (let i = 0; i < WIRE_LINE_N; i++) {
+  const geo = keep(new THREE.TorusGeometry(wireRadii[i], 0.0042, 6, isMobile ? 48 : 72));
+  const mesh = new THREE.Mesh(geo, tubeMat);
+  mesh.rotation.x = Math.PI / 2;
+  mesh.position.y = MAG_Y;
+  mesh.visible = false;
+  scene.add(mesh);
+  wireLines.push(mesh);
+}
+const tipGeo = keep(new THREE.ConeGeometry(0.011, 0.034, 8));
+tipGeo.translate(0, 0.017, 0);
+const heads = [];
+for (let i = 0; i < 48; i++) {
+  const m = new THREE.Mesh(tipGeo, honeyMat);
+  m.visible = false;
+  m.frustumCulled = false;
+  scene.add(m);
+  heads.push(m);
+}
+
+function mag(v) { return Math.hypot(v.x, v.y, v.z); }
+function cross(a, b) {
+  return {
+    x: a.y * b.z - a.z * b.y,
+    y: a.z * b.x - a.x * b.z,
+    z: a.x * b.y - a.y * b.x,
+  };
+}
+function insideBar(x, y, z) {
+  const lx = x - state.shift;
+  if (Math.abs(lx) > HALF) return false;
+  const dy = y - MAG_Y;
+  return dy * dy + z * z < 0.052 * 0.052;
+}
+function fieldMagnet(x, y, z) {
+  if (insideBar(x, y, z)) return null;
+  function one(px, q) {
+    const dx = x - px;
+    const dy = y - MAG_Y;
+    const dz = z;
+    const r2 = dx * dx + dy * dy + dz * dz;
+    const r = Math.sqrt(r2);
+    if (r < 0.02) return null;
+    const s = MU0_4PI * q / (r2 * r);
+    return { x: s * dx, y: s * dy, z: s * dz };
+  }
+  const n = one(POLE + state.shift, QM);
+  const s = one(-POLE + state.shift, -QM);
+  if (!n || !s) return null;
+  return { x: n.x + s.x, y: n.y + s.y, z: n.z + s.z };
+}
+function fieldWire(x, y, z) {
+  const r = Math.hypot(x, z);
+  if (r < 0.02) return null;
+  const b = (MU0 * state.Iwire) / (2 * Math.PI * r);
+  return { x: b * (z / r), y: 0, z: -b * (x / r) };
+}
+function fieldAt(x, y, z) {
+  return state.source === 'wire' ? fieldWire(x, y, z) : fieldMagnet(x, y, z);
+}
+function reachedSouth(x, y, z) {
+  const face = state.shift - HALF;
+  const radial = Math.hypot(y - MAG_Y, z);
+  return x <= face + 0.04 && radial < 0.14;
+}
+function traceLine(x, y, z) {
+  const pts = [];
+  const h = 0.012;
+  let closed = false;
+  for (let n = 0; n < MAX_PTS; n++) {
+    if (n > 3 && insideBar(x, y, z)) break;
+    pts.push(x, y, z);
+    if (n > 8 && reachedSouth(x, y, z)) { closed = true; break; }
+    const b = fieldMagnet(x, y, z);
+    if (!b) break;
+    const m = Math.hypot(b.x, b.y, b.z);
+    if (m < 1e-8) break;
+    x += (h * b.x) / m;
+    y += (h * b.y) / m;
+    z += (h * b.z) / m;
+    const dx = x - state.shift;
+    const dy = y - MAG_Y;
+    if (dx * dx + dy * dy + z * z > 2.6) break;
+  }
+  return { pts, closed };
+}
+function rebuildField() {
+  if (state.source !== 'magnet') {
+    for (let i = 0; i < MAG_LINE_N; i++) {
+      magnetLines[i].visible = false;
+      lineN[i] = 0;
+    }
+    return;
+  }
+  let slot = 0;
+  const seeds = [];
+  for (const z of [0.12, 0.18, 0.26]) seeds.push([0, z], [0, -z]);
+  seeds.push([0.10, 0.06], [0.10, -0.06], [0.16, 0.05], [0.16, -0.05]);
+  for (const seed of seeds) {
+    if (slot >= MAG_LINE_N) break;
+    {
+      const traced = traceLine(
+        state.shift + HALF + 0.02,
+        MAG_Y + seed[0],
+        seed[1]
+      );
+      const pts = traced.pts;
+      const line = magnetLines[slot];
+      const count = Math.min(MAX_PTS, Math.floor(pts.length / 3));
+      if (!traced.closed || count < 8) {
+        line.visible = false;
+        lineN[slot] = 0;
+      } else {
+        const store = linePts[slot];
+        for (let k = 0; k < count * 3; k++) store[k] = pts[k];
+        const step = Math.max(1, Math.floor((count - 1) / 56));
+        const vecs = [];
+        for (let i = 0; i < count; i += step) vecs.push(new THREE.Vector3(pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]));
+        const last = count - 1;
+        const tail = vecs[vecs.length - 1];
+        if (Math.abs(tail.x - pts[last * 3]) > 1e-4 || Math.abs(tail.z - pts[last * 3 + 2]) > 1e-4) {
+          vecs.push(new THREE.Vector3(pts[last * 3], pts[last * 3 + 1], pts[last * 3 + 2]));
+        }
+        const curve = new THREE.CatmullRomCurve3(vecs);
+        const geo = new THREE.TubeGeometry(curve, Math.max(28, vecs.length * 2), 0.0048, 5, false);
+        if (line.userData.tube) line.userData.tube.dispose();
+        else if (line.geometry && line.geometry.dispose) line.geometry.dispose();
+        line.geometry = geo;
+        line.userData.tube = geo;
+        line.visible = true;
+        lineN[slot] = count;
+      }
+      slot++;
+    }
+  }
+  for (; slot < MAG_LINE_N; slot++) {
+    magnetLines[slot].visible = false;
+    lineN[slot] = 0;
+  }
+}
+
+function acrossDir(B) {
+  let vx = -B.z;
+  let vy = 0;
+  let vz = B.x;
+  let vm = Math.hypot(vx, vy, vz);
+  if (vm < 1e-6) { vx = 1; vy = 0; vz = 0; vm = 1; }
+  return { x: vx / vm, y: vy / vm, z: vz / vm };
+}
+function flowDir(B) {
+  const m = mag(B);
+  if (m < 1e-9) return { x: 0, y: 0, z: 1 };
+  if (state.align === 'along') return { x: B.x / m, y: B.y / m, z: B.z / m };
+  return acrossDir(B);
+}
+function angleBetween(a, b) {
+  const am = mag(a);
+  const bm = mag(b);
+  if (am < 1e-12 || bm < 1e-12) return 0;
+  const c = (a.x * b.x + a.y * b.y + a.z * b.z) / (am * bm);
+  return Math.acos(Math.max(-1, Math.min(1, c)));
+}
+function sampleFlux() {
+  let sum = 0;
+  const a = COIL_A;
+  for (let iy = -1; iy <= 1; iy++) {
+    for (let iz = -1; iz <= 1; iz++) {
+      const b = fieldMagnet(COIL_X, COIL_Y + iy * a * 0.7, iz * a * 0.7);
+      sum += b ? b.x : 0;
+    }
+  }
+  return (sum / 9) * (2 * a) * (2 * a);
+}
+function solve() {
+  const raw = fieldAt(state.charge.x, state.charge.y, state.charge.z);
+  const blocked = !raw;
+  const B = raw || { x: 0, y: 0, z: 0 };
+  const Bmag = mag(B);
+  const dir = flowDir(Bmag > 0 ? B : { x: 1, y: 0, z: 0 });
+  const v = { x: dir.x * state.speed, y: dir.y * state.speed, z: dir.z * state.speed };
+  const vc = cross(v, B);
+  const F = { x: state.q * vc.x, y: state.q * vc.y, z: state.q * vc.z };
+  const rawS = fieldAt(state.seg.x, state.seg.y, state.seg.z);
+  const segBlocked = !rawS;
+  const Bs = rawS || { x: 0, y: 0, z: 0 };
+  const Bsm = mag(Bs);
+  const idir = flowDir(Bsm > 0 ? Bs : { x: 1, y: 0, z: 0 });
+  const Lvec = { x: idir.x * state.L, y: idir.y * state.L, z: idir.z * state.L };
+  const lc = cross(Lvec, Bs);
+  const Fs = { x: state.Iseg * lc.x, y: state.Iseg * lc.y, z: state.Iseg * lc.z };
+  const theta = angleBetween(v, B);
+  const thetaS = angleBetween(Lvec, Bs);
+  const phi = state.source === 'magnet' ? sampleFlux() : 0;
+  fluxNow = phi;
+  const emf = state.source === 'magnet' ? (emfHold != null ? emfHold : emfSmooth) : 0;
+  const sinT = Math.sin(theta);
+  const sinS = Math.sin(thetaS);
+  return {
+    blocked, segBlocked, B, Bmag, v, F, Fmag: mag(F),
+    Bs, Bsm, idir, Fs, Fsmag: mag(Fs),
+    theta, thetaS, sinT, sinS, phi, emf, dir,
+    scalarF: Math.abs(state.q) * state.speed * Bmag * sinT,
+    scalarFs: Math.abs(state.Iseg) * state.L * Bsm * sinS,
+    rWire: Math.hypot(state.charge.x, state.charge.z),
+  };
+}
+
+function fmtB(t) {
+  if (t == null || !isFinite(t)) return '—';
+  const mT = Math.abs(t) * 1e3;
+  if (mT < 5e-4) return '0 mT';
+  if (mT >= 10) return (t * 1e3).toFixed(1) + ' mT';
+  if (mT >= 0.1) return (t * 1e3).toFixed(2) + ' mT';
+  return (t * 1e3).toFixed(3) + ' mT';
+}
+function fmtF(n) {
+  if (!isFinite(n)) return '—';
+  const a = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (a < 5e-12) return '0 N';
+  if (a >= 0.05) return sign + a.toFixed(3) + ' N';
+  if (a >= 5e-4) return sign + (a * 1e3).toFixed(2) + ' mN';
+  if (a >= 5e-7) return sign + (a * 1e6).toFixed(3) + ' μN';
+  return sign + (a * 1e9).toFixed(1) + ' nN';
+}
+function fmtEmf(v) {
+  if (v == null || !isFinite(v)) return '—';
+  const a = Math.abs(v);
+  if (a < 5e-5) return '0 mV';
+  if (a >= 0.5) return v.toFixed(2) + ' V';
+  return (v * 1e3).toFixed(1) + ' mV';
+}
+function fmtFlux(wb) {
+  if (wb == null || !isFinite(wb)) return '—';
+  const a = Math.abs(wb);
+  if (a < 1e-9) return '0 μWb';
+  if (a >= 1e-3) return (wb * 1e3).toFixed(2) + ' mWb';
+  return (wb * 1e6).toFixed(1) + ' μWb';
+}
+function fmtDeg(rad) {
+  const d = rad * 180 / Math.PI;
+  if (Math.abs(d) < 0.4) return '0°';
+  return d.toFixed(0) + '°';
+}
+function fmtQ(q) {
+  const sign = q < 0 ? '−' : '+';
+  return sign + Math.abs(q * 1e6).toFixed(2) + ' μC';
+}
+function fmtA(a) {
+  return (Math.abs(a) >= 10 ? a.toFixed(0) : a.toFixed(2)) + ' A';
+}
+function fmtSpeed(v) { return v.toFixed(0) + ' m/s'; }
+function logBar(el, value, vmin, vmax) {
+  const v = Math.max(Math.abs(value), vmin);
+  const t = Math.log(v / vmin) / Math.log(vmax / vmin);
+  el.style.width = (Math.max(0, Math.min(1, t)) * 100).toFixed(2) + '%';
+}
+function linBar(el, value, full) {
+  const t = Math.max(0, Math.min(1, value / full));
+  el.style.width = (t * 100).toFixed(2) + '%';
+}
+
+function poseArrow(g, ox, oy, oz, dx, dy, dz, length) {
+  const m = Math.hypot(dx, dy, dz);
+  if (!g || m < 1e-8 || length < 0.025) { if (g) g.visible = false; return; }
+  g.visible = true;
+  _dir.set(dx / m, dy / m, dz / m);
+  g.position.set(ox + _dir.x * 0.03, oy + _dir.y * 0.03, oz + _dir.z * 0.03);
+  g.quaternion.setFromUnitVectors(_up, _dir);
+  const shaftLen = Math.max(length - 0.04, 0.02);
+  g.userData.shaft.scale.set(1, shaftLen, 1);
+  g.userData.head.position.set(0, shaftLen, 0);
+}
+function visLen(value, ref, min, max) {
+  if (!(value > 0)) return 0;
+  const u = Math.min(1.4, Math.sqrt(value / ref));
+  return min + (max - min) * Math.min(1, u);
+}
+
+const _a = new THREE.Vector3();
+const _t = new THREE.Vector3();
+function pointOn(iLine, i, target) {
+  const a = linePts[iLine];
+  target.set(a[i * 3], a[i * 3 + 1], a[i * 3 + 2]);
+}
+function aimHead(mesh, x, y, z, dx, dy, dz) {
+  const m = Math.hypot(dx, dy, dz);
+  if (m < 1e-8) { mesh.visible = false; return; }
+  mesh.visible = true;
+  mesh.position.set(x, y, z);
+  _dir.set(dx / m, dy / m, dz / m);
+  mesh.quaternion.setFromUnitVectors(_up, _dir);
+}
+function placeHeads(phase) {
+  let hi = 0;
+  if (state.source === 'magnet') {
+    for (const line of wireLines) line.visible = false;
+    for (let i = 0; i < MAG_LINE_N; i++) {
+      const n = lineN[i];
+      const line = magnetLines[i];
+      if (!line.visible || n < 8) continue;
+      for (let k = 0; k < 1; k++) {
+        const head = heads[hi++];
+        if (!head) break;
+        const f = (phase + k * 0.5 + i * 0.13) % 1;
+        const idx = f * (n - 2);
+        const i0 = Math.min(n - 2, Math.floor(idx));
+        pointOn(i, i0, _a);
+        pointOn(i, i0 + 1, _t);
+        aimHead(head, _a.x, _a.y, _a.z, _t.x - _a.x, _t.y - _a.y, _t.z - _a.z);
+      }
+    }
+  } else {
+    for (const line of magnetLines) line.visible = false;
+    for (let i = 0; i < WIRE_LINE_N; i++) {
+      wireLines[i].visible = true;
+      const r = wireRadii[i];
+      for (let k = 0; k < 2; k++) {
+        const head = heads[hi++];
+        const a = (phase + k * 0.5 + i * 0.08) * Math.PI * 2;
+        const x = Math.cos(a) * r;
+        const z = Math.sin(a) * r;
+        const b = fieldWire(x, MAG_Y, z);
+        if (b) aimHead(head, x, MAG_Y, z, b.x, b.y, b.z);
+        else head.visible = false;
+      }
+    }
+  }
+  for (; hi < heads.length; hi++) heads[hi].visible = false;
+}
+
+function syncObjects(sol) {
+  magnet.position.x = state.shift;
+  magnet.visible = state.source === 'magnet';
+  wireGroup.visible = state.source === 'wire';
+  const showCoil = state.source === 'magnet';
+  coilGroup.visible = showCoil;
+  const focus = lsOpen ? LS[lsStep].focus : 'both';
+  const coilHot = focus === 'faraday' || focus === 'lenz' || focus === 'world' || focus === 'questions' || focus === 'both';
+  coilMat.emissiveIntensity = coilHot ? 0.55 : 0.16;
+  coilMat.opacity = 1;
+  for (const child of coilGroup.children) {
+    if (child.material === coilMat) child.material.transparent = !coilHot;
+  }
+  coilMat.transparent = !coilHot;
+  coilMat.opacity = coilHot ? 1 : 0.35;
+
+  chargeMesh.position.set(state.charge.x, state.charge.y, state.charge.z);
+  const qNeg = state.q < 0;
+  chargeMesh.material = qNeg ? southMat : pearlMat;
+
+  const id = sol.idir;
+  segMesh.visible = !sol.segBlocked;
+  segMesh.position.set(state.seg.x, state.seg.y, state.seg.z);
+  _dir.set(id.x, id.y, id.z);
+  if (mag(id) > 0) segMesh.quaternion.setFromUnitVectors(_up, _dir);
+  segMesh.scale.y = state.L;
+
+  const bLen = sol.blocked ? 0 : visLen(sol.Bmag, 0.005, 0.08, 0.2);
+  poseArrow(bArrow, state.charge.x, state.charge.y, state.charge.z, sol.B.x, sol.B.y, sol.B.z, bLen);
+  const vLen = visLen(state.speed, 80, 0.1, 0.22);
+  poseArrow(vArrow, state.charge.x, state.charge.y, state.charge.z, sol.v.x, sol.v.y, sol.v.z, sol.blocked ? 0 : vLen);
+  const fLen = sol.blocked ? 0 : visLen(sol.Fmag, 8e-7, 0.1, 0.28);
+  poseArrow(fArrow, state.charge.x, state.charge.y, state.charge.z, sol.F.x, sol.F.y, sol.F.z, fLen);
+  const fsLen = sol.segBlocked ? 0 : visLen(sol.Fsmag, 0.0025, 0.1, 0.28);
+  poseArrow(fSegArrow, state.seg.x, state.seg.y, state.seg.z, sol.Fs.x, sol.Fs.y, sol.Fs.z, fsLen);
+  poseArrow(
+    iSegArrow,
+    state.seg.x - id.x * state.L * 0.15,
+    state.seg.y - id.y * state.L * 0.15,
+    state.seg.z - id.z * state.L * 0.15,
+    id.x, id.y, id.z,
+    0.09
+  );
+  iWireArrow.visible = state.source === 'wire';
+  if (state.source === 'wire') poseArrow(iWireArrow, 0, 0.7, 0, 0, 1, 0, 0.16);
+
+  const emfOn = showCoil && Math.abs(sol.emf) > 4e-4;
+  if (emfOn) {
+    const sgn = sol.emf < 0 ? -1 : 1;
+    poseArrow(bIndArrow, COIL_X - 0.05, COIL_Y, 0, sgn, 0, 0, 0.22);
+    const u = 0.125;
+    const p = coilPoint(u, 0.02);
+    const ahead = coilPoint(u + 0.02 * sgn, 0.02);
+    poseArrow(iCoilArrow, p.x, p.y, p.z, ahead.x - p.x, ahead.y - p.y, ahead.z - p.z, 0.14);
+  } else {
+    bIndArrow.visible = false;
+    iCoilArrow.visible = false;
+  }
+
+  const travel = emfOn && !still;
+  for (let i = 0; i < BEADS; i++) {
+    const u = (beadU + i / BEADS) % 1;
+    const p = coilPoint(u < 0 ? u + 1 : u, 0);
+    beads[i].position.set(p.x, p.y, p.z);
+    beads[i].visible = showCoil;
+  }
+  beadMat.emissiveIntensity = travel ? 0.85 : 0.2;
+  if (!still) {
+    const pulse = 0.4 + 0.12 * Math.sin(headPhase * 12);
+    northMat.emissiveIntensity = pulse + 0.2;
+  }
+}
+
+function stepShift(dt) {
+  if (still) return;
+  const prev = state.shift;
+  state.shift += (state.shiftGoal - state.shift) * (1 - Math.exp(-dt * 3.2));
+  if (Math.abs(state.shift - prev) > 0.0016) fieldDirty = true;
+  if (state.source !== 'magnet') { emfSmooth = 0; return; }
+  const phi = sampleFlux();
+  if (prevPhi == null) { prevPhi = phi; emfSmooth = 0; return; }
+  const raw = -N_TURNS * (phi - prevPhi) / Math.max(dt, 1e-4);
+  if (Math.abs(state.shiftGoal - state.shift) < 4e-4) emfSmooth = 0;
+  else emfSmooth += (raw - emfSmooth) * (1 - Math.exp(-dt * 5));
+  prevPhi = phi;
+}
+
+function updateHud(sol) {
+  const bEl = document.getElementById('h-b');
+  const thEl = document.getElementById('h-th');
+  const fqEl = document.getElementById('h-fq');
+  const fsEl = document.getElementById('h-fs');
+  const phiEl = document.getElementById('h-phi');
+  const emfEl = document.getElementById('h-emf');
+  if (sol.blocked) {
+    bEl.textContent = 'inside';
+    thEl.textContent = '—';
+    fqEl.textContent = '—';
+    document.getElementById('bar-b').style.width = '0%';
+    document.getElementById('bar-th').style.width = '0%';
+    document.getElementById('bar-fq').style.width = '0%';
+  } else {
+    bEl.textContent = fmtB(sol.Bmag);
+    thEl.textContent = fmtDeg(sol.theta);
+    fqEl.textContent = fmtF(sol.Fmag);
+    logBar(document.getElementById('bar-b'), sol.Bmag, 1e-5, 0.1);
+    linBar(document.getElementById('bar-th'), sol.theta, Math.PI);
+    logBar(document.getElementById('bar-fq'), sol.Fmag, 1e-9, 1e-5);
+  }
+  fsEl.textContent = sol.segBlocked ? '—' : fmtF(sol.Fsmag);
+  if (!sol.segBlocked) logBar(document.getElementById('bar-fs'), sol.Fsmag, 1e-4, 2e-2);
+  else document.getElementById('bar-fs').style.width = '0%';
+  if (state.source === 'magnet') {
+    phiEl.textContent = fmtFlux(sol.phi);
+    emfEl.textContent = fmtEmf(sol.emf);
+    logBar(document.getElementById('bar-phi'), sol.phi, 1e-6, 2e-4);
+    logBar(document.getElementById('bar-emf'), sol.emf, 2e-4, 0.08);
+  } else {
+    phiEl.textContent = '—';
+    emfEl.textContent = '—';
+    document.getElementById('bar-phi').style.width = '0%';
+    document.getElementById('bar-emf').style.width = '0%';
+  }
+  const focus = lsOpen ? LS[lsStep].focus : 'both';
+  const eq = document.getElementById('h-eq');
+  if (focus === 'rule' || focus === 'distance' || state.source === 'wire' && (focus === 'both' || focus === 'intro')) {
+    eq.textContent = 'B = μ₀ I / (2π r) = ' + fmtB(sol.Bmag);
+  } else if (focus === 'segment' || focus === 'double') {
+    eq.textContent = '|F| = I L B sinθ = ' + (sol.segBlocked ? '—' : fmtF(sol.Fsmag));
+  } else if (focus === 'faraday' || focus === 'lenz') {
+    eq.textContent = 'emf = −N ΔΦ/Δt = ' + fmtEmf(sol.emf);
+  } else {
+    eq.textContent = '|F| = |q| v B sinθ = ' + (sol.blocked ? '—' : fmtF(sol.Fmag));
+  }
+  const flag = document.getElementById('h-flag');
+  if (flagHold > 0 && flagText) flag.textContent = flagText;
+  else if (sol.blocked) flag.textContent = 'That point is inside the bar. This model draws the field outside, where the lines leave north and enter south.';
+  else if (state.source === 'wire') flag.textContent = 'The wire’s current is ' + fmtA(state.Iwire) + ' upward. At the charge, r = ' + (sol.rWire * 100).toFixed(1) + ' cm.';
+  else if (Math.abs(sol.emf) > 4e-4) flag.textContent = 'The flux is changing, so the coil has an induced emf. When the bar stops, the emf returns to zero.';
+  else if (state.align === 'along') flag.textContent = 'The velocity is along the field, so the force on the charge is zero. The segment current is along the field too.';
+  else flag.textContent = 'The velocity is across the field. A positive charge is pushed up, and so is the short wire.';
+}
+function setFlag(text) { flagText = text; flagHold = 8; }
+
+function clampPoint(p) {
+  p.y = MAG_Y;
+  p.x = Math.max(-1.02, Math.min(1.02, p.x));
+  p.z = Math.max(-0.95, Math.min(0.95, p.z));
+  if (state.source === 'wire') {
+    let r = Math.hypot(p.x, p.z);
+    if (r < 0.036) {
+      if (r < 1e-6) { p.x = 0.036; p.z = 0; r = 0.036; }
+      else { p.x *= 0.036 / r; p.z *= 0.036 / r; }
+    }
+  } else if (insideBar(p.x, p.y, p.z)) {
+    p.x = p.x >= state.shift ? state.shift + HALF + 0.03 : state.shift - HALF - 0.03;
+  }
+}
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const _hit = new THREE.Vector3();
+const _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -MAG_Y);
+const drag = { kind: null, sx: 0, sy: 0, lx: 0, ly: 0, hx: 0, shift0: 0 };
+function planeHit(e) {
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  if (!raycaster.ray.intersectPlane(_plane, _hit)) return null;
+  return _hit;
+}
+function pickKind(hit) {
+  const dCharge = Math.hypot(hit.x - state.charge.x, hit.z - state.charge.z);
+  const dSeg = Math.hypot(hit.x - state.seg.x, hit.z - state.seg.z);
+  const choices = [];
+  if (dCharge < 0.08) choices.push({ k: 'charge', d: dCharge });
+  if (dSeg < 0.09) choices.push({ k: 'seg', d: dSeg });
+  if (state.source === 'magnet' && Math.abs(hit.z) < 0.1 && Math.abs(hit.x - state.shift) < HALF + 0.03) {
+    choices.push({ k: 'magnet', d: Math.abs(hit.z) + 0.02 });
+  }
+  if (!choices.length) return null;
+  choices.sort((a, b) => a.d - b.d);
+  return choices[0].k;
+}
+function onDown(e) {
+  if (e.button != null && e.button !== 0) return;
+  const hit = planeHit(e);
+  if (!hit) return;
+  const kind = pickKind(hit);
+  drag.kind = kind || 'lean';
+  drag.sx = e.clientX;
+  drag.sy = e.clientY;
+  drag.lx = lean.x;
+  drag.ly = lean.y;
+  drag.hx = hit.x;
+  drag.shift0 = state.shift;
+  canvas.classList.add('grabbing');
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+}
+function onMove(e) {
+  const hit = planeHit(e);
+  if (!drag.kind) {
+    canvas.classList.toggle('can-grab', !!(hit && pickKind(hit)));
+    return;
+  }
+  if (!hit) return;
+  if (drag.kind === 'charge') {
+    state.charge.x = hit.x;
+    state.charge.z = hit.z;
+    clampPoint(state.charge);
+  } else if (drag.kind === 'seg') {
+    state.seg.x = hit.x;
+    state.seg.z = hit.z;
+    clampPoint(state.seg);
+  } else if (drag.kind === 'magnet') {
+    const next = Math.max(-0.12, Math.min(0.2, drag.shift0 + (hit.x - drag.hx)));
+    if (still) {
+      state.shift = state.shiftGoal = next;
+      emfHold = null;
+      emfSmooth = 0;
+      prevPhi = null;
+      fieldDirty = true;
+    } else {
+      emfHold = null;
+      state.shiftGoal = next;
+    }
+  } else if (drag.kind === 'lean') {
+    leanGoal.x = Math.max(-0.28, Math.min(0.28, drag.lx + (e.clientX - drag.sx) * 0.0016));
+    leanGoal.y = Math.max(-0.16, Math.min(0.16, drag.ly + (e.clientY - drag.sy) * -0.0011));
+    if (still) { lean.x = leanGoal.x; lean.y = leanGoal.y; }
+  }
+  if (still) holdStill();
+}
+function onUp(e) {
+  drag.kind = null;
+  canvas.classList.remove('grabbing');
+  leanGoal.x = 0;
+  leanGoal.y = 0;
+  if (still) { lean.x = 0; lean.y = 0; holdStill(); }
+  try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+
+function ensureMagnet() {
+  if (state.source === 'magnet') return;
+  state.source = 'magnet';
+  fieldDirty = true;
+  if (insideBar(state.charge.x, MAG_Y, state.charge.z) || state.charge.x < 0.22) {
+    state.charge.x = AXIS_X; state.charge.y = MAG_Y; state.charge.z = 0;
+  }
+  if (insideBar(state.seg.x, MAG_Y, state.seg.z) || state.seg.x < 0.22) {
+    state.seg.x = AXIS_X; state.seg.y = MAG_Y; state.seg.z = 0.16;
+  }
+}
+function ensureWire() {
+  if (state.source !== 'wire') {
+    state.source = 'wire';
+    fieldDirty = true;
+  }
+  const r = Math.hypot(state.charge.x, state.charge.z);
+  if (r < 0.03 || r > 0.25) {
+    state.charge.x = 0.05; state.charge.y = MAG_Y; state.charge.z = 0;
+  }
+  const rs = Math.hypot(state.seg.x, state.seg.z);
+  if (rs < 0.04 || rs > 0.32) {
+    state.seg.x = 0.12; state.seg.y = MAG_Y; state.seg.z = 0;
+  }
+}
+function doReset() {
+  state.source = 'magnet';
+  state.align = 'across';
+  state.q = 2e-6;
+  state.speed = 80;
+  state.Iwire = 20;
+  state.Iseg = 5;
+  state.L = 0.10;
+  state.shift = 0;
+  state.shiftGoal = 0;
+  state.charge.x = AXIS_X; state.charge.y = MAG_Y; state.charge.z = 0;
+  state.seg.x = AXIS_X; state.seg.y = MAG_Y; state.seg.z = 0.16;
+  emfSmooth = 0;
+  emfHold = null;
+  prevPhi = null;
+  fieldDirty = true;
+  setFlag('Reset. The charge is on the axis beyond the north pole, and the velocity is across the field.');
+}
+function moveMagnet(goal, alreadyMsg) {
+  ensureMagnet();
+  const clamped = Math.max(-0.12, Math.min(0.2, goal));
+  if (Math.abs(clamped - state.shift) < 0.005 && Math.abs(clamped - state.shiftGoal) < 0.005) {
+    setFlag(alreadyMsg);
+    return;
+  }
+  if (still) {
+    const phi0 = sampleFlux();
+    state.shift = state.shiftGoal = clamped;
+    const phi1 = sampleFlux();
+    emfHold = -N_TURNS * (phi1 - phi0) / STORY_DT;
+    prevPhi = phi1;
+    fieldDirty = true;
+    setFlag('The bar jumped. That change in flux, spread over 0.40 s, is the emf on the meter.');
+  } else {
+    emfHold = null;
+    state.shiftGoal = clamped;
+    setFlag('The bar is moving. Watch the emf while the flux changes, then watch it return to zero.');
+  }
+}
+function dispatchAct(name) {
+  if (name === 'magnet') { ensureMagnet(); setFlag('The bar is back. Field lines leave the north end and enter the south end.'); }
+  else if (name === 'wire') { ensureWire(); setFlag('Thumb along the current, up the wire. Your fingers curl the way B goes.'); }
+  else if (name === 'across') { state.align = 'across'; setFlag('Across the field: θ = 90° and the force is as large as it gets.'); }
+  else if (name === 'along') { state.align = 'along'; setFlag('Along the field: sinθ = 0, so the force drops to zero.'); }
+  else if (name === 'faster') {
+    state.speed = Math.min(320, state.speed * 2);
+    setFlag('Speed is now ' + fmtSpeed(state.speed) + '. With θ unchanged, the force on the charge scales with speed.');
+  } else if (name === 'slower') {
+    state.speed = Math.max(10, state.speed / 2);
+    setFlag('Speed is now ' + fmtSpeed(state.speed) + '.');
+  } else if (name === 'double-i' || name === 'double-seg' || name === 'double-wire') {
+    if (name === 'double-wire' || (name === 'double-i' && state.source === 'wire')) {
+      if (name === 'double-wire') ensureWire();
+      state.Iwire = Math.min(80, state.Iwire * 2);
+      setFlag('Wire current is now ' + fmtA(state.Iwire) + '. B around the wire scales with I.');
+    } else {
+      state.Iseg = Math.min(20, state.Iseg * 2);
+      setFlag('Segment current is now ' + fmtA(state.Iseg) + '. The force on the segment scales with I.');
+    }
+  } else if (name === 'halve-i') {
+    if (state.source === 'wire') {
+      state.Iwire = Math.max(5, state.Iwire / 2);
+      setFlag('Wire current is now ' + fmtA(state.Iwire) + '.');
+    } else {
+      state.Iseg = Math.max(1.25, state.Iseg / 2);
+      setFlag('Segment current is now ' + fmtA(state.Iseg) + '.');
+    }
+  } else if (name === 'flip-q') {
+    state.q = -state.q;
+    setFlag(state.q < 0
+      ? 'The charge is negative, so its force reversed. The segment did not, because its current is the same.'
+      : 'The charge is positive again. Its force points with the right-hand rule.');
+  } else if (name === 'move-in') {
+    moveMagnet(0.16, 'The bar is already close. Press Reset, then Move closer, to see the emf change again.');
+  } else if (name === 'move-out') {
+    moveMagnet(-0.08, 'The bar is already pulled back. Press Move closer, or Reset.');
+  } else if (name === 'reset') doReset();
+  else if (name === 'place-axis') {
+    ensureMagnet();
+    state.align = 'across';
+    state.charge.x = AXIS_X; state.charge.y = MAG_Y; state.charge.z = 0;
+    if (Math.hypot(state.seg.x - AXIS_X, state.seg.z) < 0.06) state.seg.z = 0.16;
+    setFlag('The charge is on the axis. B there is 5.00 mT, straight out of the north pole.');
+  } else if (name === 'place-near') {
+    ensureMagnet();
+    state.charge.x = 0.24; state.charge.y = MAG_Y; state.charge.z = 0;
+    setFlag('The charge is close to the north face. |B| is much larger here.');
+  } else if (name === 'place-far') {
+    ensureMagnet();
+    state.charge.x = 0.62; state.charge.y = MAG_Y; state.charge.z = 0;
+    setFlag('The charge is farther from the bar. |B| has fallen off.');
+  } else if (name === 'segment-axis') {
+    ensureMagnet();
+    state.align = 'across';
+    state.seg.x = AXIS_X; state.seg.y = MAG_Y; state.seg.z = 0;
+    if (Math.hypot(state.charge.x - AXIS_X, state.charge.z) < 0.06) state.charge.z = 0.14;
+    setFlag('The segment is on the axis, across a 5.00 mT field. |F| = I L B.');
+  } else if (name === 'wire-near') {
+    ensureWire();
+    state.charge.x = 0.05; state.charge.y = MAG_Y; state.charge.z = 0;
+    setFlag('The charge is 5.0 cm from the wire.');
+  } else if (name === 'wire-far') {
+    ensureWire();
+    state.charge.x = 0.10; state.charge.y = MAG_Y; state.charge.z = 0;
+    setFlag('The charge is 10 cm from the wire. B should be half of the 5 cm value.');
+  }
+  fieldDirty = true;
+  syncChips();
+  if (still) holdStill();
+  else updateLessonLive();
+}
+
+document.getElementById('chips').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  dispatchAct(btn.dataset.act);
+});
+
+const lean = { x: 0, y: 0, vx: 0, vy: 0 };
+const leanGoal = { x: 0, y: 0 };
+function stepLean(dt) {
+  if (still) return;
+  const k = 36, damp = 8.5;
+  lean.vx += (k * (leanGoal.x - lean.x) - damp * lean.vx) * dt;
+  lean.vy += (k * (leanGoal.y - lean.y) - damp * lean.vy) * dt;
+  lean.x += lean.vx * dt;
+  lean.y += lean.vy * dt;
+}
+const narrowMq = matchMedia('(max-width: 720px), (max-aspect-ratio: 5/6)');
+function chromeLeftEdge() {
+  if (embed || narrowMq.matches || !lsOpen) return 0;
+  return lessonEl.getBoundingClientRect().right;
+}
+function placeCamera(t) {
+  const left = chromeLeftEdge();
+  const shift = left > 40 ? (left / innerWidth) * 0.85 : 0;
+  const breathe = still ? 0 : Math.sin(t * 0.35) * 0.008;
+  camera.position.set(
+    camBase.x - shift * 0.12 + lean.x * 0.85,
+    camBase.y + lean.y + breathe,
+    camBase.z - lean.y * 0.12
+  );
+  camera.lookAt(camLook.x - shift * 0.85 + lean.x * 0.35, camLook.y, camLook.z);
+}
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  camera.aspect = w / Math.max(1, h);
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+}
+
+const lessonEl = document.getElementById('lesson');
+const lsBody = document.getElementById('ls-body');
+const lsKicker = document.getElementById('ls-kicker');
+const lsDots = document.getElementById('ls-dots');
+const lsToggle = document.getElementById('ls-toggle');
+const labelEl = document.querySelector('.label');
+const footEl = document.querySelector('.foot');
+const metersEl = document.getElementById('meters');
+
+const LS = [
+  { topic: 'Meet the magnet', focus: 'intro', html: `
+    <h3>Meet the magnet</h3>
+    <p class="formula">field lines leave north and enter south</p>
+    <p>The bar on the bench is a magnet. The warm end is north and the lilac end is south. The warm threads are magnetic field lines. Outside the bar they leave the north end and enter the south end. You cannot snip off a north pole by itself. Break a magnet and each piece still has both ends.</p>
+    <p>The pearl sphere is a test charge you can drag. The short lilac rod is a piece of wire carrying a current. The coil stands off to the right for the induction steps. Arrow lengths are a drawing scale so the direction stays easy to see. The meters carry the true numbers.</p>
+    <p class="watch"><b>Watch</b> Follow one thread from the warm end around to the lilac end. The tags should read N and S, and the |B| meter should have a reading at the charge.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The source is the <span data-live="source">—</span>. At the charge, |B| = <span data-live="B">—</span>.</p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="place-axis">Charge on axis</button></div>` },
+  { topic: 'Right-hand rule', focus: 'rule', html: `
+    <h3>Right-hand rule for a wire</h3>
+    <p class="formula">B = μ₀ I / (2π r)</p>
+    <p>A long straight wire makes circles of magnetic field. Point the thumb of your right hand along the current. Your fingers curl the way B goes. On this bench the current runs up the wire, so the circles go around it. μ₀ is 4π × 10⁻⁷ T·m/A. The field gets weaker as you move away, following 1/r, and it gets stronger if you raise the current.</p>
+    <p>The meter reads |B| at the pearl charge. At the reset current of 20 A, a point 5.0 cm from the wire has B = 0.080 mT. That is much weaker than the bar. One wire is a modest source. Motors and electromagnets use many turns, packed close.</p>
+    <p class="watch"><b>Watch</b> Press Straight wire and look down on the circles. The arrowheads should travel around the wire, not radially out from it. Drag the charge closer and farther and watch |B|.</p>
+    <p class="live" aria-live="polite"><b>Now</b> I = <span data-live="Iwire">—</span>, r = <span data-live="rWire">—</span>, and |B| = <span data-live="B">—</span>.</p>
+    <div class="acts"><button type="button" data-act="wire">Straight wire</button><button type="button" data-act="wire-near">5 cm away</button><button type="button" data-act="wire-far">10 cm away</button></div>` },
+  { topic: 'Field of the bar', focus: 'lines', html: `
+    <h3>How to read the bar’s field</h3>
+    <p class="formula">the line shows the direction of B</p>
+    <p>Bring the bar back. At each point outside the magnet the thread points the way B points. The lines do not cross, because the field has one direction at a point. Where the threads sit closer together, near the poles, the field is stronger. That part of the picture is qualitative. Quote the |B| meter when you need the number.</p>
+    <p>This model draws the field outside the bar, the way an intro course sketches a north pole and a south pole. Inside a real bar magnet the field runs from the south end back toward the north end, so each line is a closed loop. The meter does not report a value inside the metal.</p>
+    <p class="watch"><b>Watch</b> Put the charge on the axis, then close to the north face, then far away. |B| should be largest near the face and smaller far away. On the axis the field points straight out of the north end.</p>
+    <p class="live" aria-live="polite"><b>Now</b> |B| at the charge is <span data-live="B">—</span>. The charge is <span data-live="q">—</span>.</p>
+    <div class="acts"><button type="button" data-act="magnet">Bar magnet</button><button type="button" data-act="place-near">Near the pole</button><button type="button" data-act="place-far">Farther out</button><button type="button" data-act="place-axis">On the axis</button></div>` },
+  { topic: 'Force on a charge', focus: 'charge', html: `
+    <h3>Force on a moving charge</h3>
+    <p class="formula">F = q v × B &nbsp;&nbsp; |F| = |q| v B sinθ</p>
+    <p>A magnetic field does not push a charge that is sitting still. The charge has to be moving. The force is F = q v × B. Its size is |q| v B sinθ, where θ is the angle between the velocity and the field. Point the fingers of your right hand along v. Curl them toward B. Your palm pushes a positive charge. A negative charge is pushed the opposite way.</p>
+    <p>The lilac arrow is v. The small honey arrow is B. The warm arrow is F. On the axis, with the velocity across the field, θ = 90° and the warm arrow stands straight up. The arrow length is a drawing scale. Trust the meter for the newtons.</p>
+    <p class="watch"><b>Watch</b> Press Charge on axis. The warm arrow should leave the pearl sphere upward. Then press Flip q. The warm arrow should reverse, and the segment’s arrow should stay put.</p>
+    <p class="live" aria-live="polite"><b>Now</b> q = <span data-live="q">—</span>, v = <span data-live="speed">—</span>, |B| = <span data-live="B">—</span>, θ = <span data-live="theta">—</span>, so |F| = <span data-live="F">—</span>.</p>
+    <div class="acts"><button type="button" data-act="place-axis">Charge on axis</button><button type="button" data-act="across">Across</button><button type="button" data-act="flip-q">Flip q</button></div>` },
+  { topic: 'When force is zero', focus: 'zero', html: `
+    <h3>When the force drops to zero</h3>
+    <p class="formula">sinθ = 0 when v is along B</p>
+    <p>If the velocity is parallel to the field, θ is 0° or 180° and sinθ is 0, so the force is zero. The charge coasts in a straight line at constant speed. If the velocity is perpendicular to the field, sinθ is 1 and the force is as large as |q| v B. Anywhere between, only the perpendicular part of the velocity counts.</p>
+    <p>The force is always perpendicular to v, so it changes the direction of the motion and not the speed. In a uniform field that is a circle, or a helix if the charge also slides along the field. The field on this bench changes from place to place, so the path would not be a perfect circle. The meter still uses the local B.</p>
+    <p class="watch"><b>Watch</b> Press Along. The warm force arrow on the charge should disappear and |F| should read 0. Press Across and the arrow should come back.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The velocity is <span data-live="align">—</span>. θ = <span data-live="theta">—</span> and |F| on the charge is <span data-live="F">—</span>.</p>
+    <div class="acts"><button type="button" data-act="along">Along the field</button><button type="button" data-act="across">Across the field</button><button type="button" data-act="place-axis">Charge on axis</button></div>` },
+  { topic: 'Force on a wire', focus: 'segment', html: `
+    <h3>Force on a current</h3>
+    <p class="formula">F = I L × B &nbsp;&nbsp; |F| = I L B sinθ</p>
+    <p>A current is a stream of moving charges, so the wire feels the same kind of push. For a straight piece of wire the force is F = I L × B. L points along the current, and its length is the length of the piece. The size is I L B sinθ. Point your fingers along the current, curl them toward B, and your palm pushes the wire. That is the motor force.</p>
+    <p>The short lilac rod is that piece. At reset it carries 5.00 A and it is 0.10 m long. Put it on the axis, where B is 5.00 mT and the current is across the field, and |F| = 5.00 × 0.10 × 0.005 = 2.50 mN. The warm arrow is the force. The smaller lilac arrow on the rod is the current.</p>
+    <p class="watch"><b>Watch</b> Press Segment on axis. The warm arrow on the rod should point up, and the meter |F| with the subscript I should read 2.50 mN. Press Along and that force should drop to zero too.</p>
+    <p class="live" aria-live="polite"><b>Now</b> I = <span data-live="Iseg">—</span>, L = 0.10 m, |B| at the segment is <span data-live="Bseg">—</span>, and |F| = <span data-live="Fseg">—</span>.</p>
+    <div class="acts"><button type="button" data-act="segment-axis">Segment on axis</button><button type="button" data-act="across">Across</button><button type="button" data-act="along">Along</button></div>` },
+  { topic: 'Double it', focus: 'double', html: `
+    <h3>What a double does</h3>
+    <p class="formula">F scales with v, with I, and with B</p>
+    <p>The magnetic force is linear in the things you can double one at a time. Double the speed of the charge, leave q, B, and θ alone, and |F| on the charge doubles. Double the segment current and |F| on the segment doubles. Around the straight wire, double the current and B doubles everywhere, because I sits in the numerator of μ₀ I / (2π r).</p>
+    <p>This is not Coulomb’s 1/r². Distance has its own rule, and the next step checks it for the wire. Here, keep the place fixed and change only the speed or the current so you can see the factor of two on the meter.</p>
+    <p class="watch"><b>Watch</b> Reset, put the charge on the axis, and read |F|. It should be 0.800 μN. Press Faster once. The force should read 1.600 μN. Then put the segment on the axis, read 2.50 mN, and press Double I. The segment force should read 5.00 mN.</p>
+    <p class="live" aria-live="polite"><b>Now</b> v = <span data-live="speed">—</span> and |F| on the charge is <span data-live="F">—</span>. Segment I = <span data-live="Iseg">—</span> and |F| on the segment is <span data-live="Fseg">—</span>.</p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="place-axis">Charge on axis</button><button type="button" data-act="faster">Faster</button><button type="button" data-act="segment-axis">Segment on axis</button><button type="button" data-act="double-seg">Double I</button></div>` },
+  { topic: 'A straight wire', focus: 'distance', html: `
+    <h3>Distance from a straight wire</h3>
+    <p class="formula">double r → B becomes half</p>
+    <p>For a long straight wire, B = μ₀ I / (2π r). The field is perpendicular to the radius, tangent to the circle. Double the distance and B halves. That is gentler than a point charge’s 1/r², and much gentler than a bar magnet far away, which falls off about as 1/r³. The wire’s rule is the one to use when the wire is long compared with how far you are from it.</p>
+    <p>At 20 A and 5.0 cm, B = 0.080 mT. At 10 cm it is 0.040 mT. The same 2.00 μC charge at 80 m/s feels only about 12.8 nN at 5 cm. The bar on the axis produced 0.800 μN, about sixty times larger, because 5.00 mT is a much stronger field than a single wire makes.</p>
+    <p class="watch"><b>Watch</b> Press 5 cm away and read |B|. Then press 10 cm away. The field should fall by half. The circles farther out are the weaker field.</p>
+    <p class="live" aria-live="polite"><b>Now</b> I = <span data-live="Iwire">—</span>, r = <span data-live="rWire">—</span>, |B| = <span data-live="B">—</span>, and |F| on the charge is <span data-live="F">—</span>.</p>
+    <div class="acts"><button type="button" data-act="wire-near">5 cm away</button><button type="button" data-act="wire-far">10 cm away</button><button type="button" data-act="double-wire">Double wire I</button><button type="button" data-act="magnet">Back to the bar</button></div>` },
+  { topic: 'Changing flux', focus: 'faraday', html: `
+    <h3>A changing flux makes an emf</h3>
+    <p class="formula">emf = −N ΔΦ / Δt</p>
+    <p>Faraday’s law is about change. The magnetic flux Φ through the coil is the field through the loop times the area, when the field is even. Here the meter averages B across the square and multiplies by the area. The coil has 200 turns, so the induced emf is emf = −N ΔΦ/Δt. A strong field that is sitting still induces nothing. The emf is zero until the flux changes.</p>
+    <p>Move closer slides the north pole toward the coil. The flux grows while the bar is moving, and the emf leaves zero. When the bar stops, the emf returns to zero even though the field is still there. If the picture is held still, Move closer jumps the bar and spreads that same change over 0.40 s so you can read one number.</p>
+    <p class="watch"><b>Watch</b> Press Reset and read the emf. It should be 0 mV. Press Move closer and keep your eye on the emf meter. It should leave zero while the bar moves, then settle back to zero when the bar stops.</p>
+    <p class="live" aria-live="polite"><b>Now</b> Φ = <span data-live="phi">—</span> and emf = <span data-live="emf">—</span>. The coil has 200 turns.</p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="move-in">Move closer</button><button type="button" data-act="move-out">Move away</button></div>` },
+  { topic: 'Lenz’s law', focus: 'lenz', html: `
+    <h3>The induced current fights the change</h3>
+    <p class="formula">the induced field opposes ΔΦ</p>
+    <p>Lenz’s law gives the direction. The induced current makes its own magnetic field, and that field opposes the change in flux. It does not oppose the flux itself. It opposes the increase or the decrease. If nothing is changing, there is no induced current, and the beads on the coil sit still.</p>
+    <p>The north pole faces the coil. When that pole moves closer, the flux through the coil in the direction of the bar’s field increases. The coil answers by making a field back toward the magnet, so the near face acts like a north pole and repels the approach. When you pull the bar away, the flux is decreasing, the current reverses, and the near face attracts the north pole, trying to keep the flux from falling. The warm arrow on the coil is the induced current. The honey arrow through the center is the field that current makes.</p>
+    <p class="watch"><b>Watch</b> From the reset position, press Move closer and look at the honey arrow on the coil. It should point back toward the bar while the emf is nonzero. Press Move away and the arrows should reverse.</p>
+    <p class="live" aria-live="polite"><b>Now</b> emf = <span data-live="emf">—</span>. The induced field points <span data-live="bInd">—</span>.</p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="move-in">Move closer</button><button type="button" data-act="move-out">Move away</button></div>` },
+  { topic: 'In the real world', focus: 'world', html: `
+    <h3>In the real world</h3>
+    <p>These rules are how a hospital scanner, a motor, and the power grid push across empty space. The field on this bench is a few millitesla. The machines below use the same relationships at a much larger scale.</p>
+    <p>An MRI technologist, working with a medical physicist in a hospital radiology suite, runs a scanner whose magnet is about a tesla or more. The technologist keeps ferrous metal out of the room, screens patients for implants, and positions the person in that steady field. The medical physicist checks the field, the safety limits, and the image quality. The main magnet is a very strong B that stays on. It is not a trick of a changing flux.</p>
+    <p>An electric-motor design engineer, in a motor shop or an EV drivetrain lab, sizes the current and the magnets so F = I L B turns a shaft. Reverse the current and the force reverses. That is the palm-push on the short wire here, repeated through many turns of a coil.</p>
+    <p>A power-grid transformer technician, in a substation or a transformer yard, depends on Faraday’s law. Alternating current in one coil keeps the flux in the iron core changing, and that changing flux induces the voltage in the second coil. If the flux stopped changing, the secondary voltage would fall to zero, the way the emf on this meter falls to zero when the bar sits still.</p>
+    <p>A maglev or rail engineer, on a guideway or a rail test track, uses magnetic forces to lift and guide a train with little contact. The field, the onboard magnets or coils, and the conducting guideway have to stay in the arrangement the force law expects, or the lift disappears.</p>
+    <p class="watch"><b>Watch</b> Set the velocity across the field and look at the upward force on the short wire. That is the motor. Then move the bar and watch the emf leave zero and return. That on-and-off is the transformer, drawn slowly.</p>
+    <p class="live" aria-live="polite"><b>Now</b> |B| = <span data-live="B">—</span>, |F| on the segment is <span data-live="Fseg">—</span>, and emf = <span data-live="emf">—</span>.</p>
+    <div class="acts"><button type="button" data-act="magnet">Bar magnet</button><button type="button" data-act="across">Across</button><button type="button" data-act="segment-axis">Segment on axis</button><button type="button" data-act="move-in">Move closer</button></div>` },
+  { topic: 'Questions to try', focus: 'questions', html: `
+    <h3>Questions to try</h3>
+    <p>Predict first. Then use the bench, and open a hint after you have a number in mind.</p>
+    <p class="watch"><b>Watch</b> Use Reset when a hint starts from the axis, 5.00 mT, and 80 m/s. Read the meter before you open the hint.</p>
+    <p class="live" aria-live="polite"><b>Now</b> <span data-live="source">—</span>. |B| = <span data-live="B">—</span>, |F| = <span data-live="F">—</span>, emf = <span data-live="emf">—</span>.</p>
+    <details><summary>Which way do the field lines leave the bar, and where do they enter?</summary><p>Outside the bar they leave the north end and enter the south end. They do not start or stop in empty space, and they do not cross. Inside a real magnet they run from south back to north and close the loop. This model draws the outside. Press Reset and follow one thread from the warm end to the lilac end.</p></details>
+    <details><summary>The charge is on the axis at 80 m/s across a 5.00 mT field. What happens to |F| if you double only the speed?</summary><p>|F| = |q| v B sinθ. θ stays 90° and B stays put, so |F| doubles, from 0.800 μN to 1.600 μN. Press Reset, Charge on axis, read |F|, then press Faster once.</p></details>
+    <details><summary>You aim the velocity along the field. What is the force, and why?</summary><p>θ = 0° and sinθ = 0, so |F| = 0. The speed does not matter. The warm arrow disappears. Press Along the field and read |F|. Press Across to bring the force back.</p></details>
+    <details><summary>The segment carries 5.00 A across a 5.00 mT field for 0.10 m. What is |F|?</summary><p>|F| = I L B = 5.00 A × 0.10 m × 0.005 T = 2.50 mN. Press Reset, then Segment on axis, and read the segment force. Along the field, that force is zero too.</p></details>
+    <details><summary>A long wire carries 20 A. What is |B| at 5.0 cm, and at 10 cm?</summary><p>B = μ₀ I / (2π r). At 5.0 cm, B = 0.080 mT. At 10 cm, B = 0.040 mT, half as much. Press Straight wire, then 5 cm away, then 10 cm away.</p></details>
+    <details><summary>The bar is still and the flux is not zero. Why is the emf zero?</summary><p>emf = −N ΔΦ/Δt. A steady flux has ΔΦ = 0, so the emf is 0 no matter how large Φ is. Press Reset and read the emf before you move the bar. It should be 0 mV. The induced current needs a change.</p></details>
+    <details><summary>You push the north pole toward the coil. Which way does the induced field point, and why?</summary><p>The flux through the coil is increasing. Lenz’s law says the induced field opposes that increase, so it points back toward the magnet and the near face repels the approaching north pole. From reset, press Move closer and watch the honey arrow on the coil while the emf is nonzero. In a still picture the jump is spread over 0.40 s and the emf is about −15 mV.</p></details>
+    <details><summary>Who is using F = I L B to turn a shaft, and who is mainly living with a very strong steady field?</summary><p>An electric-motor design engineer uses F = I L B, in a coil of many turns, to make a torque. An MRI technologist and a medical physicist, in a hospital radiology suite, work around a steady field of about a tesla. The main magnet is not inducing that field by a changing flux. The transformer in a substation is the machine that needs the changing flux.</p></details>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="faster">Faster</button><button type="button" data-act="segment-axis">Segment on axis</button><button type="button" data-act="wire-near">5 cm away</button><button type="button" data-act="move-in">Move closer</button></div>` },
+];
+
+let lsStep = 0;
+let lsOpen = !params.has('nolesson');
+let mMode = 'learn';
+const lsLive = [];
+const FOCUS_SOURCE = {
+  intro: 'magnet', lines: 'magnet', charge: 'magnet', zero: 'magnet', segment: 'magnet',
+  double: 'magnet', faraday: 'magnet', lenz: 'magnet', world: 'magnet', questions: 'magnet',
+  rule: 'wire', distance: 'wire',
+};
+
+for (let i = 0; i < LS.length; i++) {
+  const d = document.createElement('button');
+  d.type = 'button';
+  d.dataset.go = String(i);
+  d.setAttribute('aria-label', 'Step ' + (i + 1) + ': ' + LS[i].topic);
+  lsDots.appendChild(d);
+}
+
+function syncChips() {
+  document.getElementById('chip-magnet').setAttribute('aria-pressed', String(state.source === 'magnet'));
+  document.getElementById('chip-wire').setAttribute('aria-pressed', String(state.source === 'wire'));
+  document.getElementById('chip-across').setAttribute('aria-pressed', String(state.align === 'across'));
+  document.getElementById('chip-along').setAttribute('aria-pressed', String(state.align === 'along'));
+  syncLessonPressed();
+}
+function renderLesson() {
+  const st = LS[lsStep];
+  lsKicker.innerHTML = 'Lesson ' + (lsStep + 1) + '/' + LS.length + ' · <b>' + st.topic + '</b>';
+  lsBody.innerHTML = st.html;
+  lsBody.scrollTop = 0;
+  lsLive.length = 0;
+  for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
+  for (const dot of lsDots.children) dot.toggleAttribute('aria-current', false);
+  lsDots.children[lsStep].setAttribute('aria-current', 'step');
+  lessonEl.querySelector('[data-step="prev"]').disabled = lsStep === 0;
+  lessonEl.querySelector('[data-step="next"]').disabled = lsStep === LS.length - 1;
+  document.body.dataset.focus = lsOpen ? st.focus : 'both';
+  const mode = FOCUS_SOURCE[st.focus];
+  if (mode === 'wire') ensureWire();
+  else if (mode === 'magnet') ensureMagnet();
+  syncChips();
+  updateLessonLive();
+}
+function syncLessonPressed() {
+  for (const b of lsBody.querySelectorAll('button[data-act]')) {
+    const a = b.dataset.act;
+    let on = null;
+    if (a === 'magnet') on = state.source === 'magnet';
+    else if (a === 'wire') on = state.source === 'wire';
+    else if (a === 'across') on = state.align === 'across';
+    else if (a === 'along') on = state.align === 'along';
+    else continue;
+    b.setAttribute('aria-pressed', String(on));
+  }
+}
+function updateLessonLive() {
+  if (!lsLive.length) return;
+  const sol = solve();
+  let bInd = 'nowhere, because the emf is zero';
+  if (state.source === 'magnet' && sol.emf < -4e-4) bInd = 'back toward the magnet, repelling the approaching north pole';
+  else if (state.source === 'magnet' && sol.emf > 4e-4) bInd = 'away from the magnet, attracting the north pole as it leaves';
+  const vals = {
+    source: state.source === 'magnet' ? 'bar magnet' : 'straight wire',
+    q: fmtQ(state.q),
+    speed: fmtSpeed(state.speed),
+    B: sol.blocked ? '—' : fmtB(sol.Bmag),
+    Bseg: sol.segBlocked ? '—' : fmtB(sol.Bsm),
+    theta: sol.blocked ? '—' : fmtDeg(sol.theta),
+    F: sol.blocked ? '—' : fmtF(sol.Fmag),
+    Fseg: sol.segBlocked ? '—' : fmtF(sol.Fsmag),
+    Iseg: fmtA(state.Iseg),
+    Iwire: fmtA(state.Iwire),
+    rWire: (sol.rWire * 100).toFixed(1) + ' cm',
+    phi: state.source === 'magnet' ? fmtFlux(sol.phi) : '—',
+    emf: state.source === 'magnet' ? fmtEmf(sol.emf) : '—',
+    align: state.align === 'across' ? 'across the field' : 'along the field',
+    bInd,
+  };
+  for (const el of lsLive) el.textContent = vals[el.dataset.live] ?? '—';
+}
+function goStep(i) {
+  lsStep = Math.max(0, Math.min(LS.length - 1, i | 0));
+  renderLesson();
+  fieldDirty = true;
+  if (still) holdStill();
+}
+function onLessonClick(e) {
+  const btn = e.target.closest('button');
+  if (!btn || !lessonEl.contains(btn)) return;
+  if (btn.dataset.step === 'prev') goStep(lsStep - 1);
+  else if (btn.dataset.step === 'next') goStep(lsStep + 1);
+  else if (btn.dataset.go) goStep(+btn.dataset.go);
+  else if (btn.dataset.mode) setMobileMode(btn.dataset.mode);
+  else if (btn === lsToggle) setLessonOpen(!lsOpen);
+  else if (btn.dataset.act) dispatchAct(btn.dataset.act);
+}
+function setLessonOpen(open) {
+  lsOpen = open;
+  document.body.classList.toggle('lesson-closed', !open);
+  lsToggle.setAttribute('aria-expanded', String(open));
+  lsToggle.textContent = open ? 'Hide' : 'Open lesson';
+  document.body.dataset.focus = open ? LS[lsStep].focus : 'both';
+  fitLesson();
+  resize();
+  if (still) holdStill();
+  else { placeCamera(0); renderer.render(scene, camera); }
+}
+function setMobileMode(mode) {
+  mMode = mode;
+  document.body.classList.toggle('m-learn', mode === 'learn');
+  document.body.classList.toggle('m-numbers', mode === 'numbers');
+  for (const b of lessonEl.querySelectorAll('[data-mode]')) {
+    b.setAttribute('aria-selected', String(b.dataset.mode === mode));
+  }
+}
+function placeLesson() {
+  if (narrowMq.matches) {
+    if (lessonEl.parentElement !== footEl) footEl.insertBefore(lessonEl, metersEl);
+    if (!lsOpen) setLessonOpen(true);
+  } else if (lessonEl.parentElement !== labelEl) {
+    labelEl.appendChild(lessonEl);
+  }
+  fitLesson();
+}
+function fitLesson() {
+  if (narrowMq.matches) { lessonEl.style.maxHeight = ''; return; }
+  const top = lessonEl.getBoundingClientRect().top;
+  const footH = footEl.getBoundingClientRect().height;
+  const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 16;
+  lessonEl.style.maxHeight = Math.max(180, innerHeight - padB - footH - 20 - top) + 'px';
+}
+function onLessonKey(e) {
+  if (e.target.closest && e.target.closest('input, textarea, summary, details')) return;
+  if (e.key === 'ArrowRight') goStep(lsStep + 1);
+  else if (e.key === 'ArrowLeft') goStep(lsStep - 1);
+}
+
+const leanClock = { t: 0 };
+function render() { renderer.render(scene, camera); }
+let raf = 0;
+const clock = new THREE.Clock();
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  leanClock.t += dt;
+  stepLean(dt);
+  stepShift(dt);
+  if (!still) {
+    headPhase = (headPhase + dt * 0.08) % 1;
+    if (Math.abs(emfHold != null ? emfHold : emfSmooth) > 4e-4) {
+      const sgn = (emfHold != null ? emfHold : emfSmooth) < 0 ? -1 : 1;
+      beadU = (beadU + dt * 0.22 * sgn) % 1;
+    }
+  }
+  if (fieldDirty) { rebuildField(); fieldDirty = false; }
+  const sol = solve();
+  placeHeads(headPhase);
+  syncObjects(sol);
+  placeCamera(leanClock.t);
+  syncTags(sol);
+  flagHold = Math.max(0, flagHold - dt);
+  updateHud(sol);
+  updateLessonLive();
+  render();
+}
+function holdStill() {
+  cancelAnimationFrame(raf); raf = 0;
+  if (drag.kind !== 'lean') {
+    lean.x = 0; lean.y = 0; lean.vx = 0; lean.vy = 0;
+    leanGoal.x = 0; leanGoal.y = 0;
+  }
+  if (fieldDirty) { rebuildField(); fieldDirty = false; }
+  if (emfHold == null) emfSmooth = 0;
+  const sol = solve();
+  placeHeads(0.22);
+  syncObjects(sol);
+  placeCamera(0);
+  syncTags(sol);
+  updateHud(sol);
+  updateLessonLive();
+  render();
+}
+function start() {
+  if (still) { holdStill(); return; }
+  if (raf || document.hidden) return;
+  clock.getDelta();
+  raf = requestAnimationFrame(frame);
+}
+
+const tagN = document.getElementById('tag-n');
+const tagS = document.getElementById('tag-s');
+const tagQ = document.getElementById('tag-q');
+const tagSeg = document.getElementById('tag-seg');
+const tagCoil = document.getElementById('tag-coil');
+const tagWire = document.getElementById('tag-wire');
+const _pr = new THREE.Vector3();
+function projectTag(el, wx, wy, wz) {
+  _pr.set(wx, wy, wz).project(camera);
+  if (_pr.z > 1) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const x = (_pr.x * 0.5 + 0.5) * innerWidth;
+  const y = (-_pr.y * 0.5 + 0.5) * innerHeight;
+  el.style.transform = 'translate(' + x + 'px, ' + y + 'px) translate(-50%, -130%)';
+}
+function syncTags(sol) {
+  if (embed) return;
+  const magnetOn = state.source === 'magnet';
+  tagN.style.display = magnetOn ? '' : 'none';
+  tagS.style.display = magnetOn ? '' : 'none';
+  tagCoil.style.display = magnetOn ? '' : 'none';
+  tagWire.style.display = magnetOn ? 'none' : '';
+  if (magnetOn) {
+    projectTag(tagN, state.shift + 0.2, MAG_Y + 0.08, 0);
+    projectTag(tagS, state.shift - 0.2, MAG_Y + 0.08, 0);
+    tagCoil.textContent = Math.abs(sol.emf) > 4e-4 ? 'coil  ' + fmtEmf(sol.emf) : 'coil';
+    projectTag(tagCoil, COIL_X, COIL_Y + COIL_A + 0.05, 0);
+  } else {
+    tagWire.textContent = 'I  ' + fmtA(state.Iwire) + ' up';
+    projectTag(tagWire, 0, 0.78, 0);
+  }
+  tagQ.textContent = 'q  ' + fmtQ(state.q);
+  projectTag(tagQ, state.charge.x, state.charge.y + 0.08, state.charge.z);
+  tagSeg.textContent = 'I  ' + fmtA(state.Iseg);
+  projectTag(tagSeg, state.seg.x, state.seg.y + 0.08, state.seg.z);
+}
+
+document.body.classList.add('has-lesson');
+setMobileMode('learn');
+lessonEl.addEventListener('click', onLessonClick);
+addEventListener('keydown', onLessonKey);
+narrowMq.addEventListener('change', () => { placeLesson(); resize(); });
+placeLesson();
+doReset();
+renderLesson();
+if (!lsOpen) setLessonOpen(false);
+const ro = new ResizeObserver(() => { fitLesson(); resize(); if (still) holdStill(); });
+ro.observe(stage);
+resize();
+start();
+
+motionQuery.addEventListener('change', (e) => {
+  reduced = e.matches;
+  still = reduced || params.has('still');
+  if (still) holdStill();
+  else start();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else start();
+});
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  cancelAnimationFrame(raf); raf = 0;
+  showErr('The picture stopped. Reload the page to bring it back.');
+});
+
+function teardown() {
+  cancelAnimationFrame(raf); raf = 0;
+  ro.disconnect();
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup', onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  lessonEl.removeEventListener('click', onLessonClick);
+  removeEventListener('keydown', onLessonKey);
+  for (const mesh of magnetLines) {
+    if (mesh.geometry && mesh.geometry.dispose) mesh.geometry.dispose();
+  }
+  for (const d of disposables) {
+    if (d && d.dispose) d.dispose();
+  }
+  renderer.dispose();
+  renderer.forceContextLoss();
+  canvas.remove();
+}
+addEventListener('pagehide', (e) => { if (!e.persisted) teardown(); });
+
+function snapshot() {
+  const sol = solve();
+  let lineCount = 0;
+  for (let i = 0; i < MAG_LINE_N; i++) if (magnetLines[i].visible) lineCount++;
+  return {
+    source: state.source,
+    align: state.align,
+    q: state.q,
+    speed: state.speed,
+    Iwire: state.Iwire,
+    Iseg: state.Iseg,
+    L: state.L,
+    shift: state.shift,
+    B: sol.Bmag,
+    Bx: sol.B.x,
+    theta: sol.theta * 180 / Math.PI,
+    F: sol.Fmag,
+    Fx: sol.F.x, Fy: sol.F.y, Fz: sol.F.z,
+    scalarF: sol.scalarF,
+    fError: Math.abs(sol.Fmag - sol.scalarF),
+    Bseg: sol.Bsm,
+    Fseg: sol.Fsmag,
+    scalarFseg: sol.scalarFs,
+    fSegError: Math.abs(sol.Fsmag - sol.scalarFs),
+    phi: sol.phi,
+    emf: sol.emf,
+    N: N_TURNS,
+    R: COIL_R,
+    charge: { x: state.charge.x, y: state.charge.y, z: state.charge.z },
+    seg: { x: state.seg.x, y: state.seg.y, z: state.seg.z },
+    lineCount,
+    step: lsStep,
+    stepTopic: LS[lsStep].topic,
+    still,
+    lessonOpen: lsOpen,
+    title: document.title,
+    QM,
+  };
+}
+
+window.__magnetismTeardown = teardown;
+window.__magnetism = {
+  renderer,
+  get still() { return still; },
+  get step() { return lsStep; },
+  act: dispatchAct,
+  goStep,
+  snapshot,
+};
+window.__magnetismReady = true;
+
+} catch (e) {
+  const raw = e && e.message ? e.message : String(e);
+  showErr(/webgl/i.test(raw)
+    ? 'The picture could not start in this browser. Reload the page, or open the lesson in a current browser.'
+    : raw);
+  console.error('[magnetism]', e);
+}
+</script>
+</body>
+</html>
