@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>Waves on a string · Physics Lab</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.55);
+    --faint: rgba(239, 230, 242, 0.3);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+    --mu: #9ad7c2;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  #stage canvas.can-grab { cursor: grab; }
+  #stage canvas.grabbing { cursor: grabbing; }
+  .vig {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(ellipse at 50% 58%, transparent 36%, rgba(5, 1, 8, 0.62) 100%),
+      linear-gradient(to top, rgba(255, 150, 80, 0.045), transparent 30%);
+  }
+  .tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .tags span {
+    position: absolute; left: 0; top: 0; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+    color: var(--pearl); background: rgba(20, 8, 24, 0.72);
+    border: 1px solid rgba(239, 230, 242, 0.14); border-radius: 8px;
+    padding: 3px 8px; will-change: transform;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+  }
+  .tags span .sym { font-family: var(--font-sans); font-style: normal; }
+  .tags span.crest { border-color: rgba(255, 179, 107, 0.6); color: #ffe2c4; }
+  .tags span.lam { border-color: rgba(240, 194, 75, 0.55); color: #ffe9a8; }
+  .tags span.node { border-color: rgba(185, 162, 255, 0.6); color: #ddd0ff; }
+  .tags span.ten { border-color: rgba(232, 181, 106, 0.6); color: #ffe2b8; }
+  .tags span.mu { border-color: rgba(154, 215, 194, 0.5); color: #c8f0e0; }
+  .chrome {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  .label .tag {
+    margin: 0 0 8px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.8);
+  }
+  .label h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(1.9rem, 4.6vw, 3.6rem); letter-spacing: -0.045em; line-height: 0.94;
+    text-shadow: 0 2px 30px rgba(20, 8, 24, 0.7);
+  }
+  .label h1 em { font-style: normal; font-weight: 250; color: var(--mute); }
+  .label .sub {
+    margin: 10px 0 0; max-width: 40ch;
+    font-size: clamp(0.8rem, 1.2vw, 0.95rem); line-height: 1.4; color: var(--mute);
+  }
+  .label .sub .sym { font-family: var(--font-sans); font-style: normal; color: var(--honey); }
+  .foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .hint {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--mute); line-height: 1.7;
+  }
+  .hint i {
+    font-style: normal; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin: 0 5px 0 0; vertical-align: 0;
+  }
+  .chips { display: flex; gap: 8px; margin: 0 0 10px; pointer-events: auto; flex-wrap: wrap; max-width: 640px; }
+  .chips button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.18);
+    background: rgba(28, 12, 34, 0.78); color: var(--pearl);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    padding: 10px 14px; min-height: 42px; border-radius: 999px; cursor: pointer;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .chips button .sym { font-family: var(--font-sans); }
+  .chips button[aria-pressed="true"] {
+    border-color: rgba(255, 179, 107, 0.7); background: rgba(255, 179, 107, 0.16); color: #ffe2c4;
+  }
+  .chips button:disabled { opacity: 0.38; cursor: default; }
+  .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chips button:active:not(:disabled) { transform: scale(0.98); }
+  .meters {
+    pointer-events: none; display: flex; flex-direction: column; gap: 6px;
+    min-width: min(300px, 46vw); padding: 12px 14px 11px;
+    background: rgba(20, 8, 24, 0.78); border: 1px solid rgba(239, 230, 242, 0.14);
+    border-radius: 14px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 16px 40px rgba(5, 1, 8, 0.35);
+  }
+  .meters h2 {
+    margin: 0 0 2px; font-family: var(--font-mono); font-weight: 400;
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 179, 107, 0.9);
+  }
+  .meters h2 .sym { font-family: var(--font-sans); letter-spacing: 0; text-transform: none; }
+  .meter { display: grid; grid-template-columns: 28px 1fr 92px; gap: 8px; align-items: center; transition: opacity 0.2s; }
+  .meter .lab { font-family: var(--font-sans); font-size: 13px; color: var(--mute); }
+  .meter .track {
+    height: 10px; border-radius: 6px; background: rgba(239, 230, 242, 0.08);
+    overflow: hidden; position: relative;
+  }
+  .meter .fill {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+    border-radius: 6px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .meter .fill { transition: width 0.12s linear; }
+  }
+  .meter.m-a .fill { background: linear-gradient(90deg, #e0a820, #f0c24b); }
+  .meter.m-f .fill { background: linear-gradient(90deg, #8a72e8, #b9a2ff); }
+  .meter.m-lam .fill { background: linear-gradient(90deg, #cfc4d8, #efe6f2); }
+  .meter.m-v .fill { background: linear-gradient(90deg, #ff8a3a, #ffb36b); }
+  .meter.m-t .fill { background: linear-gradient(90deg, #c4843a, #e8b56a); }
+  .meter.m-mu .fill { background: linear-gradient(90deg, #5fb89a, #9ad7c2); }
+  .meter .val { font-family: var(--font-mono); font-size: 11px; text-align: right; color: var(--pearl); }
+  .meters .eq {
+    margin-top: 2px; font-family: var(--font-mono); font-size: 12px; color: var(--honey);
+    letter-spacing: 0.01em; line-height: 1.45;
+  }
+  .meters .eq .sym { font-family: var(--font-sans); }
+  .meters .flag { min-height: 1.2em; font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+  body[data-focus="amp"] .meter:not(.m-a),
+  body[data-focus="freq"] .meter:not(.m-f),
+  body[data-focus="lam"] .meter:not(.m-lam),
+  body[data-focus="speed"] .meter:not(.m-v),
+  body[data-focus="ten"] .meter:not(.m-t),
+  body[data-focus="den"] .meter:not(.m-mu) { opacity: 0.42; }
+  #err {
+    position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 320px;
+    font-family: var(--font-mono); font-size: 10px; color: #ffd6d6;
+    background: rgba(58, 18, 18, 0.82); border-radius: 8px; padding: 8px 10px; display: none;
+  }
+  .lesson {
+    pointer-events: auto; margin-top: 14px; width: min(400px, 36vw); min-width: 300px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(18, 8, 24, 0.82); border: 1px solid rgba(239, 230, 242, 0.14);
+    border-radius: 18px; box-shadow: 0 24px 60px rgba(5, 1, 8, 0.55);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    overflow: hidden;
+  }
+  body.has-lesson .label .sub { display: none; }
+  body.lesson-closed .label .sub { display: block; }
+  .lesson-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px;
+    border-bottom: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-kicker {
+    margin: 0; flex: 1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.86);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .lesson-kicker b { color: var(--pearl); font-weight: 400; }
+  .lesson button { font-family: var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .lesson button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lesson-toggle {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: transparent; color: var(--mute);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; min-height: 32px;
+  }
+  .lesson-tabs { display: none; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(239, 230, 242, 0.06); }
+  .lesson-tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--mute);
+    font-size: 12.5px; font-weight: 500; padding: 7px 13px; border-radius: 999px; min-height: 32px;
+  }
+  .lesson-tabs button[aria-selected="true"] { background: rgba(255, 179, 107, 0.16); color: #ffe2c4; }
+  .lesson-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 18px 6px;
+    font-size: 14.5px; line-height: 1.5; color: rgba(239, 230, 242, 0.9);
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .lesson-body h3 {
+    margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 21px;
+    letter-spacing: -0.025em; color: var(--pearl);
+  }
+  .lesson-body p { margin: 0 0 9px; }
+  .lesson-body .formula {
+    font-family: var(--font-mono); font-size: 14.5px; color: var(--accent); letter-spacing: 0.01em; margin-bottom: 10px;
+  }
+  .lesson-body .formula .sym { font-family: var(--font-sans); font-style: normal; }
+  .lesson-body .watch {
+    padding: 9px 11px; border-radius: 12px; background: rgba(255, 179, 107, 0.08);
+    border: 1px solid rgba(255, 179, 107, 0.22); color: #f6e7d8;
+  }
+  .lesson-body .watch b, .lesson-body .live b {
+    font-family: var(--font-mono); font-weight: 400; font-size: 9.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-right: 6px;
+  }
+  .lesson-body .live { font-family: var(--font-mono); font-size: 12px; color: var(--pearl); }
+  .lesson-body .live span { color: var(--honey); }
+  .lesson-body .live .sym, .lesson-body .watch .sym { font-family: var(--font-sans); font-style: normal; letter-spacing: 0; text-transform: none; }
+  .lesson-body .acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .lesson-body .acts button {
+    appearance: none; border: 1px solid rgba(255, 179, 107, 0.5); background: rgba(255, 179, 107, 0.12);
+    color: #ffe2c4; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 500; min-height: 36px;
+  }
+  .lesson-body .acts button .sym { font-family: var(--font-sans); }
+  .lesson-body .acts button[aria-pressed="true"] { background: rgba(255, 179, 107, 0.28); border-color: rgba(255, 179, 107, 0.85); }
+  .lesson-body .acts button:disabled { opacity: 0.4; cursor: default; }
+  .lesson-body details { border-top: 1px solid rgba(239, 230, 242, 0.08); padding: 8px 0; }
+  .lesson-body summary { cursor: pointer; color: var(--pearl); list-style: none; }
+  .lesson-body summary::before { content: "+ "; font-family: var(--font-mono); color: var(--accent); }
+  .lesson-body details[open] summary::before { content: "− "; }
+  .lesson-body details p { margin: 6px 0 2px; color: var(--mute); font-size: 13.5px; }
+  .lesson-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px 12px; border-top: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-nav > button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: rgba(239, 230, 242, 0.04);
+    color: var(--pearl); border-radius: 999px; padding: 8px 14px; font-size: 13px; min-height: 38px;
+  }
+  .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
+  .lesson-nav .dots { display: flex; flex-wrap: wrap; gap: 1px; justify-content: center; max-width: 190px; }
+  .lesson-nav .dots button {
+    appearance: none; border: 0; background: transparent; width: 16px; height: 28px; padding: 0;
+    display: grid; place-items: center;
+  }
+  .lesson-nav .dots button::after {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(239, 230, 242, 0.25);
+  }
+  .lesson-nav .dots button[aria-current="step"]::after { background: var(--accent); transform: scale(1.35); }
+  body.lesson-closed .lesson-body, body.lesson-closed .lesson-nav { display: none; }
+  body.lesson-closed .lesson { width: auto; min-width: 0; align-self: flex-start; display: inline-flex; }
+  body.lesson-closed .lesson-head { border-bottom: 0; }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(1.7rem, 3.6vw, 2.8rem); }
+    .lesson { margin-top: 10px; }
+    .lesson-body { font-size: 14px; }
+  }
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .label .sub, body.lesson-closed .label .sub { display: none; }
+    .lesson { width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(38vh, 320px); }
+    .lesson-head { padding: 8px 8px 8px 12px; }
+    .lesson-tabs { display: flex; }
+    .lesson-toggle { display: none; }
+    .lesson-kicker { font-size: 9.5px; }
+    .lesson-body { padding: 10px 14px 4px; font-size: 13.5px; }
+    .lesson-body h3 { font-size: 18px; }
+    body.m-learn .meters, body.m-learn .hint { display: none; }
+    body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
+    body.m-numbers .lesson { max-height: none; }
+    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .meters { min-width: 0; width: 100%; }
+    .chips { max-width: none; }
+    .chips button { font-size: 12px; padding: 8px 11px; min-height: 38px; }
+    .chips .lg { display: none; }
+    .hint .long { display: none; }
+    .tags span { font-size: 10px; padding: 2px 6px; }
+  }
+  html.embed, body.embed { background: transparent !important; }
+  body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
+  body.embed canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.has('embed')) {
+    document.body.classList.add('embed');
+    document.documentElement.classList.add('embed');
+  }
+})();
+</script>
+  <div id="stage"></div>
+  <div class="vig" aria-hidden="true"></div>
+  <div class="tags" aria-hidden="true">
+    <span id="tag-mark" class="crest">crest</span>
+    <span id="tag-lam" class="lam">λ</span>
+    <span id="tag-node" class="node">node</span>
+    <span id="tag-t" class="ten">T</span>
+    <span id="tag-mu" class="mu">μ</span>
+  </div>
+  <div class="chrome">
+    <div class="label">
+      <p class="tag">Physics lab · waves · transverse wave</p>
+      <h1>Waves on <em>a</em><br />string</h1>
+      <p class="sub">A rope between two posts for class. Crests travel at v = f<span class="sym">λ</span>, and that speed is <span class="sym">√</span>(T/<span class="sym">μ</span>).</p>
+      <section class="lesson" id="lesson" aria-label="Lesson: waves on a string">
+        <header class="lesson-head">
+          <div class="lesson-tabs" role="tablist" aria-label="Panel">
+            <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
+            <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
+          </div>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/11 · <b>Meet the rope</b></p>
+          <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
+        </header>
+        <div class="lesson-body" id="ls-body" aria-live="polite"></div>
+        <nav class="lesson-nav" aria-label="Lesson steps">
+          <button type="button" data-step="prev">← Back</button>
+          <div class="dots" id="ls-dots"></div>
+          <button type="button" data-step="next">Next →</button>
+        </nav>
+      </section>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="chips" id="chips" role="group" aria-label="Wave controls">
+          <button type="button" data-act="travel" id="chip-travel" aria-pressed="true">Travel</button>
+          <button type="button" data-act="stand-1" id="chip-n1">1st<span class="lg"> harmonic</span></button>
+          <button type="button" data-act="stand-2" id="chip-n2">2nd<span class="lg"> harmonic</span></button>
+          <button type="button" data-act="stand-3" id="chip-n3">3rd<span class="lg"> harmonic</span></button>
+          <button type="button" data-act="faster" id="chip-faster">Faster</button>
+          <button type="button" data-act="slower" id="chip-slower">Slower</button>
+          <button type="button" data-act="double-t">T ×2</button>
+          <button type="button" data-act="half-t">T ÷2</button>
+          <button type="button" data-act="double-mu"><span class="sym">μ</span> ×2</button>
+          <button type="button" data-act="half-mu"><span class="sym">μ</span> ÷2</button>
+          <button type="button" data-act="reset">Reset</button>
+        </div>
+        <div class="hint">
+          <span><i style="background:#ffb36b"></i>drag the rope · set amplitude A</span><br />
+          <span><i style="background:#e8b56a"></i>brass weight · tension T</span><span class="long"> · empty space leans the camera</span>
+        </div>
+      </div>
+      <div class="meters" id="meters" aria-live="off">
+        <h2>Live · v = f<span class="sym">λ</span> = <span class="sym">√</span>(T/<span class="sym">μ</span>)</h2>
+        <div class="meter m-a"><span class="lab">A</span><div class="track"><div class="fill" id="bar-a"></div></div><span class="val" id="h-a">—</span></div>
+        <div class="meter m-f"><span class="lab">f</span><div class="track"><div class="fill" id="bar-f"></div></div><span class="val" id="h-f">—</span></div>
+        <div class="meter m-lam"><span class="lab sym">λ</span><div class="track"><div class="fill" id="bar-lam"></div></div><span class="val" id="h-lam">—</span></div>
+        <div class="meter m-v"><span class="lab">v</span><div class="track"><div class="fill" id="bar-v"></div></div><span class="val" id="h-v">—</span></div>
+        <div class="meter m-t"><span class="lab">T</span><div class="track"><div class="fill" id="bar-t"></div></div><span class="val" id="h-t">—</span></div>
+        <div class="meter m-mu"><span class="lab sym">μ</span><div class="track"><div class="fill" id="bar-mu"></div></div><span class="val" id="h-mu">—</span></div>
+        <div class="eq" id="h-eq">fλ = —</div>
+        <div class="flag" id="h-flag"></div>
+      </div>
+    </div>
+  </div>
+  <div id="err" role="status"></div>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const VOID = 0x140818;
+const params = new URLSearchParams(location.search);
+const embed = params.has('embed');
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let still = reduced || params.has('still');
+
+const L = 4;
+const A0 = 0.48, T0 = 2.4, MU0 = 0.15, F0 = 2;
+const A_MIN = 0.08, A_MAX = 0.7;
+const T_MIN = 0.6, T_MAX = 9.6;
+const MU_MIN = 0.075, MU_MAX = 0.6;
+const F_MIN = 0.5, F_MAX = 4;
+const R0 = 0.08;
+
+const stage = document.getElementById('stage');
+const errEl = document.getElementById('err');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+
+const ua = navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+const TUBULAR = isMobile ? 140 : 220;
+const RADIAL = isMobile ? 6 : 8;
+
+const state = { mode: 'travel', n: 1, A: A0, T: T0, mu: MU0, fTravel: F0 };
+let phase = 0;
+let dashOffset = 0;
+let aGoal = null;
+let flagMsg = '';
+let flagHold = 0;
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function mod(a, n) { return ((a % n) + n) % n; }
+function num(v, d) { return v.toFixed(d == null ? 2 : d); }
+function waveSpeed() { return Math.sqrt(state.T / state.mu); }
+function liveF() {
+  return state.mode === 'stand' ? state.n * waveSpeed() / (2 * L) : state.fTravel;
+}
+function liveLambda() {
+  return state.mode === 'stand' ? (2 * L) / state.n : waveSpeed() / state.fTravel;
+}
+function sampleY(x) {
+  const lam = liveLambda();
+  const k = (Math.PI * 2) / lam;
+  if (state.mode === 'stand') return state.A * Math.sin(k * x) * Math.cos(phase);
+  return state.A * Math.sin(k * x - phase);
+}
+function ropeRadius() { return 0.048 + 0.04 * (state.mu / MU0); }
+function metrics() {
+  const v = waveSpeed();
+  const f = liveF();
+  const lambda = liveLambda();
+  return {
+    mode: state.mode, n: state.n, A: state.A, T: state.T, mu: state.mu, fTravel: state.fTravel,
+    f, lambda, v, vFL: f * lambda, L, phase, still,
+    y0: sampleY(0), yL: sampleY(L), yMid: sampleY(L / 2),
+    nodes: state.n + 1, antinodes: state.n,
+  };
+}
+
+try {
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, alpha: embed,
+  powerPreference: isIOS ? 'default' : 'high-performance',
+});
+if (!renderer.getContext()) throw new Error('WebGL context failed to create.');
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setClearColor(VOID, embed ? 0 : 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.06;
+stage.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+if (!embed) {
+  scene.background = new THREE.Color(VOID);
+  scene.fog = new THREE.Fog(VOID, 11, 26);
+}
+
+const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 80);
+const lean = new THREE.Vector2();
+const leanGoal = new THREE.Vector2();
+
+const disposables = [];
+const keep = (x) => { disposables.push(x); return x; };
+
+scene.add(new THREE.HemisphereLight(0xd4c4f0, 0x2a1020, 0.88));
+const key = new THREE.PointLight(0xffc090, 38, 22, 1.45);
+key.position.set(0, 1.7, 1.6);
+scene.add(key);
+
+const rig = new THREE.Group();
+rig.position.x = -L / 2;
+scene.add(rig);
+
+const postMat = keep(new THREE.MeshStandardMaterial({ color: 0x3d284c, roughness: 0.55, metalness: 0.24 }));
+const brassMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xe8b56a, roughness: 0.3, metalness: 0.7, emissive: 0x6a3810, emissiveIntensity: 0.28,
+}));
+const tableMat = keep(new THREE.MeshStandardMaterial({ color: 0x2a1834, roughness: 0.72, metalness: 0.1 }));
+const cordMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xd9d0e4, roughness: 0.5, metalness: 0.12, emissive: 0x2a1828, emissiveIntensity: 0.25,
+}));
+const ropeMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffffff, roughness: 0.46, metalness: 0.14,
+  emissive: 0x4a2818, emissiveIntensity: 0.32, vertexColors: true,
+}));
+const beadMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.34, metalness: 0.2, emissive: 0xff8a3a, emissiveIntensity: 0.9,
+}));
+const nodeMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xb9a2ff, roughness: 0.4, metalness: 0.08, emissive: 0x3a2878, emissiveIntensity: 0.7,
+}));
+const envMat = keep(new THREE.LineBasicMaterial({ color: 0xffd78a, transparent: true, opacity: 0.7 }));
+const envFillMat = keep(new THREE.MeshBasicMaterial({
+  color: 0xffb36b, transparent: true, opacity: 0.14, depthWrite: false, side: THREE.DoubleSide,
+}));
+const axisMat = keep(new THREE.LineBasicMaterial({ color: 0xefe6f2, transparent: true, opacity: 0.28 }));
+const tickMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xf0c24b, roughness: 0.4, metalness: 0.2, emissive: 0x8a5a18, emissiveIntensity: 0.35,
+}));
+const tickAltMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xb9a2ff, roughness: 0.45, metalness: 0.12, emissive: 0x2a1848, emissiveIntensity: 0.4,
+}));
+const dashMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.4, metalness: 0.15, emissive: 0xff8a3a, emissiveIntensity: 0.45,
+}));
+const motorMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x241428, roughness: 0.55, metalness: 0.3, emissive: 0x5a3018, emissiveIntensity: 0.22,
+}));
+const blockMat = keep(new THREE.MeshStandardMaterial({ color: 0x1a1022, roughness: 0.92, metalness: 0.04 }));
+const bandMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x3a2418, roughness: 1, metalness: 0, emissive: 0xffb36b, emissiveIntensity: 0.16,
+}));
+
+function addMesh(geo, mat, parent, x, y, z) {
+  const m = new THREE.Mesh(keep(geo), mat);
+  m.position.set(x, y, z);
+  (parent || rig).add(m);
+  return m;
+}
+
+/* quiet spatial ground — a few masses in the fog, not a skyline */
+if (!embed) {
+  const blockGeo = keep(new THREE.BoxGeometry(1, 1, 1));
+  const blocks = new THREE.InstancedMesh(blockGeo, blockMat, 7);
+  const dummy = new THREE.Object3D();
+  const seeds = [
+    [-4.4, 0.2, -8.2, 1.3, 2.6, 1.2],
+    [-2.3, -0.1, -9.1, 1.1, 2.1, 1.3],
+    [0.2, 0.35, -9.4, 1.7, 3.3, 1.5],
+    [2.5, 0.05, -8.6, 1.2, 2.5, 1.2],
+    [4.6, 0.4, -7.6, 1.5, 3.0, 1.3],
+    [-6.1, -0.05, -7.2, 1.0, 1.9, 1.1],
+    [6.3, 0.15, -7.4, 1.25, 2.4, 1.15],
+  ];
+  for (let i = 0; i < seeds.length; i++) {
+    const s = seeds[i];
+    dummy.position.set(s[0], s[1], s[2]);
+    dummy.scale.set(s[3], s[4], s[5]);
+    dummy.updateMatrix();
+    blocks.setMatrixAt(i, dummy.matrix);
+  }
+  scene.add(blocks);
+  const band = new THREE.Mesh(keep(new THREE.BoxGeometry(30, 0.07, 0.35)), bandMat);
+  band.position.set(0, -0.7, -7.2);
+  scene.add(band);
+}
+
+const table = addMesh(new THREE.BoxGeometry(L + 0.85, 0.2, 1.12), tableMat, rig, L / 2 - 0.18, -1.02, 0);
+const floor = addMesh(new THREE.CircleGeometry(9, 40), tableMat, scene, 0, -1.18, 0);
+floor.rotation.x = -Math.PI / 2;
+floor.position.set(0, -1.18, 0.2);
+
+function makePost(x) {
+  const post = addMesh(new THREE.CylinderGeometry(0.075, 0.085, 2.15, 18), postMat, rig, x, 0.12, 0);
+  addMesh(new THREE.CylinderGeometry(0.16, 0.18, 0.08, 18), postMat, rig, x, -0.9, 0);
+  addMesh(new THREE.SphereGeometry(0.09, 16, 12), brassMat, rig, x, 1.22, 0);
+  return post;
+}
+makePost(0);
+makePost(L);
+
+const ringGeo = keep(new THREE.TorusGeometry(0.145, 0.028, 10, 22));
+const leftRing = new THREE.Mesh(ringGeo, brassMat);
+const rightRing = new THREE.Mesh(ringGeo, brassMat);
+leftRing.rotation.x = Math.PI / 2;
+rightRing.rotation.x = Math.PI / 2;
+rig.add(leftRing, rightRing);
+
+const motor = addMesh(new THREE.BoxGeometry(0.42, 0.5, 0.38), motorMat, rig, -0.48, -0.67, 0);
+addMesh(new THREE.BoxGeometry(0.18, 0.08, 0.4), brassMat, rig, -0.48, -0.45, 0);
+const driverPin = addMesh(new THREE.SphereGeometry(0.07, 14, 12), beadMat, rig, 0, 0, 0.12);
+
+const pulley = addMesh(new THREE.CylinderGeometry(0.2, 0.2, 0.08, 24), brassMat, rig, L + 0.28, 0, 0);
+pulley.rotation.x = Math.PI / 2;
+addMesh(new THREE.CylinderGeometry(0.04, 0.04, 0.16, 10), brassMat, rig, L + 0.28, 0, 0);
+const cord = addMesh(new THREE.CylinderGeometry(0.02, 0.02, 1, 8), cordMat, rig, L + 0.28, -0.7, 0);
+const mass = new THREE.Group();
+rig.add(mass);
+const massBody = addMesh(new THREE.CylinderGeometry(0.16, 0.18, 0.28, 20), brassMat, mass, 0, 0, 0);
+const massHook = addMesh(new THREE.TorusGeometry(0.07, 0.018, 8, 14), brassMat, mass, 0, 0.18, 0);
+massHook.rotation.x = Math.PI / 2;
+mass.position.set(L + 0.28, -1.38, 0);
+
+/* rope: straight tube, displaced each frame. Ring index → x along the string. */
+const ropePath = new THREE.LineCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(L, 0, 0));
+const ropeGeo = keep(new THREE.TubeGeometry(ropePath, TUBULAR, R0, RADIAL, false));
+const ropePos = ropeGeo.attributes.position;
+const ringX = new Float32Array(ropePos.count);
+const baseN = new Float32Array(ropePos.count * 3);
+const vertsPerRing = RADIAL + 1;
+for (let i = 0; i < ropePos.count; i++) {
+  const ring = Math.floor(i / vertsPerRing);
+  const cx = (ring / TUBULAR) * L;
+  ringX[i] = cx;
+  baseN[i * 3] = (ropePos.getX(i) - cx) / R0;
+  baseN[i * 3 + 1] = ropePos.getY(i) / R0;
+  baseN[i * 3 + 2] = ropePos.getZ(i) / R0;
+}
+{
+  let acc = 0;
+  const rings = TUBULAR + 1;
+  for (let r = 0; r < rings; r++) {
+    const o = r * vertsPerRing * 3;
+    acc += Math.hypot(baseN[o], baseN[o + 1], baseN[o + 2]);
+  }
+  const avg = acc / rings;
+  if (avg < 0.55 || avg > 1.45) throw new Error('Rope cross-section failed to build (' + avg.toFixed(2) + ').');
+}
+const ropeColors = new Float32Array(ropePos.count * 3);
+ropeGeo.setAttribute('color', new THREE.BufferAttribute(ropeColors, 3));
+const rope = new THREE.Mesh(ropeGeo, ropeMat);
+rope.frustumCulled = false;
+rig.add(rope);
+
+const ENV_N = 80;
+function makeLine(mat) {
+  const arr = new Float32Array(ENV_N * 3);
+  const geo = keep(new THREE.BufferGeometry());
+  geo.setAttribute('position', new THREE.BufferAttribute(arr, 3).setUsage(THREE.DynamicDrawUsage));
+  const line = new THREE.Line(geo, mat);
+  line.frustumCulled = false;
+  rig.add(line);
+  return { arr, attr: geo.attributes.position, line };
+}
+const envUp = makeLine(envMat);
+const envDn = makeLine(envMat);
+const axis = makeLine(axisMat);
+for (let i = 0; i < ENV_N; i++) {
+  const x = (i / (ENV_N - 1)) * L;
+  axis.arr[i * 3] = x;
+  axis.arr[i * 3 + 1] = 0;
+  axis.arr[i * 3 + 2] = -0.02;
+}
+axis.attr.needsUpdate = true;
+
+const ENV_FILL = 48;
+const envFillArr = new Float32Array(ENV_FILL * 2 * 3);
+const envFillGeo = keep(new THREE.BufferGeometry());
+envFillGeo.setAttribute('position', new THREE.BufferAttribute(envFillArr, 3).setUsage(THREE.DynamicDrawUsage));
+const envFillIdx = [];
+for (let i = 0; i < ENV_FILL - 1; i++) {
+  const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+  envFillIdx.push(a, b, d, a, d, c);
+}
+envFillGeo.setIndex(envFillIdx);
+const envFill = new THREE.Mesh(envFillGeo, envFillMat);
+envFill.frustumCulled = false;
+envFill.renderOrder = 1;
+rig.add(envFill);
+
+const bracket = new THREE.Group();
+rig.add(bracket);
+const brBar = addMesh(new THREE.BoxGeometry(1, 0.025, 0.025), tickMat, bracket, 0, 0, 0);
+const brL = addMesh(new THREE.BoxGeometry(0.025, 0.16, 0.025), tickMat, bracket, 0, 0.07, 0);
+const brR = addMesh(new THREE.BoxGeometry(0.025, 0.16, 0.025), tickMat, bracket, 0, 0.07, 0);
+bracket.position.set(0, -0.78, 0.42);
+
+const dashes = [];
+for (let i = 0; i < 8; i++) {
+  const d = addMesh(new THREE.BoxGeometry(0.22, 0.035, 0.07), dashMat, rig, 0, -0.9, 0.42);
+  dashes.push(d);
+}
+const arrow = new THREE.Group();
+rig.add(arrow);
+addMesh(new THREE.BoxGeometry(0.55, 0.035, 0.035), dashMat, arrow, 0, 0, 0);
+const arrowHead = addMesh(new THREE.ConeGeometry(0.07, 0.16, 10), dashMat, arrow, 0.34, 0, 0);
+arrowHead.rotation.z = -Math.PI / 2;
+arrow.position.set(L * 0.72, -0.9, 0.42);
+
+const beadGeo = keep(new THREE.SphereGeometry(0.11, 18, 14));
+const beads = [];
+for (let i = 0; i < 3; i++) {
+  const b = new THREE.Mesh(beadGeo, beadMat);
+  b.visible = false;
+  b.frustumCulled = false;
+  rig.add(b);
+  beads.push(b);
+}
+const nodeGeo = keep(new THREE.SphereGeometry(0.11, 16, 12));
+const nodes = [];
+for (let i = 0; i < 2; i++) {
+  const n = new THREE.Mesh(nodeGeo, nodeMat);
+  n.visible = false;
+  rig.add(n);
+  nodes.push(n);
+}
+
+const hitMat = keep(new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+const hitBox = new THREE.Mesh(keep(new THREE.BoxGeometry(L, 1.7, 0.7)), hitMat);
+hitBox.position.set(L / 2, 0, 0);
+rig.add(hitBox);
+
+const _pa = new THREE.Vector3();
+const _pb = new THREE.Vector3();
+const _pc = new THREE.Vector3();
+const _cb = new THREE.Vector3();
+const _ab = new THREE.Vector3();
+function recomputeNormals(geo) {
+  const index = geo.index;
+  const pos = geo.attributes.position;
+  const nor = geo.attributes.normal;
+  const ncount = nor.count;
+  for (let i = 0; i < ncount; i++) nor.setXYZ(i, 0, 0, 0);
+  for (let i = 0, ic = index.count; i < ic; i += 3) {
+    const a = index.getX(i);
+    const b = index.getX(i + 1);
+    const c = index.getX(i + 2);
+    _pa.fromBufferAttribute(pos, a);
+    _pb.fromBufferAttribute(pos, b);
+    _pc.fromBufferAttribute(pos, c);
+    _cb.subVectors(_pc, _pb);
+    _ab.subVectors(_pa, _pb);
+    _cb.cross(_ab);
+    nor.setXYZ(a, nor.getX(a) + _cb.x, nor.getY(a) + _cb.y, nor.getZ(a) + _cb.z);
+    nor.setXYZ(b, nor.getX(b) + _cb.x, nor.getY(b) + _cb.y, nor.getZ(b) + _cb.z);
+    nor.setXYZ(c, nor.getX(c) + _cb.x, nor.getY(c) + _cb.y, nor.getZ(c) + _cb.z);
+  }
+  for (let i = 0; i < ncount; i++) {
+    _pa.fromBufferAttribute(nor, i);
+    const len = _pa.length();
+    if (len > 1e-8) _pa.multiplyScalar(1 / len);
+    else _pa.set(0, 1, 0);
+    nor.setXYZ(i, _pa.x, _pa.y, _pa.z);
+  }
+  nor.needsUpdate = true;
+}
+
+const PEARL = [0.9, 0.86, 0.93];
+const HONEY = [1, 0.68, 0.4];
+const LILAC = [0.66, 0.55, 1];
+function writeColor(i, h) {
+  const o = i * 3;
+  const t = h < 0 ? -h : h;
+  const b = h >= 0 ? HONEY : LILAC;
+  const s = t < 0 ? 0 : t > 1 ? 1 : t;
+  ropeColors[o] = PEARL[0] + (b[0] - PEARL[0]) * s;
+  ropeColors[o + 1] = PEARL[1] + (b[1] - PEARL[1]) * s;
+  ropeColors[o + 2] = PEARL[2] + (b[2] - PEARL[2]) * s;
+}
+
+let preferCrest = L / 2;
+function travelingCrest() {
+  const lam = liveLambda();
+  const base = mod(lam * (phase + Math.PI / 2) / (Math.PI * 2), lam);
+  let best = base;
+  let bestD = Infinity;
+  for (let m = -1; m <= 8; m++) {
+    const x = base + m * lam;
+    if (x < -0.02 || x > L + 0.02) continue;
+    const d = Math.abs(x - preferCrest);
+    if (d < bestD) { bestD = d; best = x; }
+  }
+  preferCrest = clamp(best, 0, L);
+  return preferCrest;
+}
+
+function syncScene() {
+  const R = ropeRadius();
+  const A = Math.max(state.A, 1e-4);
+  const lam = liveLambda();
+  const stand = state.mode === 'stand';
+  for (let i = 0; i < ropePos.count; i++) {
+    const x = ringX[i];
+    const y = sampleY(x);
+    const o = i * 3;
+    ropePos.setXYZ(i, x + baseN[o] * R, y + baseN[o + 1] * R, baseN[o + 2] * R);
+    writeColor(i, y / A);
+  }
+  ropePos.needsUpdate = true;
+  ropeGeo.attributes.color.needsUpdate = true;
+  recomputeNormals(ropeGeo);
+
+  const y0 = sampleY(0);
+  const yL = sampleY(L);
+  leftRing.position.set(0, stand ? 0 : y0, 0);
+  rightRing.position.set(L, stand ? 0 : yL, 0);
+  driverPin.position.set(0, stand ? 0 : y0, 0.14);
+  brassMat.emissiveIntensity = stand ? 0.18 : 0.34;
+
+  for (let i = 0; i < ENV_N; i++) {
+    const x = (i / (ENV_N - 1)) * L;
+    const env = stand ? state.A * Math.sin((Math.PI * 2 / lam) * x) : state.A;
+    envUp.arr[i * 3] = x;
+    envUp.arr[i * 3 + 1] = env;
+    envUp.arr[i * 3 + 2] = -0.04;
+    envDn.arr[i * 3] = x;
+    envDn.arr[i * 3 + 1] = stand ? -env : -state.A;
+    envDn.arr[i * 3 + 2] = -0.04;
+  }
+  envUp.attr.needsUpdate = true;
+  envDn.attr.needsUpdate = true;
+  for (let i = 0; i < ENV_FILL; i++) {
+    const x = (i / (ENV_FILL - 1)) * L;
+    const env = stand ? state.A * Math.sin((Math.PI * 2 / lam) * x) : state.A;
+    const up = env;
+    const dn = stand ? -env : -state.A;
+    const o = i * 6;
+    envFillArr[o] = x;
+    envFillArr[o + 1] = up;
+    envFillArr[o + 2] = -0.05;
+    envFillArr[o + 3] = x;
+    envFillArr[o + 4] = dn;
+    envFillArr[o + 5] = -0.05;
+  }
+  envFillGeo.attributes.position.needsUpdate = true;
+
+  const fits = lam <= L + 1e-3;
+  const span = fits ? lam : L;
+  const x0 = fits ? (L - lam) / 2 : 0;
+  brBar.scale.x = span;
+  brBar.position.x = x0 + span / 2;
+  brL.position.x = x0;
+  brR.position.x = x0 + span;
+  const tick = fits ? tickMat : tickAltMat;
+  brBar.material = tick;
+  brL.material = tick;
+  brR.material = tick;
+
+  const showFlow = !stand;
+  for (let i = 0; i < dashes.length; i++) {
+    dashes[i].visible = showFlow;
+    dashes[i].position.x = mod(i * (L / dashes.length) + dashOffset, L);
+  }
+  arrow.visible = showFlow;
+
+  for (let i = 0; i < beads.length; i++) {
+    if (stand) {
+      const x = ((2 * i + 1) * L) / (2 * state.n);
+      const on = x < L - 1e-3;
+      beads[i].visible = on;
+      if (on) {
+        const y = sampleY(x);
+        beads[i].position.set(x, y, 0.12);
+        const s = 0.55 + 0.5 * Math.min(1, Math.abs(y) / A);
+        beads[i].scale.setScalar(s);
+      }
+    } else if (i === 0) {
+      const x = travelingCrest();
+      const y = sampleY(x);
+      beads[0].visible = true;
+      beads[0].position.set(x, y, 0.13);
+      beads[0].scale.setScalar(1);
+    } else {
+      beads[i].visible = false;
+    }
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    const m = i + 1;
+    const on = stand && m < state.n;
+    nodes[i].visible = on;
+    if (on) nodes[i].position.set((m * L) / state.n, 0, 0.1);
+  }
+
+  const s = Math.cbrt(state.T / T0);
+  mass.scale.setScalar(clamp(s, 0.62, 1.7));
+  mass.position.y = -1.28 - 0.16 * s;
+  const cordTop = -0.2;
+  const cordBot = mass.position.y + 0.2 * mass.scale.y;
+  cord.scale.y = Math.max(0.08, cordTop - cordBot);
+  cord.position.y = (cordTop + cordBot) / 2;
+
+  const crestLocal = stand ? (L / (2 * state.n)) : preferCrest;
+  const crestWorld = crestLocal + rig.position.x;
+  key.position.x = crestWorld;
+  key.position.y = 1.55 + Math.max(0, sampleY(crestLocal)) * 0.35;
+  const breathe = Math.min(1, Math.abs(sampleY(crestLocal)) / A);
+  key.intensity = 32 + breathe * 18;
+}
+
+/* ——— HUD ——— */
+const barA = document.getElementById('bar-a');
+const barF = document.getElementById('bar-f');
+const barLam = document.getElementById('bar-lam');
+const barV = document.getElementById('bar-v');
+const barT = document.getElementById('bar-t');
+const barMu = document.getElementById('bar-mu');
+const hA = document.getElementById('h-a');
+const hF = document.getElementById('h-f');
+const hLam = document.getElementById('h-lam');
+const hV = document.getElementById('h-v');
+const hT = document.getElementById('h-t');
+const hMu = document.getElementById('h-mu');
+const hEq = document.getElementById('h-eq');
+const hFlag = document.getElementById('h-flag');
+const tagMark = document.getElementById('tag-mark');
+const tagLam = document.getElementById('tag-lam');
+const tagNode = document.getElementById('tag-node');
+const tagT = document.getElementById('tag-t');
+const tagMu = document.getElementById('tag-mu');
+
+function setBar(el, value, full) {
+  const t = clamp(value / full, 0, 1);
+  el.style.width = (t * 100) + '%';
+}
+function updateHud() {
+  const m = metrics();
+  hA.textContent = num(m.A) + ' m';
+  hF.textContent = num(m.f) + ' Hz';
+  hLam.textContent = num(m.lambda) + ' m';
+  hV.textContent = num(m.v) + ' m/s';
+  hT.textContent = num(m.T) + ' N';
+  hMu.textContent = num(m.mu, 3) + ' kg/m';
+  setBar(barA, m.A, A_MAX);
+  setBar(barF, m.f, F_MAX);
+  setBar(barLam, m.lambda, 8);
+  setBar(barV, m.v, 12);
+  setBar(barT, m.T, T_MAX);
+  setBar(barMu, m.mu, MU_MAX);
+  const match = Math.abs(m.vFL - m.v) < 0.03;
+  hEq.innerHTML = 'f<span class="sym">λ</span> = ' + num(m.vFL) + ' m/s<br><span class="sym">√</span>(T/<span class="sym">μ</span>) = ' + num(m.v) + ' m/s';
+  let flag = '';
+  if (flagHold > 0 && flagMsg) flag = flagMsg;
+  else if (!match) flag = 'fλ and √(T/μ) disagree — check the live values';
+  else if (m.mode === 'stand') flag = 'standing · n = ' + m.n + ' · nodes ' + m.nodes + ' · antinodes ' + m.antinodes;
+  else if (m.lambda > L + 0.05) flag = 'traveling · λ is longer than the rope';
+  else flag = 'traveling · crests move right at v';
+  hFlag.textContent = flag;
+}
+
+const _proj = new THREE.Vector3();
+function projectTag(el, x, y, z, ox, oy) {
+  _proj.set(x, y, z);
+  rig.localToWorld(_proj);
+  _proj.project(camera);
+  if (_proj.z > 1) { el.style.opacity = '0'; return; }
+  const sx = (_proj.x * 0.5 + 0.5) * canvas.clientWidth + (ox || 0);
+  const sy = (-_proj.y * 0.5 + 0.5) * canvas.clientHeight + (oy || 0);
+  if (!embed && !narrowMq.matches && lsOpen) {
+    const edge = lessonEl.getBoundingClientRect().right;
+    if (sx < edge + 6) { el.style.opacity = '0'; return; }
+  }
+  el.style.opacity = '1';
+  el.style.transform = 'translate3d(' + sx + 'px,' + sy + 'px,0) translate(-50%, -120%)';
+}
+function syncTags() {
+  const stand = state.mode === 'stand';
+  const lam = liveLambda();
+  const fits = lam <= L + 1e-3;
+  const span = fits ? lam : L;
+  const x0 = fits ? (L - lam) / 2 : 0;
+  const mark = stand ? beads[0] : beads[0];
+  if (mark.visible) {
+    tagMark.style.display = '';
+    tagMark.textContent = stand ? 'antinode' : 'crest';
+    projectTag(tagMark, mark.position.x, mark.position.y, mark.position.z, 0, -6);
+  } else tagMark.style.display = 'none';
+  tagLam.textContent = fits ? ('λ ' + num(lam) + ' m') : (Math.abs(lam / L - 2) < 0.06 ? 'L = λ/2' : ('L ' + num(L) + ' m'));
+  projectTag(tagLam, x0 + span / 2, -0.78, 0.42, 0, 8);
+  if (stand) {
+    tagNode.style.display = '';
+    if (state.n >= 2) {
+      tagNode.textContent = 'node';
+      projectTag(tagNode, L / state.n, 0.02, 0.1, 0, -28);
+    } else {
+      tagNode.textContent = 'node · end';
+      projectTag(tagNode, 0, 0.15, 0, 18, -36);
+    }
+  } else tagNode.style.display = 'none';
+  tagT.textContent = 'T ' + num(state.T) + ' N';
+  projectTag(tagT, mass.position.x, mass.position.y, 0.2, 10, -8);
+  tagMu.textContent = 'μ ' + num(state.mu, 3) + ' kg/m';
+  projectTag(tagMu, 0.15, 0.85, 0, 8, -20);
+}
+
+/* ——— actions ——— */
+function note(msg) { flagMsg = msg; flagHold = 3.2; }
+function setA(a) { state.A = clamp(a, A_MIN, A_MAX); aGoal = null; }
+function refresh() {
+  syncChips();
+  syncScene();
+  updateHud();
+  updateLessonLive();
+  if (still) render();
+}
+function doReset() {
+  state.mode = 'travel';
+  state.n = 1;
+  state.A = A0;
+  state.T = T0;
+  state.mu = MU0;
+  state.fTravel = F0;
+  phase = 0;
+  dashOffset = 0;
+  aGoal = null;
+  preferCrest = L / 2;
+  flagMsg = '';
+  flagHold = 0;
+}
+function setStand(n) { state.mode = 'stand'; state.n = n; }
+function doFaster() {
+  if (state.mode === 'stand') { note('On a standing wave, f = nv/(2L). Switch to Travel to change f.'); return; }
+  state.fTravel = clamp(Math.round((state.fTravel + 0.5) * 100) / 100, F_MIN, F_MAX);
+}
+function doSlower() {
+  if (state.mode === 'stand') { note('On a standing wave, f = nv/(2L). Switch to Travel to change f.'); return; }
+  state.fTravel = clamp(Math.round((state.fTravel - 0.5) * 100) / 100, F_MIN, F_MAX);
+}
+function scaleT(k) {
+  const next = state.T * k;
+  if (next > T_MAX + 1e-6) { state.T = T_MAX; note('Tension is at the top of the range.'); }
+  else if (next < T_MIN - 1e-6) { state.T = T_MIN; note('Tension is at the bottom of the range.'); }
+  else state.T = next;
+}
+function scaleMu(k) {
+  const next = state.mu * k;
+  if (next > MU_MAX + 1e-9) { state.mu = MU_MAX; note('Linear density is at the top of the range.'); }
+  else if (next < MU_MIN - 1e-9) { state.mu = MU_MIN; note('Linear density is at the bottom of the range.'); }
+  else state.mu = next;
+}
+function dispatchAct(act) {
+  if (act === 'reset') doReset();
+  else if (act === 'travel') state.mode = 'travel';
+  else if (act === 'stand-1') setStand(1);
+  else if (act === 'stand-2') setStand(2);
+  else if (act === 'stand-3') setStand(3);
+  else if (act === 'faster') doFaster();
+  else if (act === 'slower') doSlower();
+  else if (act === 'double-t') scaleT(2);
+  else if (act === 'half-t') scaleT(0.5);
+  else if (act === 'double-mu') scaleMu(2);
+  else if (act === 'half-mu') scaleMu(0.5);
+  else if (act === 'louder') setA(state.A + 0.1);
+  else if (act === 'softer') setA(state.A - 0.1);
+  else return;
+  refresh();
+}
+function syncChips() {
+  const stand = state.mode === 'stand';
+  document.getElementById('chip-travel').setAttribute('aria-pressed', String(!stand));
+  document.getElementById('chip-n1').setAttribute('aria-pressed', String(stand && state.n === 1));
+  document.getElementById('chip-n2').setAttribute('aria-pressed', String(stand && state.n === 2));
+  document.getElementById('chip-n3').setAttribute('aria-pressed', String(stand && state.n === 3));
+  document.getElementById('chip-faster').disabled = stand;
+  document.getElementById('chip-slower').disabled = stand;
+}
+
+/* ——— pointer ——— */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const drag = { target: null };
+const _hit = new THREE.Vector3();
+function setPointer(e) {
+  const r = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+}
+function worldOnZ() {
+  raycaster.setFromCamera(pointer, camera);
+  const o = raycaster.ray.origin;
+  const d = raycaster.ray.direction;
+  if (Math.abs(d.z) < 1e-6) return null;
+  return _hit.copy(o).addScaledVector(d, -o.z / d.z);
+}
+function onDown(e) {
+  if (e.button !== undefined && e.button !== 0) return;
+  canvas.setPointerCapture(e.pointerId);
+  setPointer(e);
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObject(hitBox, false);
+  if (hits.length) {
+    drag.target = 'rope';
+    canvas.classList.add('grabbing');
+    const w = worldOnZ();
+    if (w) {
+      aGoal = clamp(Math.abs(w.y), A_MIN, A_MAX);
+      if (still) { state.A = aGoal; refresh(); }
+    }
+  } else {
+    drag.target = 'lean';
+    drag.sx = e.clientX;
+    drag.sy = e.clientY;
+  }
+}
+function onMove(e) {
+  setPointer(e);
+  if (!drag.target) {
+    raycaster.setFromCamera(pointer, camera);
+    canvas.classList.toggle('can-grab', raycaster.intersectObject(hitBox, false).length > 0);
+    return;
+  }
+  if (drag.target === 'rope') {
+    const w = worldOnZ();
+    if (!w) return;
+    aGoal = clamp(Math.abs(w.y), A_MIN, A_MAX);
+    if (still) { state.A = aGoal; refresh(); }
+  } else if (drag.target === 'lean') {
+    leanGoal.set(
+      clamp((e.clientX - drag.sx) * 0.0011, -0.35, 0.35),
+      clamp((e.clientY - drag.sy) * -0.0008, -0.2, 0.2)
+    );
+    if (still) { lean.copy(leanGoal); placeCamera(); syncTags(); render(); }
+  }
+}
+function onUp(e) {
+  drag.target = null;
+  canvas.classList.remove('grabbing');
+  leanGoal.set(0, 0);
+  try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+document.getElementById('chips').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn || btn.disabled) return;
+  dispatchAct(btn.dataset.act);
+});
+
+/* ——— camera ——— */
+const narrowMq = matchMedia('(max-width: 720px), (max-aspect-ratio: 5/6)');
+const lessonEl = document.getElementById('lesson');
+let lsOpen = !params.has('nolesson');
+function chromeLeftEdge() {
+  if (embed || narrowMq.matches || !lsOpen) return 0;
+  return lessonEl.getBoundingClientRect().right;
+}
+function placeCamera() {
+  const narrow = narrowMq.matches;
+  const left = chromeLeftEdge();
+  const shift = left > 40 ? (left / innerWidth) * 1.85 : 0;
+  const z = narrow ? 9.1 : 7.15;
+  const y = narrow ? 1.85 : 1.22;
+  camera.position.set(0.05 - shift * 0.12 + lean.x * 0.8, y + lean.y, z);
+  camera.lookAt(-shift * 0.95, narrow ? -0.05 : -0.22, 0);
+}
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  camera.aspect = w / Math.max(1, h);
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+}
+function render() { renderer.render(scene, camera); }
+
+/* ——— lesson ——— */
+const lsBody = document.getElementById('ls-body');
+const lsKicker = document.getElementById('ls-kicker');
+const lsDots = document.getElementById('ls-dots');
+const lsToggle = document.getElementById('ls-toggle');
+const labelEl = document.querySelector('.label');
+const footEl = document.querySelector('.foot');
+const metersEl = document.getElementById('meters');
+const SYM = '<span class="sym">';
+const SYME = '</span>';
+
+const LS = [
+  { topic: 'Meet the rope', focus: 'both', html: `
+    <h3>Meet the rope</h3>
+    <p class="formula">transverse wave · the rope moves ${SYM}⊥${SYME} to the way the pattern travels</p>
+    <p>This is a classroom rope, 4.00 m between two posts. Each bit of rope moves up and down. The shape — the wave — travels along the rope toward the pulley. The brass weight hanging off the pulley is the tension.</p>
+    <p>Every number on the right is computed from the live rope. Nothing is a canned label.</p>
+    <p class="watch"><b>Watch</b>Follow one honey crest. It walks right. The posts stay put.</p>
+    <p class="live"><b>Now</b>L = <span data-live="L">—</span> · A = <span data-live="A">—</span> · mode <span data-live="mode">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="travel">Travel</button></div>` },
+  { topic: 'Amplitude A', focus: 'amp', html: `
+    <h3>Amplitude</h3>
+    <p class="formula">A = maximum displacement from the center line · meters</p>
+    <p>Amplitude is how far a piece of rope swings from the faint center line. It is not the height of the posts, and it does not set the speed. The ghost curves above and below the rope are +A and −A.</p>
+    <p class="watch"><b>Watch</b>Drag the rope up or down, or tap Louder. Crests grow. The v meter stays put.</p>
+    <p class="live"><b>Now</b>A = <span data-live="A">—</span> · v = <span data-live="v">—</span></p>
+    <div class="acts"><button type="button" data-act="louder">Louder</button><button type="button" data-act="softer">Softer</button></div>` },
+  { topic: 'Wavelength λ', focus: 'lam', html: `
+    <h3>Wavelength</h3>
+    <p class="formula">${SYM}λ${SYME} = distance from one crest to the next · meters</p>
+    <p>Wavelength is the length of one repeat of the shape. The bracket under the rope marks one ${SYM}λ${SYME} when a full wave fits on the rope. If ${SYM}λ${SYME} is longer than the rope, the bracket marks L instead, and the meter still tells you ${SYM}λ${SYME}.</p>
+    <p class="watch"><b>Watch</b>Tap Slower. Frequency drops, so ${SYM}λ${SYME} grows. Tap Faster and the bracket shrinks.</p>
+    <p class="live"><b>Now</b>${SYM}λ${SYME} = <span data-live="lambda">—</span> · L = <span data-live="L">—</span></p>
+    <div class="acts"><button type="button" data-act="slower">Slower</button><button type="button" data-act="faster">Faster</button><button type="button" data-act="travel">Travel</button></div>` },
+  { topic: 'Frequency f', focus: 'freq', html: `
+    <h3>Frequency</h3>
+    <p class="formula">f = crests that pass a point each second · hertz · period = 1/f</p>
+    <p>Frequency counts cycles, not distance. A higher f means each bit of rope bobs faster. Period is the time for one bob. This page uses T for tension only, so the period is written 1/f.</p>
+    <p class="watch"><b>Watch</b>In Travel, tap Faster. The rope hurries, and ${SYM}λ${SYME} gets shorter because v has not changed.</p>
+    <p class="live"><b>Now</b>f = <span data-live="f">—</span> · period = <span data-live="period">—</span></p>
+    <div class="acts"><button type="button" data-act="faster">Faster</button><button type="button" data-act="slower">Slower</button></div>` },
+  { topic: 'Speed v = fλ', focus: 'speed', html: `
+    <h3>Wave speed</h3>
+    <p class="formula">v = f ${SYM}λ${SYME}</p>
+    <p>A crest travels one wavelength in the time of one cycle, so speed is frequency times wavelength. The dashes on the table move at that same v, left to right, and loop back.</p>
+    <p class="watch"><b>Watch</b>Tap Faster. f goes up, ${SYM}λ${SYME} goes down, and the v meter holds still. The two changes cancel.</p>
+    <p class="live"><b>Now</b>f = <span data-live="f">—</span> · ${SYM}λ${SYME} = <span data-live="lambda">—</span> · f${SYM}λ${SYME} = <span data-live="vFL">—</span></p>
+    <div class="acts"><button type="button" data-act="faster">Faster</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Tension T', focus: 'ten', html: `
+    <h3>Tension</h3>
+    <p class="formula">v = ${SYM}√${SYME}(T / ${SYM}μ${SYME})</p>
+    <p>Tension T is the pull along the rope, in newtons. Here it is the weight hanging from the pulley. A tighter rope carries the wave faster. Doubling T does not double v — it multiplies v by ${SYM}√${SYME}2, about 1.41.</p>
+    <p class="watch"><b>Watch</b>Tap T ×2. The brass weight grows. v rises by ${SYM}√${SYME}2. In Travel, f stays put, so ${SYM}λ${SYME} stretches.</p>
+    <p class="live"><b>Now</b>T = <span data-live="T">—</span> · ${SYM}√${SYME}(T/${SYM}μ${SYME}) = <span data-live="v">—</span></p>
+    <div class="acts"><button type="button" data-act="double-t">T ×2</button><button type="button" data-act="half-t">T ÷2</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Linear density μ', focus: 'den', html: `
+    <h3>Linear density</h3>
+    <p class="formula">${SYM}μ${SYME} = mass per meter · kg/m · heavier rope → slower wave</p>
+    <p>Linear density ${SYM}μ${SYME} is how much mass sits in each meter of rope. It is not the hanging weight. A heavier rope has more inertia, so the same tension drives a slower wave. The rope on the table thickens when ${SYM}μ${SYME} rises.</p>
+    <p class="watch"><b>Watch</b>Reset, then tap ${SYM}μ${SYME} ×2. The rope thickens and v falls by ${SYM}√${SYME}2. Drag it: a heavier, slacker feel follows your hand more slowly when T is low.</p>
+    <p class="live"><b>Now</b>${SYM}μ${SYME} = <span data-live="mu">—</span> · v = <span data-live="v">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="double-mu">${SYM}μ${SYME} ×2</button><button type="button" data-act="half-mu">${SYM}μ${SYME} ÷2</button></div>` },
+  { topic: 'Both formulas', focus: 'both', html: `
+    <h3>The two speeds match</h3>
+    <p class="formula">f ${SYM}λ${SYME} = ${SYM}√${SYME}(T / ${SYM}μ${SYME})</p>
+    <p>One speed, two ways to say it. f${SYM}λ${SYME} comes from how the shape is moving. ${SYM}√${SYME}(T/${SYM}μ${SYME}) comes from the rope and the hanging weight. The two lines under the meters are computed separately. They should agree.</p>
+    <p class="watch"><b>Watch</b>Tap T ×2, then Faster. Both lines update, and they still meet.</p>
+    <p class="live"><b>Now</b>f${SYM}λ${SYME} = <span data-live="vFL">—</span> · ${SYM}√${SYME}(T/${SYM}μ${SYME}) = <span data-live="v">—</span></p>
+    <div class="acts"><button type="button" data-act="double-t">T ×2</button><button type="button" data-act="faster">Faster</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Traveling wave', focus: 'speed', html: `
+    <h3>Traveling wave</h3>
+    <p class="formula">y = A sin(2${SYM}π${SYME}x/${SYM}λ${SYME} − 2${SYM}π${SYME}ft)</p>
+    <p>In Travel, the pattern carries along the rope. The rope itself does not travel to the pulley — a dab of rope only goes up and down. The crest, and the energy, move at v. The warm light stays over a crest as it walks.</p>
+    <p class="watch"><b>Watch</b>Track the crest tag from the driver post toward the pulley. Then watch one spot on the rope: it oscillates in place.</p>
+    <p class="live"><b>Now</b>v = <span data-live="v">—</span> to the right · ${SYM}λ${SYME} = <span data-live="lambda">—</span> · f = <span data-live="f">—</span></p>
+    <div class="acts"><button type="button" data-act="travel">Travel</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Nodes & antinodes', focus: 'both', html: `
+    <h3>Standing wave</h3>
+    <p class="formula">y = A sin(2${SYM}π${SYME}x/${SYM}λ${SYME}) cos(2${SYM}π${SYME}ft) · both ends fixed</p>
+    <p>A standing wave is what you get when the wave fits the rope and reflects back on itself. Some points stay still — nodes. The posts are always nodes. Antinodes swing the farthest. Neighboring loops move in opposite directions.</p>
+    <p class="watch"><b>Watch</b>Tap 2nd. The middle of the rope is a node (lilac). Two antinodes swing on either side. The dashes stop: the pattern is not traveling along the rope.</p>
+    <p class="live"><b>Now</b>n = <span data-live="n">—</span> · nodes <span data-live="nodes">—</span> · antinodes <span data-live="antinodes">—</span></p>
+    <div class="acts"><button type="button" data-act="stand-2">2nd harmonic</button><button type="button" data-act="stand-1">1st</button><button type="button" data-act="stand-3">3rd</button></div>` },
+  { topic: 'Harmonics & questions', focus: 'both', html: `
+    <h3>Harmonics, then try it</h3>
+    <p class="formula">${SYM}λ${SYME}<sub>n</sub> = 2L / n · f<sub>n</sub> = n v / (2L)</p>
+    <p>The nth harmonic fits n loops. The 1st is one loop and ${SYM}λ${SYME} = 2L, so the rope is half a wavelength. Tighten the rope and ${SYM}λ${SYME} stays — the posts did not move — but v rises, so f rises. That is why a tighter string plays a higher note.</p>
+    <p class="watch"><b>Watch</b>On 2nd, read f and ${SYM}λ${SYME}. Tap T ×2. ${SYM}λ${SYME} holds. f grows.</p>
+    <p class="live"><b>Now</b>n = <span data-live="n">—</span> · ${SYM}λ${SYME} = <span data-live="lambda">—</span> · f = <span data-live="f">—</span> · v = <span data-live="v">—</span></p>
+    <div class="acts"><button type="button" data-act="stand-1">1st</button><button type="button" data-act="stand-2">2nd</button><button type="button" data-act="stand-3">3rd</button><button type="button" data-act="double-t">T ×2</button></div>
+    <details><summary>Starting numbers: what is √(T/μ)?</summary><p>T = 2.40 N and μ = 0.150 kg/m, so T/μ = 16 and v = 4.00 m/s. Reset and read both meter lines.</p></details>
+    <details><summary>In Travel you double f and leave T alone. What happens to λ and to v?</summary><p>v stays the same, because v depends on T and μ. λ = v/f, so λ halves. Faster steps f by 0.50 Hz.</p></details>
+    <details><summary>Why doesn’t a bigger amplitude change v?</summary><p>v = √(T/μ). A is how far the rope moves, not the pull and not the mass per meter.</p></details>
+    <details><summary>T ×2 multiplies v by about 1.41, not by 2. Why?</summary><p>The tension sits under a square root. 2T gives √2 times the speed. √2 ≈ 1.414. From 4.00 m/s that is 5.66 m/s.</p></details>
+    <details><summary>How is μ ÷2 like T ×2?</summary><p>Both multiply T/μ by 2, so both multiply v by √2. Double the density instead, and v is divided by √2.</p></details>
+    <details><summary>2nd harmonic: how many nodes, counting the posts? How many antinodes?</summary><p>Nodes = n + 1 = 3. Antinodes = n = 2. The middle node never leaves the center line.</p></details>
+    <details><summary>1st harmonic: how does λ compare with L?</summary><p>λ = 2L = 8.00 m. The rope is λ/2 — one loop. The bracket is labeled L = λ/2.</p></details>
+    <details><summary>You tighten the rope and stay on the 2nd harmonic. Why does λ stay and f rise?</summary><p>The ends are fixed, so λ = 2L/n cannot change. v = √(T/μ) rose, and f = v/λ, so the frequency rises.</p></details>
+    <details><summary>Does a piece of rope travel across the table with the crest?</summary><p>No. The crest moves along the rope. Each piece of rope only oscillates up and down.</p></details>` },
+];
+
+let lsStep = 0;
+let mMode = 'learn';
+const lsLive = [];
+for (let i = 0; i < LS.length; i++) {
+  const d = document.createElement('button');
+  d.type = 'button';
+  d.dataset.go = String(i);
+  d.setAttribute('aria-label', 'Step ' + (i + 1) + ': ' + LS[i].topic);
+  lsDots.appendChild(d);
+}
+function renderLesson() {
+  const st = LS[lsStep];
+  lsKicker.innerHTML = 'Lesson ' + (lsStep + 1) + '/' + LS.length + ' · <b>' + st.topic + '</b>';
+  lsBody.innerHTML = st.html;
+  lsBody.scrollTop = 0;
+  lsLive.length = 0;
+  for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
+  for (const d of lsDots.children) d.toggleAttribute('aria-current', false);
+  lsDots.children[lsStep].setAttribute('aria-current', 'step');
+  lessonEl.querySelector('[data-step="prev"]').disabled = lsStep === 0;
+  lessonEl.querySelector('[data-step="next"]').disabled = lsStep === LS.length - 1;
+  document.body.dataset.focus = lsOpen ? st.focus : 'both';
+  updateLessonLive();
+}
+function updateLessonLive() {
+  if (!lsLive.length) return;
+  const m = metrics();
+  const vals = {
+    A: num(m.A) + ' m',
+    f: num(m.f) + ' Hz',
+    lambda: num(m.lambda) + ' m',
+    v: num(m.v) + ' m/s',
+    vFL: num(m.vFL) + ' m/s',
+    T: num(m.T) + ' N',
+    mu: num(m.mu, 3) + ' kg/m',
+    L: num(m.L) + ' m',
+    period: num(1 / m.f) + ' s',
+    n: String(m.n),
+    nodes: String(m.nodes),
+    antinodes: String(m.antinodes),
+    mode: m.mode === 'stand' ? ('standing ' + m.n) : 'traveling',
+  };
+  for (const el of lsLive) el.textContent = vals[el.dataset.live] || '—';
+  const lockF = state.mode === 'stand';
+  for (const b of lsBody.querySelectorAll('[data-act="faster"], [data-act="slower"]')) b.disabled = lockF;
+  for (const b of lsBody.querySelectorAll('[data-act^="stand-"]')) {
+    const n = Number(b.dataset.act.slice(6));
+    b.setAttribute('aria-pressed', String(state.mode === 'stand' && state.n === n));
+  }
+  for (const b of lsBody.querySelectorAll('[data-act="travel"]')) {
+    b.setAttribute('aria-pressed', String(state.mode === 'travel'));
+  }
+}
+function goStep(i) {
+  lsStep = clamp(i, 0, LS.length - 1);
+  renderLesson();
+}
+function onLessonClick(e) {
+  const btn = e.target.closest('button');
+  if (!btn || !lessonEl.contains(btn)) return;
+  if (btn.dataset.step === 'prev') goStep(lsStep - 1);
+  else if (btn.dataset.step === 'next') goStep(lsStep + 1);
+  else if (btn.dataset.go) goStep(+btn.dataset.go);
+  else if (btn.dataset.mode) setMobileMode(btn.dataset.mode);
+  else if (btn === lsToggle) setLessonOpen(!lsOpen);
+  else if (btn.dataset.act && !btn.disabled) dispatchAct(btn.dataset.act);
+}
+function setLessonOpen(open) {
+  lsOpen = open;
+  document.body.classList.toggle('lesson-closed', !open);
+  lsToggle.setAttribute('aria-expanded', String(open));
+  lsToggle.textContent = open ? 'Hide' : 'Open lesson';
+  document.body.dataset.focus = open ? LS[lsStep].focus : 'both';
+  fitLesson();
+  resize();
+}
+function setMobileMode(mode) {
+  mMode = mode;
+  document.body.classList.toggle('m-learn', mode === 'learn');
+  document.body.classList.toggle('m-numbers', mode === 'numbers');
+  for (const b of lessonEl.querySelectorAll('[data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === mode));
+}
+function placeLesson() {
+  if (narrowMq.matches) {
+    if (lessonEl.parentElement !== footEl) footEl.insertBefore(lessonEl, metersEl);
+    if (!lsOpen) setLessonOpen(true);
+  } else if (lessonEl.parentElement !== labelEl) labelEl.appendChild(lessonEl);
+  fitLesson();
+}
+function fitLesson() {
+  if (narrowMq.matches) { lessonEl.style.maxHeight = ''; return; }
+  const top = lessonEl.getBoundingClientRect().top;
+  const footH = footEl.getBoundingClientRect().height;
+  const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 16;
+  lessonEl.style.maxHeight = Math.max(160, innerHeight - padB - footH - 20 - top) + 'px';
+}
+function onLessonKey(e) {
+  if (e.target.closest && e.target.closest('input, textarea, button')) return;
+  if (e.key === 'ArrowRight') goStep(lsStep + 1);
+  else if (e.key === 'ArrowLeft') goStep(lsStep - 1);
+}
+
+const HIDE_DT = 0.05;
+let raf = 0;
+const clock = new THREE.Clock();
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), HIDE_DT);
+  if (aGoal != null) {
+    const stiff = 2.4 + 12 * Math.sqrt(state.T / T0);
+    const lag = 1 - Math.exp(-dt * stiff);
+    state.A += (aGoal - state.A) * lag;
+    if (!drag.target && Math.abs(state.A - aGoal) < 0.002) {
+      state.A = aGoal;
+      aGoal = null;
+    }
+  }
+  phase = mod(phase + Math.PI * 2 * liveF() * dt, Math.PI * 2);
+  if (state.mode === 'travel') {
+    dashOffset += waveSpeed() * dt;
+    preferCrest += waveSpeed() * dt;
+    const lamNow = liveLambda();
+    while (preferCrest > L) preferCrest -= lamNow;
+    while (preferCrest < 0) preferCrest += lamNow;
+  }
+  flagHold = Math.max(0, flagHold - dt);
+  lean.lerp(leanGoal, 1 - Math.exp(-dt * 5));
+  placeCamera();
+  syncScene();
+  syncTags();
+  updateHud();
+  updateLessonLive();
+  render();
+}
+function holdStill() {
+  cancelAnimationFrame(raf);
+  raf = 0;
+  phase = 0;
+  dashOffset = 0;
+  preferCrest = L / 2;
+  lean.set(0, 0);
+  leanGoal.set(0, 0);
+  placeCamera();
+  syncScene();
+  syncTags();
+  updateHud();
+  updateLessonLive();
+  render();
+}
+function start() {
+  if (still) { holdStill(); return; }
+  if (raf || document.hidden) return;
+  clock.getDelta();
+  raf = requestAnimationFrame(frame);
+}
+
+doReset();
+document.body.classList.add('has-lesson');
+setMobileMode('learn');
+lessonEl.addEventListener('click', onLessonClick);
+addEventListener('keydown', onLessonKey);
+narrowMq.addEventListener('change', onNarrow);
+function onNarrow() { placeLesson(); resize(); placeCamera(); if (still) render(); }
+placeLesson();
+renderLesson();
+syncChips();
+if (!lsOpen) setLessonOpen(false);
+const ro = new ResizeObserver(() => { fitLesson(); resize(); placeCamera(); if (still) { syncTags(); render(); } });
+ro.observe(stage);
+resize();
+placeCamera();
+syncScene();
+updateHud();
+render();
+if (still) holdStill();
+else start();
+
+motionQuery.addEventListener('change', onMotion);
+function onMotion(e) {
+  reduced = e.matches;
+  still = reduced || params.has('still');
+  if (still) holdStill();
+  else start();
+}
+document.addEventListener('visibilitychange', onVis);
+function onVis() {
+  if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else start();
+}
+canvas.addEventListener('webglcontextlost', onLost);
+function onLost(e) {
+  e.preventDefault();
+  cancelAnimationFrame(raf);
+  raf = 0;
+  showErr('WebGL context lost — reload to resume.');
+}
+
+function teardown() {
+  cancelAnimationFrame(raf);
+  raf = 0;
+  ro.disconnect();
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup', onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  lessonEl.removeEventListener('click', onLessonClick);
+  removeEventListener('keydown', onLessonKey);
+  narrowMq.removeEventListener('change', onNarrow);
+  motionQuery.removeEventListener('change', onMotion);
+  document.removeEventListener('visibilitychange', onVis);
+  canvas.removeEventListener('webglcontextlost', onLost);
+  for (const d of disposables) d.dispose();
+  renderer.dispose();
+  if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+}
+addEventListener('pagehide', (e) => { if (!e.persisted) teardown(); });
+
+window.__wavesStringTeardown = teardown;
+window.__wavesString = {
+  renderer,
+  state,
+  get still() { return still; },
+  act: dispatchAct,
+  goStep,
+  sample: sampleY,
+  metrics,
+};
+window.__wavesStringReady = true;
+
+} catch (e) {
+  showErr((e && e.message) ? e.message : String(e));
+  console.error('[waves-string]', e);
+}
+</script>
+</body>
+</html>
