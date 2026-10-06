@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>DC circuits · Physics Lab</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.55);
+    --faint: rgba(239, 230, 242, 0.3);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  #stage canvas.can-grab { cursor: grab; }
+  #stage canvas.grabbing { cursor: grabbing; }
+  .vig {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(ellipse at 50% 58%, transparent 36%, rgba(5, 1, 8, 0.66) 100%),
+      linear-gradient(to top, rgba(255, 150, 80, 0.045), transparent 30%);
+  }
+  .tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .tags span {
+    position: absolute; left: 0; top: 0; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+    color: var(--pearl); background: rgba(20, 8, 24, 0.76);
+    border: 1px solid rgba(239, 230, 242, 0.14); border-radius: 8px;
+    padding: 3px 8px; will-change: transform;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+  }
+  .tags span.bat { border-color: rgba(255,179,107,0.55); color: #ffe2c4; }
+  .tags span.r1 { border-color: rgba(255,179,107,0.45); color: #ffe2c4; }
+  .tags span.r2 { border-color: rgba(185,162,255,0.65); color: #ddd0ff; }
+  .tags span.amp { border-color: rgba(239,230,242,0.45); }
+  .tags span.volt { border-color: rgba(185,162,255,0.65); color: #ddd0ff; }
+  .chrome {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  .label .tag {
+    margin: 0 0 8px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.8);
+  }
+  .label h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(1.9rem, 4.6vw, 3.6rem); letter-spacing: -0.045em; line-height: 0.94;
+    text-shadow: 0 2px 30px rgba(20, 8, 24, 0.7);
+  }
+  .label h1 em { font-style: normal; font-weight: 250; color: var(--mute); }
+  .label .sub {
+    margin: 10px 0 0; max-width: 42ch;
+    font-size: clamp(0.8rem, 1.2vw, 0.95rem); line-height: 1.4; color: var(--mute);
+  }
+  .foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .hint {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--mute); line-height: 1.7;
+  }
+  .hint i {
+    font-style: normal; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin: 0 5px 0 10px; vertical-align: 0;
+  }
+  .hint i:first-child { margin-left: 0; }
+  .chips { display: flex; gap: 8px; margin: 0 0 10px; pointer-events: auto; flex-wrap: wrap; }
+  .chips button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.18);
+    background: rgba(28, 12, 34, 0.72); color: var(--pearl);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    padding: 10px 14px; min-height: 42px; border-radius: 999px; cursor: pointer;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .chips button small { font-family: var(--font-mono); font-size: 10px; color: var(--mute); margin-left: 6px; }
+  .chips button[aria-pressed="true"] {
+    border-color: rgba(255, 179, 107, 0.7); background: rgba(255, 179, 107, 0.16); color: #ffe2c4;
+  }
+  .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chips button:active { transform: scale(0.98); }
+
+  .meters {
+    pointer-events: none; display: flex; flex-direction: column; gap: 6px;
+    min-width: min(360px, 48vw); padding: 12px 14px;
+    background: rgba(20, 8, 24, 0.76); border: 1px solid rgba(239,230,242,0.14);
+    border-radius: 14px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .meters h2 {
+    margin: 0; font-family: var(--font-mono); font-weight: 400;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,179,107,0.9);
+  }
+  .meters .note {
+    margin: 0 0 2px; font-size: 12.5px; line-height: 1.35; color: var(--mute);
+  }
+  .meter { display: grid; grid-template-columns: 52px 1fr 118px; gap: 8px; align-items: center; }
+  .meter .lab { font-family: var(--font-mono); font-size: 11px; color: var(--mute); }
+  .meter .track {
+    height: 11px; border-radius: 7px; background: rgba(239,230,242,0.08);
+    overflow: hidden; position: relative;
+  }
+  .meter .fill {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+    border-radius: 7px;
+  }
+  .meter.m-v .fill { background: linear-gradient(90deg, #ff8a3a, #ffb36b); }
+  .meter.m-i .fill { background: linear-gradient(90deg, #e0a820, #f0c24b); }
+  .meter.m-r1 .fill { background: linear-gradient(90deg, #ffb36b, #ffe2c4); }
+  .meter.m-r2 .fill { background: linear-gradient(90deg, #8a72e8, #b9a2ff); }
+  .meter.m-req .fill { background: linear-gradient(90deg, #cfc4d8, #efe6f2); }
+  .meter.m-p .fill { background: linear-gradient(90deg, #ff8a3a, #ffb36b); }
+  .meter .val { font-family: var(--font-mono); font-size: 11px; text-align: right; color: var(--pearl); }
+  .meters .eq {
+    margin-top: 2px; font-family: var(--font-mono); font-size: 11.5px; color: var(--honey);
+    letter-spacing: 0.01em; line-height: 1.45;
+  }
+  .meters .flag {
+    min-height: 2.6em; font-size: 13px; line-height: 1.35; color: var(--pearl);
+  }
+
+  #err {
+    position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 300px;
+    font-family: var(--font-mono); font-size: 10px; color: #ffd6d6;
+    background: rgba(58, 18, 18, 0.82); border-radius: 8px; padding: 8px 10px; display: none;
+  }
+
+  .lesson {
+    pointer-events: auto; margin-top: 14px; width: min(420px, 40vw); min-width: 300px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(26, 10, 32, 0.78); border: 1px solid rgba(239, 230, 242, 0.13);
+    border-radius: 18px; box-shadow: 0 18px 50px rgba(5, 1, 8, 0.5);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  body.has-lesson .label .sub { display: none; }
+  body.lesson-closed .label .sub { display: block; }
+  .lesson-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px;
+    border-bottom: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-kicker {
+    margin: 0; flex: 1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.86);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .lesson-kicker b { color: var(--pearl); font-weight: 400; }
+  .lesson button { font-family: var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .lesson button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lesson-toggle {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: transparent; color: var(--mute);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; min-height: 32px;
+  }
+  .lesson-tabs { display: none; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(239, 230, 242, 0.06); }
+  .lesson-tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--mute);
+    font-size: 12.5px; font-weight: 500; padding: 7px 13px; border-radius: 999px; min-height: 32px;
+  }
+  .lesson-tabs button[aria-selected="true"] { background: rgba(255, 179, 107, 0.16); color: #ffe2c4; }
+  .lesson-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 18px 6px;
+    font-size: 14.5px; line-height: 1.5; color: rgba(239, 230, 242, 0.9);
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .lesson-body h3 {
+    margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 21px;
+    letter-spacing: -0.025em; color: var(--pearl);
+  }
+  .lesson-body p { margin: 0 0 9px; }
+  .lesson-body .formula {
+    font-family: var(--font-mono); font-size: 13.5px; color: var(--accent); letter-spacing: 0.02em; margin-bottom: 10px;
+  }
+  .lesson-body .watch {
+    padding: 9px 11px; border-radius: 12px; background: rgba(255, 179, 107, 0.08);
+    border: 1px solid rgba(255, 179, 107, 0.22); color: #f6e7d8;
+  }
+  .lesson-body .watch b, .lesson-body .live b {
+    font-family: var(--font-mono); font-weight: 400; font-size: 9.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-right: 6px;
+  }
+  .lesson-body .live { font-family: var(--font-mono); font-size: 12px; color: var(--pearl); line-height: 1.45; }
+  .lesson-body .live span { color: var(--honey); }
+  .lesson-body .acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .lesson-body .acts button {
+    appearance: none; border: 1px solid rgba(255, 179, 107, 0.5); background: rgba(255, 179, 107, 0.12);
+    color: #ffe2c4; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 500; min-height: 36px;
+  }
+  .lesson-body .acts button[aria-pressed="true"] { background: rgba(255, 179, 107, 0.28); border-color: rgba(255, 179, 107, 0.85); }
+  .lesson-body details { border-top: 1px solid rgba(239, 230, 242, 0.08); padding: 8px 0; }
+  .lesson-body summary { cursor: pointer; color: var(--pearl); list-style: none; }
+  .lesson-body summary::before { content: "+ "; font-family: var(--font-mono); color: var(--accent); }
+  .lesson-body details[open] summary::before { content: "− "; }
+  .lesson-body details p { margin: 6px 0 2px; color: var(--mute); font-size: 13.5px; }
+  .lesson-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px 12px; border-top: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-nav > button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: rgba(239, 230, 242, 0.04);
+    color: var(--pearl); border-radius: 999px; padding: 8px 14px; font-size: 13px; min-height: 38px;
+  }
+  .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
+  .lesson-nav .dots { display: flex; flex-wrap: wrap; gap: 1px; justify-content: center; max-width: 196px; }
+  .lesson-nav .dots button {
+    appearance: none; border: 0; background: transparent; width: 16px; height: 28px; padding: 0;
+    display: grid; place-items: center;
+  }
+  .lesson-nav .dots button::after {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(239, 230, 242, 0.25);
+  }
+  .lesson-nav .dots button[aria-current="step"]::after { background: var(--accent); transform: scale(1.35); }
+  body.lesson-closed .lesson-body, body.lesson-closed .lesson-nav { display: none; }
+  body.lesson-closed .lesson { width: auto; min-width: 0; align-self: flex-start; display: inline-flex; }
+  body.lesson-closed .lesson-head { border-bottom: 0; }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(1.7rem, 3.6vw, 2.8rem); }
+    .lesson { margin-top: 10px; }
+    .lesson-body { font-size: 14px; }
+  }
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .label .sub, body.lesson-closed .label .sub { display: none; }
+    .lesson { width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(38vh, 320px); }
+    .lesson-head { padding: 8px 8px 8px 12px; }
+    .lesson-tabs { display: flex; }
+    .lesson-toggle { display: none; }
+    .lesson-kicker { font-size: 9.5px; }
+    .lesson-body { padding: 10px 14px 4px; font-size: 13.5px; }
+    .lesson-body h3 { font-size: 18px; }
+    body.m-learn .meters, body.m-learn .hint { display: none; }
+    body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
+    body.m-numbers .lesson { max-height: none; }
+    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .meters { min-width: 0; width: 100%; }
+    .chips button { font-size: 12px; padding: 8px 12px; min-height: 38px; }
+    .hint .long { display: none; }
+    .tags span { font-size: 10px; padding: 2px 6px; }
+  }
+  html.embed, body.embed { background: transparent !important; }
+  body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
+  body.embed canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.has('embed')) {
+    document.body.classList.add('embed');
+    document.documentElement.classList.add('embed');
+  }
+})();
+</script>
+  <div id="stage"></div>
+  <div class="vig" aria-hidden="true"></div>
+  <div class="tags" aria-hidden="true">
+    <span id="tag-bat" class="bat">battery</span>
+    <span id="tag-r1" class="r1">R₁</span>
+    <span id="tag-r2" class="r2">R₂</span>
+    <span id="tag-a" class="amp">A</span>
+    <span id="tag-v" class="volt">V</span>
+  </div>
+  <div class="chrome">
+    <div class="label">
+      <p class="tag">Physics lab · DC circuits</p>
+      <h1>DC circuits<br /><em>Ohm’s law</em></h1>
+      <p class="sub">A battery, two resistor blocks, and the meters. Series is one path. Parallel splits the current. The beads keep circulating.</p>
+      <section class="lesson" id="lesson" aria-label="Lesson: Ohm’s law, series and parallel">
+        <header class="lesson-head">
+          <div class="lesson-tabs" role="tablist" aria-label="Panel">
+            <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
+            <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
+          </div>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the circuit</b></p>
+          <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
+        </header>
+        <div class="lesson-body" id="ls-body"></div>
+        <nav class="lesson-nav" aria-label="Lesson steps">
+          <button type="button" data-step="prev">← Back</button>
+          <div class="dots" id="ls-dots"></div>
+          <button type="button" data-step="next">Next →</button>
+        </nav>
+      </section>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="chips" id="chips" role="group" aria-label="Simulation controls">
+          <button type="button" data-act="series" id="chip-series">Series</button>
+          <button type="button" data-act="parallel" id="chip-parallel">Parallel</button>
+          <button type="button" data-act="toggle-r" id="chip-which">Using R₁</button>
+          <button type="button" data-act="double-r">Double R</button>
+          <button type="button" data-act="halve-r">Halve R</button>
+          <button type="button" data-act="raise-v">Raise V</button>
+          <button type="button" data-act="reset">Reset</button>
+        </div>
+        <div class="hint">
+          <span><i style="background:#ffb36b"></i>current</span>
+          <span><i style="background:#efe6f2"></i>R₁</span>
+          <span><i style="background:#b9a2ff"></i>R₂ · voltmeter</span>
+          <span class="long">Drag a resistor or the battery upward to raise it. Drag empty space to lean the view.</span>
+        </div>
+      </div>
+      <div class="meters" id="meters">
+        <h2>Live meters</h2>
+        <p class="note" id="h-note">Ammeter in the loop. Voltmeter across the battery.</p>
+        <div class="meter m-v"><span class="lab">V</span><div class="track"><div class="fill" id="bar-v"></div></div><span class="val" id="h-v">—</span></div>
+        <div class="meter m-i"><span class="lab">I</span><div class="track"><div class="fill" id="bar-i"></div></div><span class="val" id="h-i">—</span></div>
+        <div class="meter m-r1"><span class="lab">R₁</span><div class="track"><div class="fill" id="bar-r1"></div></div><span class="val" id="h-r1">—</span></div>
+        <div class="meter m-r2"><span class="lab">R₂</span><div class="track"><div class="fill" id="bar-r2"></div></div><span class="val" id="h-r2">—</span></div>
+        <div class="meter m-req"><span class="lab">R<sub>eq</sub></span><div class="track"><div class="fill" id="bar-req"></div></div><span class="val" id="h-req">—</span></div>
+        <div class="meter m-p"><span class="lab">P</span><div class="track"><div class="fill" id="bar-p"></div></div><span class="val" id="h-p">—</span></div>
+        <div class="eq" id="h-eq">V = I R</div>
+        <div class="eq" id="h-eq2">—</div>
+        <div class="flag" id="h-flag"></div>
+      </div>
+    </div>
+  </div>
+  <div id="err" role="status"></div>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const VOID = 0x140818;
+const PLANE = 0.24;
+const V_MIN = 3, V_MAX = 24, V_STEP = 3;
+const R_MIN = 5, R_MAX = 40;
+const AMP_FULL = 4;
+const VOLT_FULL = 24;
+
+const C = {
+  batX: -0.98,
+  batTop: 0.30,
+  batBot: -0.30,
+  topY: 0.46,
+  botY: -0.48,
+  rightX: 0.78,
+  r1x: -0.26,
+  r2x: 0.36,
+  half: 0.19,
+  amX: 0.02,
+  amHalf: 0.115,
+  splitX: -0.52,
+  joinX: 0.58,
+  p1y: 0.50,
+  p2y: 0.02,
+  px: 0.04,
+};
+
+const params = new URLSearchParams(location.search);
+const embed = params.has('embed');
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let still = reduced || params.has('still');
+
+const state = {
+  mode: 'series',
+  v: 12,
+  r1: 10,
+  r2: 20,
+  focus: 'r1',
+  probe: 'battery',
+};
+
+const stage = document.getElementById('stage');
+const errEl = document.getElementById('err');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+
+const ua = navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function fmtNum(n, d) {
+  if (!Number.isFinite(n)) return '—';
+  return (n < -0.0005 ? '−' : '') + Math.abs(n).toFixed(d);
+}
+function fmtV(n) { return fmtNum(n, 2) + ' V'; }
+function fmtA(n) { return fmtNum(n, 3) + ' A'; }
+function fmtR(n) { return fmtNum(n, Math.abs(n) >= 10 ? 1 : 2) + ' Ω'; }
+function fmtW(n) { return fmtNum(n, 2) + ' W'; }
+
+function solve(mode, v, r1, r2) {
+  const series = mode === 'series';
+  const Req = series ? r1 + r2 : (r1 * r2) / (r1 + r2);
+  const I = v / Req;
+  const I1 = series ? I : v / r1;
+  const I2 = series ? I : v / r2;
+  const V1 = I1 * r1;
+  const V2 = I2 * r2;
+  const P1 = I1 * V1;
+  const P2 = I2 * V2;
+  const P = I * v;
+  return { series, mode, V: v, R1: r1, R2: r2, Req, I, I1, I2, V1, V2, P, P1, P2 };
+}
+let latest = null;
+function readCircuit() {
+  latest = solve(state.mode, state.v, state.r1, state.r2);
+  return latest;
+}
+function probeVoltage(sol) {
+  if (state.probe === 'r1') return sol.V1;
+  if (state.probe === 'r2') return sol.V2;
+  return sol.V;
+}
+function probeLabel() {
+  if (state.probe === 'r1') return 'R₁';
+  if (state.probe === 'r2') return 'R₂';
+  return 'the battery';
+}
+function focusLabel() { return state.focus === 'r1' ? 'R₁' : 'R₂'; }
+
+try {
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, alpha: embed,
+  powerPreference: isIOS ? 'default' : 'high-performance',
+});
+if (!renderer.getContext()) throw new Error('WebGL context failed to create.');
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setClearColor(VOID, embed ? 0 : 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = false;
+stage.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+canvas.setAttribute('role', 'img');
+canvas.setAttribute('aria-label', 'DC circuit with a battery, two resistors, an ammeter, and a voltmeter. Warm beads show the steady current.');
+
+const scene = new THREE.Scene();
+if (!embed) {
+  scene.background = new THREE.Color(VOID);
+  scene.fog = new THREE.Fog(VOID, 6.8, 16);
+}
+const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 40);
+const camWide = new THREE.Vector3(0.12, 0.22, 2.72);
+const lookWide = new THREE.Vector3(0.02, 0.0, 0);
+const camNarrow = new THREE.Vector3(0.04, 0.28, 3.85);
+const lookNarrow = new THREE.Vector3(0.0, 0.02, 0);
+
+const disposables = [];
+const keep = (x) => { disposables.push(x); return x; };
+
+scene.add(new THREE.HemisphereLight(0xd4c4f0, 0x2a1020, 0.94));
+const key = new THREE.PointLight(0xffc090, 42, 16, 1.6);
+key.position.set(0.35, 1.45, 1.55);
+scene.add(key);
+
+const floorMat = keep(new THREE.MeshStandardMaterial({ color: 0x1a0c22, roughness: 0.95, metalness: 0 }));
+const floor = new THREE.Mesh(keep(new THREE.CircleGeometry(3.4, isMobile ? 36 : 52)), floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -1.05;
+scene.add(floor);
+
+const boardMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x241028, roughness: 0.86, metalness: 0.04,
+  emissive: 0x140810, emissiveIntensity: 0.25,
+}));
+const board = new THREE.Mesh(keep(new THREE.BoxGeometry(2.62, 1.58, 0.06)), boardMat);
+board.position.set(0.02, -0.02, 0.02);
+scene.add(board);
+const lipMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x6a4a78, roughness: 0.45, metalness: 0.18,
+  emissive: 0x2a1438, emissiveIntensity: 0.28,
+}));
+const lip = new THREE.Mesh(keep(new THREE.BoxGeometry(2.62, 0.028, 0.07)), lipMat);
+lip.position.set(0.02, -0.80, 0.05);
+scene.add(lip);
+
+const _up = new THREE.Vector3(0, 1, 0);
+const _dir = new THREE.Vector3();
+function orientTube(mesh, x1, y1, z1, x2, y2, z2) {
+  _dir.set(x2 - x1, y2 - y1, z2 - z1);
+  const len = _dir.length();
+  if (len < 1e-4) { mesh.visible = false; return; }
+  mesh.visible = true;
+  mesh.scale.set(1, len, 1);
+  mesh.position.set((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2);
+  _dir.multiplyScalar(1 / len);
+  if (_dir.y < -0.999) mesh.quaternion.set(1, 0, 0, 0);
+  else mesh.quaternion.setFromUnitVectors(_up, _dir);
+}
+function noPick(mesh) { mesh.raycast = function () {}; }
+
+const wireGeo = keep(new THREE.CylinderGeometry(0.016, 0.016, 1, isMobile ? 8 : 12));
+const jointGeo = keep(new THREE.SphereGeometry(0.03, 12, 10));
+const seriesWireMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xd9cfc8, roughness: 0.38, metalness: 0.55,
+  emissive: 0x3a2820, emissiveIntensity: 0.2,
+}));
+const parallelWireMat = seriesWireMat.clone();
+disposables.push(parallelWireMat);
+const leadGeo = keep(new THREE.CylinderGeometry(0.0075, 0.0075, 1, 8));
+const leadMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xb9a2ff, roughness: 0.4, metalness: 0.22,
+  emissive: 0x2a1848, emissiveIntensity: 0.4,
+}));
+
+function addWire(group, mat, x1, y1, x2, y2) {
+  const mesh = new THREE.Mesh(wireGeo, mat);
+  orientTube(mesh, x1, y1, PLANE, x2, y2, PLANE);
+  noPick(mesh);
+  group.add(mesh);
+}
+function addJoint(group, mat, x, y) {
+  const mesh = new THREE.Mesh(jointGeo, mat);
+  mesh.position.set(x, y, PLANE);
+  noPick(mesh);
+  group.add(mesh);
+}
+
+const seriesGroup = new THREE.Group();
+const parallelGroup = new THREE.Group();
+scene.add(seriesGroup);
+scene.add(parallelGroup);
+
+const r1L = C.r1x - C.half, r1R = C.r1x + C.half;
+const r2L = C.r2x - C.half, r2R = C.r2x + C.half;
+const amL = C.amX - C.amHalf, amR = C.amX + C.amHalf;
+const pL = C.px - C.half, pR = C.px + C.half;
+
+addWire(seriesGroup, seriesWireMat, C.batX, C.batTop, C.batX, C.topY);
+addWire(seriesGroup, seriesWireMat, C.batX, C.topY, r1L, C.topY);
+addWire(seriesGroup, seriesWireMat, r1R, C.topY, r2L, C.topY);
+addWire(seriesGroup, seriesWireMat, r2R, C.topY, C.rightX, C.topY);
+addWire(seriesGroup, seriesWireMat, C.rightX, C.topY, C.rightX, C.botY);
+addWire(seriesGroup, seriesWireMat, C.rightX, C.botY, amR, C.botY);
+addWire(seriesGroup, seriesWireMat, amL, C.botY, C.batX, C.botY);
+addWire(seriesGroup, seriesWireMat, C.batX, C.botY, C.batX, C.batBot);
+addJoint(seriesGroup, seriesWireMat, C.batX, C.topY);
+addJoint(seriesGroup, seriesWireMat, C.rightX, C.topY);
+addJoint(seriesGroup, seriesWireMat, C.rightX, C.botY);
+addJoint(seriesGroup, seriesWireMat, C.batX, C.botY);
+
+addWire(parallelGroup, parallelWireMat, C.batX, C.batTop, C.batX, C.p1y);
+addWire(parallelGroup, parallelWireMat, C.batX, C.p1y, C.splitX, C.p1y);
+addWire(parallelGroup, parallelWireMat, C.splitX, C.p1y, pL, C.p1y);
+addWire(parallelGroup, parallelWireMat, pR, C.p1y, C.joinX, C.p1y);
+addWire(parallelGroup, parallelWireMat, C.splitX, C.p1y, C.splitX, C.p2y);
+addWire(parallelGroup, parallelWireMat, C.splitX, C.p2y, pL, C.p2y);
+addWire(parallelGroup, parallelWireMat, pR, C.p2y, C.joinX, C.p2y);
+addWire(parallelGroup, parallelWireMat, C.joinX, C.p1y, C.joinX, C.botY);
+addWire(parallelGroup, parallelWireMat, C.joinX, C.botY, amR, C.botY);
+addWire(parallelGroup, parallelWireMat, amL, C.botY, C.batX, C.botY);
+addWire(parallelGroup, parallelWireMat, C.batX, C.botY, C.batX, C.batBot);
+addJoint(parallelGroup, parallelWireMat, C.batX, C.p1y);
+addJoint(parallelGroup, parallelWireMat, C.splitX, C.p1y);
+addJoint(parallelGroup, parallelWireMat, C.splitX, C.p2y);
+addJoint(parallelGroup, parallelWireMat, C.joinX, C.p1y);
+addJoint(parallelGroup, parallelWireMat, C.joinX, C.p2y);
+addJoint(parallelGroup, parallelWireMat, C.joinX, C.botY);
+addJoint(parallelGroup, parallelWireMat, C.batX, C.botY);
+
+function makePath(coords) {
+  const points = coords.map(([x, y]) => ({ x, y, z: PLANE }));
+  const cum = new Float32Array(points.length);
+  for (let i = 1; i < points.length; i++) {
+    cum[i] = cum[i - 1] + Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+  }
+  return { points, cum, length: cum[points.length - 1] };
+}
+function samplePath(path, dist, target) {
+  const L = path.length;
+  const pts = path.points;
+  if (L < 1e-6) { target.set(pts[0].x, pts[0].y, pts[0].z); return; }
+  let d = dist % L;
+  if (d < 0) d += L;
+  let i = 1;
+  const cum = path.cum;
+  while (i < cum.length - 1 && cum[i] < d) i++;
+  const span = cum[i] - cum[i - 1] || 1;
+  const t = (d - cum[i - 1]) / span;
+  const a = pts[i - 1], b = pts[i];
+  target.set(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z);
+}
+
+const pathSeries = makePath([
+  [C.batX, C.batBot], [C.batX, C.batTop], [C.batX, C.topY],
+  [r1L, C.topY], [r1R, C.topY], [r2L, C.topY], [r2R, C.topY],
+  [C.rightX, C.topY], [C.rightX, C.botY], [amR, C.botY], [amL, C.botY],
+  [C.batX, C.botY], [C.batX, C.batBot],
+]);
+const pathA = makePath([
+  [C.batX, C.batBot], [C.batX, C.batTop], [C.batX, C.p1y], [C.splitX, C.p1y],
+  [pL, C.p1y], [pR, C.p1y], [C.joinX, C.p1y], [C.joinX, C.botY],
+  [amR, C.botY], [amL, C.botY], [C.batX, C.botY], [C.batX, C.batBot],
+]);
+const pathB = makePath([
+  [C.batX, C.batBot], [C.batX, C.batTop], [C.batX, C.p1y], [C.splitX, C.p1y],
+  [C.splitX, C.p2y], [pL, C.p2y], [pR, C.p2y], [C.joinX, C.p2y], [C.joinX, C.botY],
+  [amR, C.botY], [amL, C.botY], [C.batX, C.botY], [C.batX, C.batBot],
+]);
+
+const beadGeo = keep(new THREE.SphereGeometry(0.026, isMobile ? 10 : 14, isMobile ? 8 : 12));
+const beadMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.32, metalness: 0.08,
+  emissive: 0xffb36b, emissiveIntensity: 0.65,
+}));
+const BEAD_N = 40;
+const beads = [];
+for (let i = 0; i < BEAD_N; i++) {
+  const mesh = new THREE.Mesh(beadGeo, beadMat);
+  noPick(mesh);
+  mesh.visible = false;
+  scene.add(mesh);
+  beads.push({ mesh, path: pathSeries, key: 'I', u: 0, z: 0.06 });
+}
+let activeCount = 0;
+function countFor(path) {
+  return Math.max(8, Math.min(18, Math.round(path.length / 0.30)));
+}
+function showLoops(entries) {
+  let n = 0;
+  for (const e of entries) {
+    const count = e.count;
+    for (let i = 0; i < count && n < BEAD_N; i++) {
+      const b = beads[n++];
+      b.mesh.visible = true;
+      b.path = e.path;
+      b.key = e.key;
+      b.z = e.z;
+      b.u = i / count;
+      samplePath(b.path, b.u * b.path.length, b.mesh.position);
+      b.mesh.position.z = PLANE + b.z;
+    }
+  }
+  for (let i = n; i < BEAD_N; i++) beads[i].mesh.visible = false;
+  activeCount = n;
+}
+
+function makeResistor(coreHex, coreEmissive) {
+  const group = new THREE.Group();
+  const bodyMat = keep(new THREE.MeshStandardMaterial({
+    color: 0xefe6f2, roughness: 0.16, metalness: 0.02,
+    emissive: 0x2a1838, emissiveIntensity: 0.12,
+    transparent: true, opacity: 0.5, depthWrite: false,
+  }));
+  const body = new THREE.Mesh(keep(new THREE.BoxGeometry(0.42, 0.16, 0.15)), bodyMat);
+  body.renderOrder = 2;
+  group.add(body);
+  const coreMat = keep(new THREE.MeshStandardMaterial({
+    color: coreHex, roughness: 0.42, metalness: 0.06,
+    emissive: coreEmissive, emissiveIntensity: 0.25,
+  }));
+  const core = new THREE.Mesh(keep(new THREE.BoxGeometry(0.12, 0.17, 0.16)), coreMat);
+  core.renderOrder = 1;
+  group.add(core);
+  const capMat = keep(new THREE.MeshStandardMaterial({
+    color: 0xd9cfc8, roughness: 0.35, metalness: 0.6,
+    emissive: 0x3a2820, emissiveIntensity: 0.15,
+  }));
+  const capGeo = keep(new THREE.BoxGeometry(0.045, 0.15, 0.14));
+  const capL = new THREE.Mesh(capGeo, capMat);
+  capL.position.x = -0.185;
+  const capR = new THREE.Mesh(capGeo, capMat);
+  capR.position.x = 0.185;
+  group.add(capL, capR);
+  const shellMat = keep(new THREE.MeshStandardMaterial({
+    color: 0xb9a2ff, roughness: 0.4, metalness: 0.05,
+    emissive: 0xb9a2ff, emissiveIntensity: 0.35,
+    transparent: true, opacity: 0.28, depthWrite: false,
+  }));
+  const shell = new THREE.Mesh(keep(new THREE.BoxGeometry(0.48, 0.22, 0.2)), shellMat);
+  shell.renderOrder = 3;
+  shell.visible = false;
+  group.add(shell);
+  group.userData.role = '';
+  return { group, coreMat, shell };
+}
+const r1 = makeResistor(0xffb36b, 0xffb36b);
+const r2 = makeResistor(0xb9a2ff, 0xb9a2ff);
+r1.group.userData.role = 'r1';
+r2.group.userData.role = 'r2';
+scene.add(r1.group);
+scene.add(r2.group);
+
+const batG = new THREE.Group();
+batG.userData.role = 'battery';
+batG.position.set(C.batX, 0, PLANE);
+const batBodyMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x3a2418, roughness: 0.55, metalness: 0.2,
+  emissive: 0x5a3010, emissiveIntensity: 0.35,
+}));
+const batBody = new THREE.Mesh(keep(new THREE.BoxGeometry(0.28, 0.5, 0.18)), batBodyMat);
+batG.add(batBody);
+const plusMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.35, metalness: 0.45,
+  emissive: 0xffb36b, emissiveIntensity: 0.45,
+}));
+const plusCap = new THREE.Mesh(keep(new THREE.BoxGeometry(0.16, 0.055, 0.12)), plusMat);
+plusCap.position.y = 0.275;
+batG.add(plusCap);
+const minusMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xefe6f2, roughness: 0.4, metalness: 0.35,
+  emissive: 0x3a3048, emissiveIntensity: 0.2,
+}));
+const minusCap = new THREE.Mesh(keep(new THREE.BoxGeometry(0.22, 0.045, 0.14)), minusMat);
+minusCap.position.y = -0.27;
+batG.add(minusCap);
+const markMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, roughness: 0.4, metalness: 0.2,
+  emissive: 0xffb36b, emissiveIntensity: 0.7,
+}));
+const plusV = new THREE.Mesh(keep(new THREE.BoxGeometry(0.012, 0.055, 0.012)), markMat);
+const plusH = new THREE.Mesh(keep(new THREE.BoxGeometry(0.055, 0.012, 0.012)), markMat);
+plusV.position.set(0, 0.275, 0.07);
+plusH.position.set(0, 0.275, 0.07);
+batG.add(plusV, plusH);
+const longPlate = new THREE.Mesh(keep(new THREE.BoxGeometry(0.012, 0.16, 0.012)), markMat);
+longPlate.position.set(0.0, 0.1, 0.1);
+const shortPlate = new THREE.Mesh(keep(new THREE.BoxGeometry(0.012, 0.08, 0.012)), minusMat);
+shortPlate.position.set(0.0, -0.08, 0.1);
+batG.add(longPlate, shortPlate);
+scene.add(batG);
+
+function gaugeAngle(value, full) {
+  const t = clamp(value / full, 0, 1);
+  const a0 = Math.PI - 0.55;
+  const a1 = 0.55;
+  return a0 + (a1 - a0) * t;
+}
+function makeGauge(faceHex, rimHex, role) {
+  const group = new THREE.Group();
+  group.userData.role = role;
+  const faceMat = keep(new THREE.MeshStandardMaterial({
+    color: 0x1a0c22, roughness: 0.6, metalness: 0.15,
+    emissive: 0x140810, emissiveIntensity: 0.4,
+  }));
+  const face = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.125, 0.125, 0.04, isMobile ? 20 : 28)), faceMat);
+  face.rotation.x = Math.PI / 2;
+  group.add(face);
+  const rimMat = keep(new THREE.MeshStandardMaterial({
+    color: rimHex, roughness: 0.35, metalness: 0.4,
+    emissive: rimHex, emissiveIntensity: 0.25,
+  }));
+  const rim = new THREE.Mesh(keep(new THREE.TorusGeometry(0.125, 0.012, 8, 28)), rimMat);
+  group.add(rim);
+  const tickMat = keep(new THREE.MeshStandardMaterial({
+    color: faceHex, roughness: 0.4, metalness: 0.1,
+    emissive: faceHex, emissiveIntensity: 0.35,
+  }));
+  const tickGeo = keep(new THREE.BoxGeometry(0.018, 0.006, 0.008));
+  for (let i = 0; i < 5; i++) {
+    const ang = gaugeAngle(i / 4, 1);
+    const tick = new THREE.Mesh(tickGeo, tickMat);
+    tick.position.set(Math.cos(ang) * 0.09, Math.sin(ang) * 0.09, 0.024);
+    tick.rotation.z = ang;
+    group.add(tick);
+  }
+  const pivot = new THREE.Group();
+  const needleMat = keep(new THREE.MeshStandardMaterial({
+    color: 0xffb36b, roughness: 0.35, metalness: 0.15,
+    emissive: 0xffb36b, emissiveIntensity: 0.55,
+  }));
+  const needle = new THREE.Mesh(keep(new THREE.BoxGeometry(0.09, 0.01, 0.01)), needleMat);
+  needle.position.x = 0.04;
+  pivot.add(needle);
+  group.add(pivot);
+  const hub = new THREE.Mesh(keep(new THREE.SphereGeometry(0.016, 10, 8)), needleMat);
+  hub.position.z = 0.026;
+  group.add(hub);
+  const glassMat = keep(new THREE.MeshStandardMaterial({
+    color: 0xefe6f2, roughness: 0.1, metalness: 0.02,
+    transparent: true, opacity: 0.18, depthWrite: false,
+  }));
+  const glass = new THREE.Mesh(keep(new THREE.CircleGeometry(0.11, 24)), glassMat);
+  glass.position.z = 0.03;
+  glass.renderOrder = 2;
+  group.add(glass);
+  return { group, pivot };
+}
+const ammeter = makeGauge(0xffb36b, 0xd9cfc8, 'amp');
+ammeter.group.position.set(C.amX, C.botY, PLANE + 0.02);
+scene.add(ammeter.group);
+const voltmeter = makeGauge(0xb9a2ff, 0xb9a2ff, 'volt');
+const VOLT_POS = new THREE.Vector3(1.08, 0.06, 0.48);
+voltmeter.group.position.copy(VOLT_POS);
+scene.add(voltmeter.group);
+const leadA = new THREE.Mesh(leadGeo, leadMat);
+const leadB = new THREE.Mesh(leadGeo, leadMat);
+noPick(leadA); noPick(leadB);
+scene.add(leadA); scene.add(leadB);
+const endA = new THREE.Vector3();
+const endB = new THREE.Vector3();
+const lugA = new THREE.Vector3();
+const lugB = new THREE.Vector3();
+
+function makePathCount(path) { return countFor(path); }
+let wiredMode = '';
+function applyMode() {
+  if (wiredMode === state.mode) return;
+  wiredMode = state.mode;
+  const series = state.mode === 'series';
+  seriesGroup.visible = series;
+  parallelGroup.visible = !series;
+  if (series) {
+    r1.group.position.set(C.r1x, C.topY, PLANE);
+    r2.group.position.set(C.r2x, C.topY, PLANE);
+    showLoops([{ path: pathSeries, key: 'I', z: 0.13, count: makePathCount(pathSeries) }]);
+  } else {
+    r1.group.position.set(C.px, C.p1y, PLANE);
+    r2.group.position.set(C.px, C.p2y, PLANE);
+    showLoops([
+      { path: pathA, key: 'I1', z: 0.12, count: makePathCount(pathA) },
+      { path: pathB, key: 'I2', z: 0.17, count: makePathCount(pathB) },
+    ]);
+  }
+}
+function thicken(group, R, k) {
+  const s = 0.74 + ((R - R_MIN) / (R_MAX - R_MIN)) * 0.5;
+  group.scale.y += (s - group.scale.y) * k;
+  group.scale.z += (s - group.scale.z) * k;
+}
+function easeAngle(pivot, target, k) {
+  pivot.rotation.z += (target - pivot.rotation.z) * k;
+}
+function probeEnds() {
+  const series = state.mode === 'series';
+  if (state.probe === 'r1') {
+    if (series) { endA.set(r1L, C.topY, PLANE); endB.set(r1R, C.topY, PLANE); }
+    else { endA.set(pL, C.p1y, PLANE); endB.set(pR, C.p1y, PLANE); }
+  } else if (state.probe === 'r2') {
+    if (series) { endA.set(r2L, C.topY, PLANE); endB.set(r2R, C.topY, PLANE); }
+    else { endA.set(pL, C.p2y, PLANE); endB.set(pR, C.p2y, PLANE); }
+  } else {
+    endA.set(C.batX, C.batTop, PLANE + 0.02);
+    endB.set(C.batX, C.batBot, PLANE + 0.02);
+  }
+}
+function syncLeads() {
+  probeEnds();
+  lugA.set(VOLT_POS.x - 0.06, VOLT_POS.y - 0.1, VOLT_POS.z - 0.02);
+  lugB.set(VOLT_POS.x + 0.05, VOLT_POS.y - 0.1, VOLT_POS.z - 0.02);
+  orientTube(leadA, lugA.x, lugA.y, lugA.z, endA.x, endA.y, endA.z);
+  orientTube(leadB, lugB.x, lugB.y, lugB.z, endB.x, endB.y, endB.z);
+}
+function syncWorld(dt, snap) {
+  const sol = readCircuit();
+  applyMode();
+  const k = snap ? 1 : (1 - Math.exp(-Math.max(dt, 0) * 9));
+  thicken(r1.group, sol.R1, k);
+  thicken(r2.group, sol.R2, k);
+  r1.shell.visible = state.focus === 'r1';
+  r2.shell.visible = state.focus === 'r2';
+  const heat = (p) => 0.12 + Math.min(1, p / 16) * 1.05;
+  r1.coreMat.emissiveIntensity = heat(sol.P1);
+  r2.coreMat.emissiveIntensity = heat(sol.P2);
+  batBodyMat.emissiveIntensity = 0.22 + (sol.V / V_MAX) * 0.7;
+  const glow = 0.12 + Math.min(0.55, sol.I * 0.22);
+  seriesWireMat.emissiveIntensity = glow;
+  parallelWireMat.emissiveIntensity = glow;
+  easeAngle(ammeter.pivot, gaugeAngle(sol.I, AMP_FULL), k);
+  easeAngle(voltmeter.pivot, gaugeAngle(probeVoltage(sol), VOLT_FULL), k);
+  const step = snap ? 0 : dt;
+  for (let i = 0; i < activeCount; i++) {
+    const b = beads[i];
+    const amps = sol[b.key] || 0;
+    const spd = Math.min(2.8, 1.45 * Math.max(0, amps));
+    if (step > 0 && b.path.length > 0) b.u = (b.u + (spd * step) / b.path.length) % 1;
+    samplePath(b.path, b.u * b.path.length, b.mesh.position);
+    b.mesh.position.z = PLANE + b.z;
+  }
+  syncLeads();
+}
+
+const tagBat = document.getElementById('tag-bat');
+const tagR1 = document.getElementById('tag-r1');
+const tagR2 = document.getElementById('tag-r2');
+const tagA = document.getElementById('tag-a');
+const tagV = document.getElementById('tag-v');
+const tagV3 = new THREE.Vector3();
+function projectTag(el, x, y, z) {
+  tagV3.set(x, y, z);
+  tagV3.project(camera);
+  if (tagV3.z > 1) { el.style.opacity = '0'; return; }
+  const sx = (tagV3.x * 0.5 + 0.5) * innerWidth;
+  const sy = (-tagV3.y * 0.5 + 0.5) * innerHeight;
+  el.style.opacity = '1';
+  el.style.transform = 'translate(' + sx + 'px,' + sy + 'px) translate(-50%, -130%)';
+}
+function syncTags() {
+  projectTag(tagBat, C.batX, 0.42, PLANE);
+  tagBat.textContent = 'battery  ' + fmtV(state.v);
+  const s = state.mode === 'series';
+  projectTag(tagR1, s ? C.r1x : C.px, (s ? C.topY : C.p1y) + 0.16, PLANE);
+  tagR1.textContent = 'R₁  ' + fmtR(state.r1);
+  projectTag(tagR2, s ? C.r2x : C.px, (s ? C.topY : C.p2y) + 0.16, PLANE);
+  tagR2.textContent = 'R₂  ' + fmtR(state.r2);
+  projectTag(tagA, C.amX, C.botY - 0.2, PLANE);
+  tagA.textContent = 'A  ' + (latest ? fmtA(latest.I) : '—');
+  projectTag(tagV, VOLT_POS.x, VOLT_POS.y + 0.2, VOLT_POS.z);
+  tagV.textContent = 'V  ' + (latest ? fmtV(probeVoltage(latest)) : '—');
+}
+
+let flagText = '';
+let flagHold = 0;
+function flag(msg) { flagText = msg; flagHold = 8; }
+function standing(sol) {
+  if (sol.series) return 'One path. Both resistors carry ' + fmtA(sol.I) + '.';
+  return 'Two paths. The branch currents add to ' + fmtA(sol.I) + '.';
+}
+function barTo(el, frac) { el.style.width = (clamp(frac, 0, 1) * 100) + '%'; }
+const barV = document.getElementById('bar-v');
+const barI = document.getElementById('bar-i');
+const barR1 = document.getElementById('bar-r1');
+const barR2 = document.getElementById('bar-r2');
+const barReq = document.getElementById('bar-req');
+const barP = document.getElementById('bar-p');
+function updateHud() {
+  const sol = latest || readCircuit();
+  document.getElementById('h-v').textContent = fmtV(sol.V);
+  document.getElementById('h-i').textContent = fmtA(sol.I);
+  document.getElementById('h-r1').textContent = fmtR(sol.R1);
+  document.getElementById('h-r2').textContent = fmtR(sol.R2);
+  document.getElementById('h-req').textContent = fmtR(sol.Req);
+  document.getElementById('h-p').textContent = fmtW(sol.P);
+  barTo(barV, sol.V / V_MAX);
+  barTo(barI, sol.I / AMP_FULL);
+  barTo(barR1, sol.R1 / R_MAX);
+  barTo(barR2, sol.R2 / R_MAX);
+  barTo(barReq, sol.Req / (R_MAX * 2));
+  barTo(barP, sol.P / 36);
+  document.getElementById('h-eq').textContent = fmtV(sol.V) + ' = ' + fmtA(sol.I) + ' × ' + fmtR(sol.Req);
+  document.getElementById('h-eq2').textContent = sol.series
+    ? ('V₁ + V₂ = ' + fmtV(sol.V1) + ' + ' + fmtV(sol.V2))
+    : ('I₁ + I₂ = ' + fmtA(sol.I1) + ' + ' + fmtA(sol.I2));
+  document.getElementById('h-note').textContent = sol.series
+    ? ('Series. Voltmeter across ' + probeLabel() + '.')
+    : ('Parallel. Voltmeter across ' + probeLabel() + '.');
+  document.getElementById('h-flag').textContent = flagText || standing(sol);
+  const which = document.getElementById('chip-which');
+  which.textContent = 'Using ' + focusLabel();
+}
+
+function doSeries() {
+  state.mode = 'series';
+  flag('Series. There is one path, so both resistors carry the same current.');
+}
+function doParallel() {
+  state.mode = 'parallel';
+  flag('Parallel. The voltage across each resistor matches the battery, and the currents add.');
+}
+function doFocus(which) {
+  state.focus = which === 'r2' ? 'r2' : 'r1';
+  flag('Double R and Halve R now change ' + focusLabel() + '.');
+}
+function doToggleR() { doFocus(state.focus === 'r1' ? 'r2' : 'r1'); }
+function doBumpR(factor) {
+  const key = state.focus === 'r2' ? 'r2' : 'r1';
+  const cur = state[key];
+  const next = clamp(cur * factor, R_MIN, R_MAX);
+  const name = key === 'r2' ? 'R₂' : 'R₁';
+  if (Math.abs(next - cur) < 1e-9) {
+    flag(name + (factor > 1 ? ' is already as large as this board can show.' : ' is already as small as this board can show.'));
+    return;
+  }
+  state[key] = next;
+  const exact = Math.abs(next - cur * factor) < 1e-6;
+  flag(exact
+    ? (name + ' is now ' + fmtR(next) + '.')
+    : (name + ' is now ' + fmtR(next) + ', which is as far as this board can show.'));
+}
+function doRaiseV(dir) {
+  const next = clamp(state.v + dir * V_STEP, V_MIN, V_MAX);
+  if (Math.abs(next - state.v) < 1e-9) {
+    flag(dir > 0 ? 'The battery is already as high as this board goes.' : 'The battery is already as low as this board goes.');
+    return;
+  }
+  state.v = next;
+  flag('The battery is now ' + fmtV(state.v) + '. The resistances have not changed.');
+}
+function doProbe(which) {
+  state.probe = which === 'r1' || which === 'r2' ? which : 'battery';
+  const sol = readCircuit();
+  flag('The voltmeter is across ' + probeLabel() + '. It reads ' + fmtV(probeVoltage(sol)) + '.');
+}
+function nextProbe() {
+  if (state.probe === 'battery') return 'r1';
+  if (state.probe === 'r1') return 'r2';
+  return 'battery';
+}
+function doReset(fromUser) {
+  state.mode = 'series';
+  state.v = 12;
+  state.r1 = 10;
+  state.r2 = 20;
+  state.focus = 'r1';
+  state.probe = 'battery';
+  if (fromUser) flag('The board is back to 12 V, with R₁ at 10 Ω and R₂ at 20 Ω, in series.');
+  else { flagText = ''; flagHold = 0; }
+}
+function dispatchAct(act) {
+  if (!act) return false;
+  if (act === 'series') doSeries();
+  else if (act === 'parallel') doParallel();
+  else if (act === 'toggle-r') doToggleR();
+  else if (act === 'focus-r1') doFocus('r1');
+  else if (act === 'focus-r2') doFocus('r2');
+  else if (act === 'double-r') doBumpR(2);
+  else if (act === 'halve-r') doBumpR(0.5);
+  else if (act === 'raise-v') doRaiseV(1);
+  else if (act === 'lower-v') doRaiseV(-1);
+  else if (act === 'probe-battery') doProbe('battery');
+  else if (act === 'probe-r1') doProbe('r1');
+  else if (act === 'probe-r2') doProbe('r2');
+  else if (act === 'reset') doReset(true);
+  else return false;
+  refresh();
+  return true;
+}
+function refresh() {
+  readCircuit();
+  applyMode();
+  syncPressed();
+  updateHud();
+  updateLessonLive();
+  if (still) {
+    syncWorld(0, true);
+    placeCamera(0);
+    syncTags();
+    renderer.render(scene, camera);
+  }
+}
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const lean = { x: 0, y: 0, vx: 0, vy: 0 };
+const leanGoal = { x: 0, y: 0 };
+const pickList = [batG, r1.group, r2.group, ammeter.group, voltmeter.group];
+let drag = null;
+function setPointer(e) {
+  const r = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+}
+function roleOf(obj) {
+  let o = obj;
+  while (o) {
+    if (o.userData && o.userData.role) return o.userData.role;
+    o = o.parent;
+  }
+  return '';
+}
+function pickRole() {
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(pickList, true);
+  return hits.length ? roleOf(hits[0].object) : '';
+}
+function onDown(e) {
+  if (e.button != null && e.button !== 0) return;
+  setPointer(e);
+  const role = pickRole();
+  drag = { role, x: e.clientX, y: e.clientY, v: state.v, r1: state.r1, r2: state.r2, moved: false, lean: !role };
+  if (!role) { drag.lx = lean.x; drag.ly = lean.y; }
+  canvas.classList.add('grabbing');
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+}
+function onMove(e) {
+  setPointer(e);
+  if (!drag) {
+    const role = pickRole();
+    canvas.classList.toggle('can-grab', role === 'battery' || role === 'r1' || role === 'r2' || role === 'amp' || role === 'volt');
+    return;
+  }
+  const dx = e.clientX - drag.x;
+  const dy = e.clientY - drag.y;
+  if (dx * dx + dy * dy > 16) drag.moved = true;
+  if (drag.lean) {
+    leanGoal.x = clamp(drag.lx + dx * 0.0016, -0.34, 0.34);
+    leanGoal.y = clamp(drag.ly + dy * -0.00115, -0.2, 0.2);
+    if (still) {
+      lean.x = leanGoal.x; lean.y = leanGoal.y;
+      placeCamera(0); syncTags(); renderer.render(scene, camera);
+    }
+    return;
+  }
+  if (drag.role === 'battery' || drag.role === 'r1' || drag.role === 'r2') {
+    const lift = (drag.y - e.clientY) / Math.max(1, canvas.clientHeight);
+    if (drag.role === 'battery') state.v = clamp(drag.v + lift * 28, V_MIN, V_MAX);
+    if (drag.role === 'r1') { state.focus = 'r1'; state.r1 = clamp(drag.r1 + lift * 48, R_MIN, R_MAX); }
+    if (drag.role === 'r2') { state.focus = 'r2'; state.r2 = clamp(drag.r2 + lift * 48, R_MIN, R_MAX); }
+    refresh();
+  }
+}
+function onUp(e) {
+  const d = drag;
+  drag = null;
+  canvas.classList.remove('grabbing');
+  if (!d) return;
+  if (d.lean) { leanGoal.x = 0; leanGoal.y = 0; }
+  else if (!d.moved && d.role === 'volt') doProbe(nextProbe());
+  else if (!d.moved && d.role === 'amp') flag('The ammeter stays in the loop. It reads the total current, ' + fmtA(readCircuit().I) + '.');
+  else if (!d.moved && (d.role === 'r1' || d.role === 'r2')) doFocus(d.role);
+  else if (d.moved && d.role === 'battery') flag('The battery is now ' + fmtV(state.v) + '.');
+  else if (d.moved && (d.role === 'r1' || d.role === 'r2')) {
+    flag((d.role === 'r1' ? 'R₁' : 'R₂') + ' is now ' + fmtR(d.role === 'r1' ? state.r1 : state.r2) + '.');
+  }
+  if (d.lean && still) {
+    lean.x = 0; lean.y = 0; lean.vx = 0; lean.vy = 0;
+    leanGoal.x = 0; leanGoal.y = 0;
+  }
+  refresh();
+  try { canvas.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+}
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+document.getElementById('chips').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  dispatchAct(btn.dataset.act);
+});
+
+function stepLean(dt) {
+  if (still) return;
+  const k = 32;
+  const damp = 7.2;
+  lean.vx += (k * (leanGoal.x - lean.x) - damp * lean.vx) * dt;
+  lean.vy += (k * (leanGoal.y - lean.y) - damp * lean.vy) * dt;
+  lean.x += lean.vx * dt;
+  lean.y += lean.vy * dt;
+}
+
+const narrowMq = matchMedia('(max-width: 720px), (max-aspect-ratio: 5/6)');
+const lessonEl = document.getElementById('lesson');
+function chromeLeftEdge() {
+  if (embed || narrowMq.matches || !lsOpen) return 0;
+  return lessonEl.getBoundingClientRect().right;
+}
+function placeCamera(t) {
+  const left = chromeLeftEdge();
+  const shift = left > 40 ? (left / innerWidth) * 1.45 : 0;
+  const breathe = still ? 0 : Math.sin(t * 0.35) * 0.008;
+  const from = narrowMq.matches ? camNarrow : camWide;
+  const look = narrowMq.matches ? lookNarrow : lookWide;
+  camera.position.set(from.x - shift * 0.12 + lean.x * 0.9, from.y + lean.y + breathe, from.z - lean.y * 0.12);
+  camera.lookAt(look.x - shift + lean.x * 0.28, look.y, lean.x * 0.04);
+}
+function resize() {
+  const w = stage.clientWidth;
+  const h = stage.clientHeight;
+  camera.aspect = w / Math.max(1, h);
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+}
+
+const lsBody = document.getElementById('ls-body');
+const lsKicker = document.getElementById('ls-kicker');
+const lsDots = document.getElementById('ls-dots');
+const lsToggle = document.getElementById('ls-toggle');
+const labelEl = document.querySelector('.label');
+const footEl = document.querySelector('.foot');
+const metersEl = document.getElementById('meters');
+
+const LS = [
+  { topic: 'Meet the circuit', focus: 'meet', html: `
+    <h3>Meet the circuit</h3>
+    <p class="formula">V = I R</p>
+    <p>The warm block on the left is the battery. It has a positive terminal on top and a negative terminal below. The two clear blocks are resistors. R₁ has a warm core. R₂ has a lilac core. The pearl wires join them into one closed path. The round meter in the bottom wire is the ammeter. It is part of the path, so every charge that leaves the battery passes through it. The lilac meter off to the side is the voltmeter. Its leads touch the two ends of whatever you ask it to measure.</p>
+    <p>Drag a resistor up to raise its resistance, or drag the battery up to raise the voltage. The digits on the right are the live values. If a needle sits against the end of its scale, trust the digits. The needle only has so much room.</p>
+    <p class="watch"><b>Watch</b> You should see the battery, both resistor blocks, the wires, warm beads on the wires, the ammeter in the bottom wire, and the voltmeter with two lilac leads.</p>
+    <p class="live" aria-live="polite"><b>Now</b> This board is in <span data-live="mode">—</span>. The battery is <span data-live="v">—</span>, R₁ is <span data-live="r1">—</span>, and R₂ is <span data-live="r2">—</span>. The ammeter reads <span data-live="i">—</span>.</p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="probe-battery">Meter on battery</button><button type="button" data-act="probe-r1">Meter on R₁</button></div>` },
+  { topic: 'Voltage, current, resistance', focus: 'words', html: `
+    <h3>Three words</h3>
+    <p class="formula">volt · ampere · ohm</p>
+    <p>Voltage is the energy the battery gives each unit of charge, measured in volts. A higher voltage is a harder push. Current is how much charge passes a point each second, measured in amperes. Resistance is how strongly a part opposes that current, measured in ohms. The battery sets the voltage. The resistors set the opposition. The current is what the circuit settles into.</p>
+    <p>On this board the ammeter reads the total current, and the voltmeter reads the voltage between its two leads. Neither meter is perfect in a real lab, but these two are drawn as ideal: the ammeter adds no resistance, and the voltmeter draws no current of its own.</p>
+    <p class="watch"><b>Watch</b> Put the voltmeter across the battery, then across R₁. The battery reading is the push. The R₁ reading is only the share of that push used in R₁.</p>
+    <p class="live" aria-live="polite"><b>Now</b> Battery <span data-live="v">—</span>. Voltmeter on <span data-live="probe">—</span> reads <span data-live="probeV">—</span>. Ammeter <span data-live="i">—</span>. R₁ <span data-live="r1">—</span>, R₂ <span data-live="r2">—</span>.</p>
+    <div class="acts"><button type="button" data-act="probe-battery">Meter on battery</button><button type="button" data-act="probe-r1">Meter on R₁</button><button type="button" data-act="probe-r2">Meter on R₂</button></div>` },
+  { topic: 'Ohm’s law', focus: 'ohm', html: `
+    <h3>Ohm’s law</h3>
+    <p class="formula">V = I R</p>
+    <p>Ohm’s law ties the three quantities together. For a single resistor, the voltage across it equals the current through it times its resistance. For the whole board, the battery voltage equals the total current times the equivalent resistance: V = I R<sub>eq</sub>. Same unit on every term. Volts, amperes, and ohms already match, so you do not convert.</p>
+    <p>The honey line under the meters writes that check with the live numbers. Change the battery or a resistor and both sides should still agree. If you double the resistance of the whole circuit and leave V alone, I falls to half. One resistor by itself is not the whole circuit, so doubling only R₁ does not halve the current. That comes a few steps from now.</p>
+    <p class="watch"><b>Watch</b> Read the honey line. Then press Raise V and read it again. The resistances stay put, and the current rises with the battery.</p>
+    <p class="live" aria-live="polite"><b>Now</b> <span data-live="v">—</span> = <span data-live="i">—</span> × <span data-live="req">—</span>. The two sides of Ohm’s law are the battery voltage and <span data-live="product">—</span>.</p>
+    <div class="acts"><button type="button" data-act="raise-v">Raise V</button><button type="button" data-act="lower-v">Lower V</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Steady current', focus: 'steady', html: `
+    <h3>The current is steady</h3>
+    <p class="formula">charge in = charge out</p>
+    <p>The warm beads are a picture of the current. They travel from the positive terminal, around the wires, through the resistors and the ammeter, and back in at the negative terminal. That direction is called conventional current. Inside the metal, the electrons drift the other way. The ammeter reads the same current either way you describe the moving charge.</p>
+    <p>A steady current means the beads do not pile up and they do not disappear. The spacing on a path stays even. What leaves one end of a resistor is what enters the other end. The resistor turns electrical energy into heat. It does not use up charge. The battery does not create charge either. It gives energy to the charge that is already in the loop, and the beads keep coming around.</p>
+    <p class="watch"><b>Watch</b> Follow one bead through a resistor. It should come out the far side and continue around the loop. The spacing between beads on that path should stay even.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The ammeter reads <span data-live="i">—</span> everywhere in a series loop. R₁ carries <span data-live="i1">—</span> and R₂ carries <span data-live="i2">—</span>.</p>
+    <div class="acts"><button type="button" data-act="series">Series</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Series', focus: 'series', html: `
+    <h3>Series: one path</h3>
+    <p class="formula">R<sub>eq</sub> = R₁ + R₂ &nbsp;&nbsp; V = V₁ + V₂</p>
+    <p>In series there is only one path. Every bead that goes through R₁ also goes through R₂, so the current is the same in both. The equivalent resistance is the sum, R<sub>eq</sub> = R₁ + R₂. The battery has to push through both blocks, so the total opposition is larger than either one alone.</p>
+    <p>The voltages share the battery. V₁ = I R₁ and V₂ = I R₂, and those two add back to the battery voltage. The larger resistance takes the larger share, because the current is the same and V = I R. Put the voltmeter on R₁, then on R₂, and compare.</p>
+    <p class="watch"><b>Watch</b> With the board in series, the beads should move at one speed all the way around. V₁ + V₂ on the meter line should match the battery.</p>
+    <p class="live" aria-live="polite"><b>Now</b> I = <span data-live="i">—</span> in both. V₁ = <span data-live="v1">—</span>, V₂ = <span data-live="v2">—</span>, and V₁ + V₂ = <span data-live="sumV">—</span>. R<sub>eq</sub> = <span data-live="req">—</span>.</p>
+    <div class="acts"><button type="button" data-act="series">Series</button><button type="button" data-act="probe-r1">Meter on R₁</button><button type="button" data-act="probe-r2">Meter on R₂</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Parallel', focus: 'parallel', html: `
+    <h3>Parallel: two paths</h3>
+    <p class="formula">1/R<sub>eq</sub> = 1/R₁ + 1/R₂ &nbsp;&nbsp; I = I₁ + I₂</p>
+    <p>In parallel the wire splits, and each resistor gets its own path. Both paths connect straight across the battery, so the voltage across R₁ equals the voltage across R₂, and both equal the battery. The current is not the same. I₁ = V / R₁ and I₂ = V / R₂. The smaller resistance carries the larger current. At the junctions the currents add: the ammeter, which is in the shared wire, reads I = I₁ + I₂.</p>
+    <p>Each path keeps its own beads, and a bead is not destroyed when the paths split or join. On the battery wire and on the return wire you see both sets, so that shared wire looks busier than either branch. The faster beads are the larger current. The spacing on each path stays even.</p>
+    <p class="watch"><b>Watch</b> Press Parallel. The branch with the smaller resistance should carry the faster beads. The wire through the battery should look busier than either resistor by itself.</p>
+    <p class="live" aria-live="polite"><b>Now</b> V₁ = <span data-live="v1">—</span> and V₂ = <span data-live="v2">—</span>. I₁ = <span data-live="i1">—</span>, I₂ = <span data-live="i2">—</span>, and I₁ + I₂ = <span data-live="sumI">—</span>.</p>
+    <div class="acts"><button type="button" data-act="parallel">Parallel</button><button type="button" data-act="probe-r1">Meter on R₁</button><button type="button" data-act="probe-r2">Meter on R₂</button></div>` },
+  { topic: 'Equivalent resistance', focus: 'equiv', html: `
+    <h3>One resistor that would match</h3>
+    <p class="formula">I = V / R<sub>eq</sub></p>
+    <p>The equivalent resistance is the single resistance that would draw the same total current from the same battery. You do not see that extra block on the board. R<sub>eq</sub> is the number that makes V = I R<sub>eq</sub> true for the whole circuit. In series, R<sub>eq</sub> = R₁ + R₂, which is larger than either resistor, so the current is smaller than it would be through either one alone. In parallel, 1/R<sub>eq</sub> = 1/R₁ + 1/R₂, which you can also write R<sub>eq</sub> = R₁ R₂ / (R₁ + R₂). That value is smaller than either resistor, so the same battery draws more total current. Adding a parallel path gives the charge another way through.</p>
+    <p class="watch"><b>Watch</b> Note R<sub>eq</sub> and I in series, then switch to parallel without changing R₁, R₂, or V. R<sub>eq</sub> should fall, and the ammeter should rise.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The board is in <span data-live="mode">—</span>. R<sub>eq</sub> = <span data-live="req">—</span> and I = <span data-live="i">—</span>. Ohm’s law for the whole board: <span data-live="v">—</span> = <span data-live="product">—</span>.</p>
+    <div class="acts"><button type="button" data-act="series">Series</button><button type="button" data-act="parallel">Parallel</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Double one resistance', focus: 'double', html: `
+    <h3>Double one resistance</h3>
+    <p class="formula">doubling R₁ is not the same as doubling R<sub>eq</sub></p>
+    <p>Double R changes the resistor named on the chip, R₁ unless you have switched to R₂. Doubling one resistor does not double R<sub>eq</sub>, because the other resistor is still in the circuit. In series, R<sub>eq</sub> goes from R₁ + R₂ to 2 R₁ + R₂. The current falls, but it does not fall by half unless the other resistance was zero. The doubled resistor takes a larger share of the voltage, since V = I R and its R grew.</p>
+    <p>In parallel, doubling R₁ halves only I₁. I₂ does not change, because that branch still has the same voltage and the same R₂. The ammeter falls by the same amount I₁ fell. Halve R undoes the change when the value is still inside the board’s range.</p>
+    <p class="watch"><b>Watch</b> Reset, stay in series, and note I, V₁, and V₂. Press Double R. I should fall, and V₁ should rise until the two voltages are even, because both resistances are now 20 Ω.</p>
+    <p class="live" aria-live="polite"><b>Now</b> <span data-live="focus">—</span> is the one Double R will change. R₁ = <span data-live="r1">—</span>, R₂ = <span data-live="r2">—</span>, I = <span data-live="i">—</span>, V₁ = <span data-live="v1">—</span>, V₂ = <span data-live="v2">—</span>.</p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="series">Series</button><button type="button" data-act="double-r">Double R</button><button type="button" data-act="halve-r">Halve R</button><button type="button" data-act="focus-r2">Use R₂</button></div>` },
+  { topic: 'Change the voltage', focus: 'voltage', html: `
+    <h3>Change the push</h3>
+    <p class="formula">I = V / R<sub>eq</sub></p>
+    <p>The resistances belong to the blocks. Raising the battery does not change R₁, R₂, or R<sub>eq</sub>. The current does change. From I = V / R<sub>eq</sub>, current scales with voltage when the resistance is fixed. Raise V and the ammeter rises. Lower V and it falls. The beads speed up or slow down with that current. Their spacing stays even.</p>
+    <p>Halve R is the other lever. Less opposition, with the same battery, means more current. In series that extra current goes through both resistors. In parallel, halving one resistor changes only that branch. Watch R<sub>eq</sub> when you halve a resistor, and watch it sit still when you only change V.</p>
+    <p class="watch"><b>Watch</b> Note R<sub>eq</sub>, then press Raise V. R<sub>eq</sub> should stay put and I should rise. Then press Halve R and watch both R<sub>eq</sub> and I move.</p>
+    <p class="live" aria-live="polite"><b>Now</b> V = <span data-live="v">—</span>, R<sub>eq</sub> = <span data-live="req">—</span>, I = <span data-live="i">—</span>. Halve R will change <span data-live="focus">—</span>.</p>
+    <div class="acts"><button type="button" data-act="raise-v">Raise V</button><button type="button" data-act="lower-v">Lower V</button><button type="button" data-act="halve-r">Halve R</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Power', focus: 'power', html: `
+    <h3>Power</h3>
+    <p class="formula">P = I V &nbsp;&nbsp; P = I² R &nbsp;&nbsp; P = V² / R</p>
+    <p>Power is energy per second. For the whole circuit, P = I V. That is the rate at which the battery supplies energy. For one resistor you can also write P = I² R or P = V² / R. The energy does not vanish. It leaves the resistor as heat. The warmer glow on a block is that heat. The beads are still there.</p>
+    <p>Which block warms more depends on the wiring. In series the current is the same, so the larger resistance dissipates more, from P = I² R. In parallel the voltage is the same, so the smaller resistance dissipates more, from P = V² / R. At the reset values, R₂ glows more in series, and R₁ glows more in parallel.</p>
+    <p class="watch"><b>Watch</b> In series, compare the two cores. Then switch to parallel. The brighter core should switch to the smaller resistance.</p>
+    <p class="live" aria-live="polite"><b>Now</b> P = <span data-live="p">—</span> for the whole board. R₁ dissipates <span data-live="p1">—</span> and R₂ dissipates <span data-live="p2">—</span>.</p>
+    <div class="acts"><button type="button" data-act="series">Series</button><button type="button" data-act="parallel">Parallel</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'In the real world', focus: 'world', html: `
+    <h3>In the real world</h3>
+    <p>These rules decide whether a lamp, a charger, or a whole building gets the voltage and the current it was built for. Series is one path, so the pieces share the voltage and carry one current. Parallel is a split, so each piece gets the full voltage and the supply has to provide the sum of the currents.</p>
+    <p>An electrician wiring a house puts the outlets on a branch in parallel. In the walls and at the breaker panel, each outlet gets the full line voltage, and the breaker has to carry the sum of the currents, the same addition you see on the ammeter when this board is in parallel. A loose or undersized wire is extra resistance in series with that branch, and it heats where the current is forced through it.</p>
+    <p>An electronics technician troubleshooting a board treats a string of resistors as a voltage divider. The parts are in series, so they share one current, and the larger resistance takes the larger share of the voltage. The technician sets a voltmeter across one part at a time, the way the lilac meter here can sit across R₁ or across R₂, and compares the drop with what the circuit should show.</p>
+    <p>An EV battery pack engineer balancing cells stacks cells in series to build the pack voltage, and joins groups in parallel so the pack can deliver the current the motor asks for. A weak cell changes the string the way a resistor that has grown changes this loop: the voltages along a series string stop matching, and the engineer has to bring that cell back in line with the others.</p>
+    <p>An appliance design engineer sizing a heater picks the resistance so the heat comes out right. A toaster element or a dryer coil is a resistor. The power it turns into heat each second is P = I V, which is also V² / R when the wall voltage is fixed. A lower resistance draws more current and runs hotter. The glow on the harder-working block on this board is that same idea, drawn small.</p>
+    <p class="watch"><b>Watch</b> Put the board in parallel and read both voltages. They should match the battery, which is what each outlet in a house gets. Then switch to series and move the voltmeter from R₁ to R₂, which is the check a technician makes along a divider.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The board is in <span data-live="mode">—</span>. V = <span data-live="v">—</span>, I = <span data-live="i">—</span>, and P = <span data-live="p">—</span>. The voltmeter is across <span data-live="probe">—</span>.</p>
+    <div class="acts"><button type="button" data-act="parallel">Parallel</button><button type="button" data-act="series">Series</button><button type="button" data-act="probe-r1">Meter on R₁</button><button type="button" data-act="probe-r2">Meter on R₂</button></div>` },
+  { topic: 'Questions to try', focus: 'questions', html: `
+    <h3>Questions to try</h3>
+    <p>Predict first. Then use the board, and open a hint after you have a number in mind.</p>
+    <p class="watch"><b>Watch</b> Use Reset when a hint starts from 12 V, 10 Ω, and 20 Ω. Read the meters before you open the hint.</p>
+    <p class="live" aria-live="polite"><b>Now</b> <span data-live="mode">—</span>. V = <span data-live="v">—</span>, R<sub>eq</sub> = <span data-live="req">—</span>, I = <span data-live="i">—</span>, P = <span data-live="p">—</span>.</p>
+    <details><summary>The battery is 12 V and the resistors are 10 Ω and 20 Ω in series. What should the ammeter read?</summary><p>R<sub>eq</sub> = 10 Ω + 20 Ω = 30 Ω. I = V / R<sub>eq</sub> = 12 V / 30 Ω = 0.400 A. Press Reset and read I. The honey line should show 12.00 V = 0.400 A × 30.0 Ω.</p></details>
+    <details><summary>You double R₁ and leave R₂ alone, still in series. What happens to the current, and which resistor has the larger voltage?</summary><p>R₁ becomes 20 Ω, so R<sub>eq</sub> = 40 Ω and I = 12 / 40 = 0.300 A. The current falls, but not by half. V₁ = I R₁ = 6.00 V and V₂ = 6.00 V, so the shares match. Before the change, R₂ had the larger voltage. Press Reset, then Double R, and compare V₁ with V₂.</p></details>
+    <details><summary>Same two resistors, now in parallel. Is R<sub>eq</sub> larger or smaller than the smaller resistor, and is the total current larger or smaller than it was in series?</summary><p>R<sub>eq</sub> = (10 × 20) / (10 + 20) = 6.67 Ω, which is smaller than 10 Ω. I = 12 / 6.67 = 1.800 A, larger than the 0.400 A series current. The battery did not change. Press Parallel and read R<sub>eq</sub> and I.</p></details>
+    <details><summary>In parallel, how does I₁ compare with I₂, and what happens to I₁ if you double R₂?</summary><p>I₁ = 12 / 10 = 1.200 A and I₂ = 12 / 20 = 0.600 A. Doubling R₂ changes only that branch: I₂ becomes 0.300 A, I₁ stays 1.200 A, and the total falls from 1.800 A to 1.500 A. Press Parallel, Use R₂, then Double R.</p></details>
+    <details><summary>Why do the beads not pile up in front of a resistor, or vanish inside it?</summary><p>A steady current means the charge arriving each second equals the charge leaving. The beads keep their spacing and keep moving through the block. The resistor changes how hard the battery has to push, and it turns energy into heat. It does not destroy charge. Follow one bead through R₁ and out the other side.</p></details>
+    <details><summary>You raise the battery and leave both resistors alone. What stays the same, and what scales with V?</summary><p>R₁, R₂, and R<sub>eq</sub> stay the same. Current, the resistor voltages in series, and the power all rise with V. Press Raise V and watch I and P. R<sub>eq</sub> should sit still.</p></details>
+    <details><summary>Which block should glow warmer at the reset values, and what is that glow a picture of?</summary><p>Power in one resistor is P = I² R. In series the current is the same, so the larger resistance, R₂, warms more: about 3.20 W against 1.60 W in R₁. The glow is energy leaving as heat each second. Switch to parallel and the smaller resistance warms more, because P = V² / R when the voltage is shared in full.</p></details>
+    <details><summary>A lamp and a toaster share a kitchen circuit. Are they in series or in parallel, and what would go wrong in series?</summary><p>A house branch is parallel, so each appliance gets the full line voltage, and the breaker carries the sum of the currents. In series they would share the voltage, the toaster’s low resistance would take most of it, the lamp would be dim, and unplugging one would stop the other. Press Parallel and notice that each resistor still has the full battery voltage.</p></details>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="double-r">Double R</button><button type="button" data-act="parallel">Parallel</button><button type="button" data-act="focus-r2">Use R₂</button><button type="button" data-act="raise-v">Raise V</button></div>` },
+];
+
+let lsStep = 0;
+let lsOpen = !params.has('nolesson');
+let mMode = 'learn';
+const lsLive = [];
+
+for (let i = 0; i < LS.length; i++) {
+  const d = document.createElement('button');
+  d.type = 'button';
+  d.dataset.go = String(i);
+  d.setAttribute('aria-label', 'Step ' + (i + 1) + ': ' + LS[i].topic);
+  lsDots.appendChild(d);
+}
+
+function renderLesson() {
+  const st = LS[lsStep];
+  lsKicker.innerHTML = 'Lesson ' + (lsStep + 1) + '/' + LS.length + ' · <b>' + st.topic + '</b>';
+  lsBody.innerHTML = st.html;
+  lsBody.scrollTop = 0;
+  lsLive.length = 0;
+  for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
+  for (const dot of lsDots.children) dot.toggleAttribute('aria-current', false);
+  lsDots.children[lsStep].setAttribute('aria-current', 'step');
+  lessonEl.querySelector('[data-step="prev"]').disabled = lsStep === 0;
+  lessonEl.querySelector('[data-step="next"]').disabled = lsStep === LS.length - 1;
+  document.body.dataset.focus = lsOpen ? st.focus : 'both';
+  syncPressed();
+  updateLessonLive();
+}
+function syncPressed() {
+  const seriesOn = state.mode === 'series';
+  document.getElementById('chip-series').setAttribute('aria-pressed', String(seriesOn));
+  document.getElementById('chip-parallel').setAttribute('aria-pressed', String(!seriesOn));
+  for (const b of lsBody.querySelectorAll('button[data-act]')) {
+    const a = b.dataset.act;
+    let on = null;
+    if (a === 'series') on = seriesOn;
+    else if (a === 'parallel') on = !seriesOn;
+    else if (a === 'focus-r1') on = state.focus === 'r1';
+    else if (a === 'focus-r2') on = state.focus === 'r2';
+    else if (a === 'probe-battery') on = state.probe === 'battery';
+    else if (a === 'probe-r1') on = state.probe === 'r1';
+    else if (a === 'probe-r2') on = state.probe === 'r2';
+    else continue;
+    b.setAttribute('aria-pressed', String(on));
+  }
+}
+function updateLessonLive() {
+  if (!lsLive.length) return;
+  const sol = latest || readCircuit();
+  const vals = {
+    mode: sol.series ? 'series' : 'parallel',
+    v: fmtV(sol.V),
+    i: fmtA(sol.I),
+    r1: fmtR(sol.R1),
+    r2: fmtR(sol.R2),
+    req: fmtR(sol.Req),
+    v1: fmtV(sol.V1),
+    v2: fmtV(sol.V2),
+    i1: fmtA(sol.I1),
+    i2: fmtA(sol.I2),
+    p: fmtW(sol.P),
+    p1: fmtW(sol.P1),
+    p2: fmtW(sol.P2),
+    probe: probeLabel(),
+    probeV: fmtV(probeVoltage(sol)),
+    product: fmtA(sol.I) + ' × ' + fmtR(sol.Req),
+    sumV: fmtV(sol.V1 + sol.V2),
+    sumI: fmtA(sol.I1 + sol.I2),
+    focus: focusLabel(),
+  };
+  for (const el of lsLive) el.textContent = vals[el.dataset.live] ?? '—';
+}
+function goStep(i) {
+  lsStep = Math.max(0, Math.min(LS.length - 1, i | 0));
+  const focus = LS[lsStep].focus;
+  if (focus === 'series' || focus === 'steady') state.mode = 'series';
+  else if (focus === 'parallel') state.mode = 'parallel';
+  renderLesson();
+  refresh();
+}
+function onLessonClick(e) {
+  const btn = e.target.closest('button');
+  if (!btn || !lessonEl.contains(btn)) return;
+  if (btn.dataset.step === 'prev') goStep(lsStep - 1);
+  else if (btn.dataset.step === 'next') goStep(lsStep + 1);
+  else if (btn.dataset.go) goStep(+btn.dataset.go);
+  else if (btn.dataset.mode) setMobileMode(btn.dataset.mode);
+  else if (btn === lsToggle) setLessonOpen(!lsOpen);
+  else if (btn.dataset.act) dispatchAct(btn.dataset.act);
+}
+function setLessonOpen(open) {
+  lsOpen = open;
+  document.body.classList.toggle('lesson-closed', !open);
+  lsToggle.setAttribute('aria-expanded', String(open));
+  lsToggle.textContent = open ? 'Hide' : 'Open lesson';
+  document.body.dataset.focus = open ? LS[lsStep].focus : 'both';
+  fitLesson();
+  resize();
+  placeCamera(0);
+  if (still) renderer.render(scene, camera);
+}
+function setMobileMode(mode) {
+  mMode = mode;
+  document.body.classList.toggle('m-learn', mode === 'learn');
+  document.body.classList.toggle('m-numbers', mode === 'numbers');
+  for (const b of lessonEl.querySelectorAll('[data-mode]')) {
+    b.setAttribute('aria-selected', String(b.dataset.mode === mode));
+  }
+}
+function placeLesson() {
+  if (narrowMq.matches) {
+    if (lessonEl.parentElement !== footEl) footEl.insertBefore(lessonEl, metersEl);
+    if (!lsOpen) setLessonOpen(true);
+  } else if (lessonEl.parentElement !== labelEl) {
+    labelEl.appendChild(lessonEl);
+  }
+  fitLesson();
+}
+function fitLesson() {
+  if (narrowMq.matches) { lessonEl.style.maxHeight = ''; return; }
+  const top = lessonEl.getBoundingClientRect().top;
+  const footH = footEl.getBoundingClientRect().height;
+  const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 16;
+  lessonEl.style.maxHeight = Math.max(180, innerHeight - padB - footH - 20 - top) + 'px';
+}
+function onLessonKey(e) {
+  if (e.target.closest && e.target.closest('input, textarea, summary, details')) return;
+  if (e.key === 'ArrowRight') goStep(lsStep + 1);
+  else if (e.key === 'ArrowLeft') goStep(lsStep - 1);
+}
+
+const leanClock = { t: 0 };
+function render() { renderer.render(scene, camera); }
+let raf = 0;
+const clock = new THREE.Clock();
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  leanClock.t += dt;
+  stepLean(dt);
+  syncWorld(dt, false);
+  flagHold = Math.max(0, flagHold - dt);
+  if (flagHold === 0) flagText = '';
+  placeCamera(leanClock.t);
+  syncTags();
+  updateHud();
+  updateLessonLive();
+  render();
+}
+function holdStill() {
+  cancelAnimationFrame(raf); raf = 0;
+  lean.x = 0; lean.y = 0; lean.vx = 0; lean.vy = 0;
+  leanGoal.x = 0; leanGoal.y = 0;
+  syncWorld(0, true);
+  placeCamera(0);
+  syncTags();
+  updateHud();
+  updateLessonLive();
+  render();
+}
+function start() {
+  if (still) { holdStill(); return; }
+  if (raf || document.hidden) return;
+  clock.getDelta();
+  raf = requestAnimationFrame(frame);
+}
+
+document.body.classList.add('has-lesson');
+setMobileMode('learn');
+lessonEl.addEventListener('click', onLessonClick);
+addEventListener('keydown', onLessonKey);
+narrowMq.addEventListener('change', () => { placeLesson(); resize(); });
+placeLesson();
+doReset(false);
+renderLesson();
+if (!lsOpen) setLessonOpen(false);
+syncWorld(0, true);
+updateHud();
+const ro = new ResizeObserver(() => { fitLesson(); resize(); if (still) { placeCamera(0); syncTags(); render(); } });
+ro.observe(stage);
+resize();
+placeCamera(0);
+syncTags();
+render();
+start();
+
+motionQuery.addEventListener('change', (e) => {
+  reduced = e.matches;
+  still = reduced || params.has('still');
+  if (still) holdStill();
+  else start();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else start();
+});
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  cancelAnimationFrame(raf); raf = 0;
+  showErr('The picture stopped. Reload the page to bring it back.');
+});
+
+function teardown() {
+  cancelAnimationFrame(raf); raf = 0;
+  ro.disconnect();
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup', onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  lessonEl.removeEventListener('click', onLessonClick);
+  removeEventListener('keydown', onLessonKey);
+  for (const d of disposables) {
+    if (d && d.dispose) d.dispose();
+  }
+  renderer.dispose();
+  renderer.forceContextLoss();
+  canvas.remove();
+}
+addEventListener('pagehide', (e) => { if (!e.persisted) teardown(); });
+
+function snapshot() {
+  const sol = readCircuit();
+  let beadCount = 0;
+  for (let i = 0; i < activeCount; i++) if (beads[i].mesh.visible) beadCount++;
+  return {
+    mode: state.mode,
+    V: sol.V,
+    R1: sol.R1,
+    R2: sol.R2,
+    Req: sol.Req,
+    I: sol.I,
+    I1: sol.I1,
+    I2: sol.I2,
+    V1: sol.V1,
+    V2: sol.V2,
+    P: sol.P,
+    P1: sol.P1,
+    P2: sol.P2,
+    probe: state.probe,
+    probeV: probeVoltage(sol),
+    focus: state.focus,
+    ohmResidual: Math.abs(sol.V - sol.I * sol.Req),
+    kclResidual: Math.abs(sol.I - (sol.I1 + sol.I2)),
+    kvlResidual: sol.series ? Math.abs(sol.V - (sol.V1 + sol.V2)) : Math.abs(sol.V1 - sol.V) + Math.abs(sol.V2 - sol.V),
+    powerResidual: Math.abs(sol.P - (sol.P1 + sol.P2)),
+    step: lsStep,
+    stepTopic: LS[lsStep].topic,
+    still,
+    lessonOpen: lsOpen,
+    title: document.title,
+    beadCount,
+  };
+}
+
+window.__dcCircuitsTeardown = teardown;
+window.__dcCircuits = {
+  renderer,
+  get still() { return still; },
+  get step() { return lsStep; },
+  act: dispatchAct,
+  goStep,
+  snapshot,
+};
+window.__dcCircuitsReady = true;
+
+} catch (e) {
+  const raw = e && e.message ? e.message : String(e);
+  showErr(/webgl/i.test(raw)
+    ? 'The picture could not start in this browser. Reload the page, or open the lesson in a current browser.'
+    : raw);
+  console.error('[dc-circuits]', e);
+}
+</script>
+</body>
+</html>

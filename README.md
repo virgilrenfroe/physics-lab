@@ -12,6 +12,7 @@ python3 -m http.server 8770
 - Lab index: http://127.0.0.1:8770/
 - Hooke’s law & orbits: http://127.0.0.1:8770/spring-orbit-sketch.html
 - Newton’s laws: http://127.0.0.1:8770/newton-laws-sketch.html
+- DC circuits: http://127.0.0.1:8770/dc-circuits-sketch.html
 
 Query flags: `?embed` · `?still` · `?nolesson`.
 
@@ -22,6 +23,7 @@ Query flags: `?embed` · `?still` · `?nolesson`.
 | `index.html` | Lab home · cards |
 | `spring-orbit-sketch.html` + `-NOTES.md` | Demo 01 |
 | `newton-laws-sketch.html` + `-NOTES.md` | Demo 02 |
+| `dc-circuits-sketch.html` + `-NOTES.md` | Demo 09 |
 | `vendor/three/` | three r170 (local) |
 
 Separate from noctuary-corridor / NestLight / OneShop / BarPal / Harbor / flow-atelier.
