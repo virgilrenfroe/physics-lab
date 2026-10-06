@@ -101,7 +101,7 @@
 
   .meters {
     pointer-events: none; display: flex; flex-direction: column; gap: 6px;
-    min-width: min(360px, 48vw); padding: 12px 14px;
+    min-width: min(340px, 48vw); max-width: min(380px, 100%); padding: 12px 14px;
     background: rgba(20, 8, 24, 0.76); border: 1px solid rgba(239,230,242,0.14);
     border-radius: 14px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   }
@@ -357,7 +357,7 @@ const C = {
   r1x: -0.26,
   r2x: 0.36,
   half: 0.19,
-  amX: 0.02,
+  amX: -0.22,
   amHalf: 0.115,
   splitX: -0.52,
   joinX: 0.58,
@@ -453,10 +453,10 @@ if (!embed) {
   scene.fog = new THREE.Fog(VOID, 6.8, 16);
 }
 const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 40);
-const camWide = new THREE.Vector3(0.12, 0.22, 2.72);
-const lookWide = new THREE.Vector3(0.02, 0.0, 0);
-const camNarrow = new THREE.Vector3(0.04, 0.28, 3.85);
-const lookNarrow = new THREE.Vector3(0.0, 0.02, 0);
+const camWide = new THREE.Vector3(-0.02, 0.1, 4.7);
+const lookWide = new THREE.Vector3(-0.12, 0.02, 0);
+const camNarrow = new THREE.Vector3(0.1, -0.05, 9.2);
+const lookNarrow = new THREE.Vector3(-0.2, -0.22, 0);
 
 const disposables = [];
 const keep = (x) => { disposables.push(x); return x; };
@@ -793,7 +793,7 @@ const ammeter = makeGauge(0xffb36b, 0xd9cfc8, 'amp');
 ammeter.group.position.set(C.amX, C.botY, PLANE + 0.02);
 scene.add(ammeter.group);
 const voltmeter = makeGauge(0xb9a2ff, 0xb9a2ff, 'volt');
-const VOLT_POS = new THREE.Vector3(1.08, 0.06, 0.48);
+const VOLT_POS = new THREE.Vector3(0.08, 0.74, 0.42);
 voltmeter.group.position.copy(VOLT_POS);
 scene.add(voltmeter.group);
 const leadA = new THREE.Mesh(leadGeo, leadMat);
@@ -1150,7 +1150,7 @@ function chromeLeftEdge() {
 }
 function placeCamera(t) {
   const left = chromeLeftEdge();
-  const shift = left > 40 ? (left / innerWidth) * 1.45 : 0;
+  const shift = left > 40 ? (left / innerWidth) * 1.35 : 0;
   const breathe = still ? 0 : Math.sin(t * 0.35) * 0.008;
   const from = narrowMq.matches ? camNarrow : camWide;
   const look = narrowMq.matches ? lookNarrow : lookWide;
@@ -1257,7 +1257,7 @@ const LS = [
   { topic: 'In the real world', focus: 'world', html: `
     <h3>In the real world</h3>
     <p>These rules decide whether a lamp, a charger, or a whole building gets the voltage and the current it was built for. Series is one path, so the pieces share the voltage and carry one current. Parallel is a split, so each piece gets the full voltage and the supply has to provide the sum of the currents.</p>
-    <p>An electrician wiring a house puts the outlets on a branch in parallel. In the walls and at the breaker panel, each outlet gets the full line voltage, and the breaker has to carry the sum of the currents, the same addition you see on the ammeter when this board is in parallel. A loose or undersized wire is extra resistance in series with that branch, and it heats where the current is forced through it.</p>
+    <p>An electrician doing residential wiring puts the outlets in a house on a branch in parallel. In the walls and at the breaker panel, each outlet gets the full line voltage, and the breaker has to carry the sum of the currents, the same addition you see on the ammeter when this board is in parallel. A loose or undersized wire is extra resistance in series with that branch, and it heats where the current is forced through it.</p>
     <p>An electronics technician troubleshooting a board treats a string of resistors as a voltage divider. The parts are in series, so they share one current, and the larger resistance takes the larger share of the voltage. The technician sets a voltmeter across one part at a time, the way the lilac meter here can sit across R₁ or across R₂, and compares the drop with what the circuit should show.</p>
     <p>An EV battery pack engineer balancing cells stacks cells in series to build the pack voltage, and joins groups in parallel so the pack can deliver the current the motor asks for. A weak cell changes the string the way a resistor that has grown changes this loop: the voltages along a series string stop matching, and the engineer has to bring that cell back in line with the others.</p>
     <p>An appliance design engineer sizing a heater picks the resistance so the heat comes out right. A toaster element or a dryer coil is a resistor. The power it turns into heat each second is P = I V, which is also V² / R when the wall voltage is fixed. A lower resistance draws more current and runs hotter. The glow on the harder-working block on this board is that same idea, drawn small.</p>
@@ -1522,7 +1522,9 @@ function snapshot() {
     probeV: probeVoltage(sol),
     focus: state.focus,
     ohmResidual: Math.abs(sol.V - sol.I * sol.Req),
-    kclResidual: Math.abs(sol.I - (sol.I1 + sol.I2)),
+    kclResidual: sol.series
+      ? Math.abs(sol.I - sol.I1) + Math.abs(sol.I - sol.I2)
+      : Math.abs(sol.I - (sol.I1 + sol.I2)),
     kvlResidual: sol.series ? Math.abs(sol.V - (sol.V1 + sol.V2)) : Math.abs(sol.V1 - sol.V) + Math.abs(sol.V2 - sol.V),
     powerResidual: Math.abs(sol.P - (sol.P1 + sol.P2)),
     step: lsStep,
