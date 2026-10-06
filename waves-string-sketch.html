@@ -327,7 +327,7 @@
             <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
             <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
           </div>
-          <p class="lesson-kicker" id="ls-kicker">Lesson 1/11 · <b>Meet the rope</b></p>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the rope</b></p>
           <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
         </header>
         <div class="lesson-body" id="ls-body" aria-live="polite"></div>
@@ -1275,6 +1275,13 @@ const LS = [
     <p class="watch"><b>Watch</b>Tap 2nd. The middle of the rope is a node (lilac). Two antinodes swing on either side. The dashes stop: the pattern is not traveling along the rope.</p>
     <p class="live"><b>Now</b>n = <span data-live="n">—</span> · nodes <span data-live="nodes">—</span> · antinodes <span data-live="antinodes">—</span></p>
     <div class="acts"><button type="button" data-act="stand-2">2nd harmonic</button><button type="button" data-act="stand-1">1st</button><button type="button" data-act="stand-3">3rd</button></div>` },
+  { topic: 'In the real world', focus: 'both', html: `
+    <h3>In the real world</h3>
+    <p class="formula">same relations · pitch on a string, distance from a travel time</p>
+    <p>A luthier building a guitar or violin sets each string’s length, its mass per meter, and its tension so the open note is the right pitch. Raising the tension, or fitting a lighter string, raises the frequency. A geophysicist times a seismic wave through rock and back, then uses the wave speed to turn that time into the depth of a layer and a clue to the rock. An ultrasound technologist does the same kind of timing in the body: echo delay and the speed of sound in tissue give the distance to a boundary, and a higher frequency shows finer detail because the wavelength is shorter.</p>
+    <p class="watch"><b>Watch</b>On 2nd, tap T ×2. The length stays put, the wave speeds up, and f rises. That is a tighter string playing a higher note.</p>
+    <p class="live"><b>Now</b>T = <span data-live="T">—</span> · f = <span data-live="f">—</span> · v = <span data-live="v">—</span></p>
+    <div class="acts"><button type="button" data-act="stand-2">2nd</button><button type="button" data-act="double-t">T ×2</button></div>` },
   { topic: 'Harmonics & questions', focus: 'both', html: `
     <h3>Harmonics, then try it</h3>
     <p class="formula">${SYM}λ${SYME}<sub>n</sub> = 2L / n · f<sub>n</sub> = n v / (2L)</p>

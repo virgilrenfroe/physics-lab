@@ -5,7 +5,7 @@
 
 The page is titled as a classroom exhibit. Curriculum is on screen the whole time: **v = fλ** and **v = √(T/μ)**, with live SI meters for amplitude A, frequency f, wavelength λ, speed v, tension T, and linear density μ.
 
-Guided **11-step** lesson (Watch / Now on every step):
+Guided **12-step** lesson (Watch / Now on every step):
 
 1. **Meet the rope** — 4.00 m between two posts. The rope moves up and down; the pattern travels toward the pulley. The brass weight is the tension.
 2. **Amplitude A** — max displacement from the center line, in meters. Drag the rope. A does not change v.
@@ -17,7 +17,8 @@ Guided **11-step** lesson (Watch / Now on every step):
 8. **Both formulas** — fλ and √(T/μ) are computed separately and should match.
 9. **Traveling wave** — y = A sin(2πx/λ − 2πft). The crest moves; a piece of rope does not.
 10. **Standing wave** — fixed ends, nodes and antinodes. 2nd harmonic: 3 nodes (count the posts), 2 antinodes.
-11. **Harmonics and questions** — λ_n = 2L/n, f_n = nv/(2L). Tighten on a standing wave and λ stays, f rises. Nine try-it questions with hints.
+11. **In the real world** — a luthier sets length, mass per meter, and tension for pitch. A geophysicist and an ultrasound technologist turn wave speed and travel time into distance and a clue to the material.
+12. **Harmonics and questions** — λ_n = 2L/n, f_n = nv/(2L). Tighten on a standing wave and λ stays, f rises. Nine try-it questions with hints.
 
 Chips and lesson buttons share one dispatcher: Travel · 1st · 2nd · 3rd · Faster · Slower · T ×2 · T ÷2 · μ ×2 · μ ÷2 · Reset, plus Louder / Softer in the lesson. Drag the rope to set A.
 
