@@ -39,6 +39,7 @@ Not used: Bearplus, nexstudio.tech, rubenmarcus.dev, Why Zero (type and layout s
 
 ## Controls
 - **Drag the rope** vertically to set amplitude. The rope eases toward your hand; higher tension follows faster.
+- On a phone the chips are one sideways rail above the lesson sheet (slide for Faster, tension, density). They stay under the rope. On a medium window the same rail sits on the bottom beside the meters, so a second row does not stack across the rope.
 - **Drag empty space** to lean the camera. It eases back.
 - Chips and the lesson drive the same actions. ← → steps the lesson.
 - Desktop: lesson card under the title (Hide collapses it). Phones: bottom sheet with Learn | Numbers.

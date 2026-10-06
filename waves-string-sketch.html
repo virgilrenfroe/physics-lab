@@ -258,13 +258,39 @@
     body.m-learn .meters, body.m-learn .hint { display: none; }
     body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
     body.m-numbers .lesson { max-height: none; }
-    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .foot { flex-direction: column; align-items: stretch; gap: 8px; }
+    .foot > :first-child { min-width: 0; width: 100%; max-width: 100%; }
     .meters { min-width: 0; width: 100%; }
-    .chips { max-width: none; }
-    .chips button { font-size: 12px; padding: 8px 11px; min-height: 38px; }
+    /* One heavy rail, slid sideways. Two wrapped rows were covering the rope. */
+    html, body { touch-action: auto; }
+    #stage, #stage canvas { touch-action: none; }
+    .chips {
+      width: 100%; max-width: 100%; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain;
+      margin: 0; padding: 0 18px 2px 0; gap: 8px; touch-action: pan-x;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 22px), transparent);
+    }
+    .chips::-webkit-scrollbar { display: none; }
+    .chips button { flex: 0 0 auto; font-size: 12px; padding: 8px 12px; min-height: 40px; }
     .chips .lg { display: none; }
     .hint .long { display: none; }
     .tags span { font-size: 10px; padding: 2px 6px; }
+  }
+  /* Foot wrap put a second chip row over the rope just above the phone sheet. */
+  @media (min-width: 721px) and (max-width: 1040px) and (min-aspect-ratio: 0.84) {
+    html, body { touch-action: auto; }
+    #stage, #stage canvas { touch-action: none; }
+    .foot { flex-wrap: nowrap; align-items: flex-end; }
+    .foot > :first-child { flex: 1 1 auto; min-width: 0; }
+    .chips {
+      width: 100%; max-width: 100%; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain;
+      touch-action: pan-x; scrollbar-width: none;
+      mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 18px), transparent);
+    }
+    .chips::-webkit-scrollbar { display: none; }
+    .chips button { flex: 0 0 auto; }
+    .chips .lg { display: none; }
+    .meters { flex: 0 0 268px; width: 268px; min-width: 0; }
   }
   html.embed, body.embed { background: transparent !important; }
   body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
@@ -1099,10 +1125,63 @@ function placeCamera() {
   const narrow = narrowMq.matches;
   const left = chromeLeftEdge();
   const shift = left > 40 ? (left / innerWidth) * 1.85 : 0;
-  const z = narrow ? 9.1 : 7.15;
-  const y = narrow ? 1.85 : 1.22;
+  let z = narrow ? 9.1 : 7.15;
+  const y = narrow ? 1.35 : 1.22;
+  let lookY = narrow ? -0.35 : -0.22;
+  if (narrow) {
+    const aspect = Math.max(0.34, camera.aspect || 0.5);
+    const tanH = Math.tan(THREE.MathUtils.degToRad(18)) * aspect;
+    z = Math.max(11, Math.min(22, 2.75 / tanH));
+  }
+  const lookX = -shift * 0.95;
   camera.position.set(0.05 - shift * 0.12 + lean.x * 0.8, y + lean.y, z);
-  camera.lookAt(-shift * 0.95, narrow ? -0.05 : -0.22, 0);
+  camera.lookAt(lookX, lookY, 0);
+  if (!embed && labelEl && footEl) {
+    const tanV = Math.tan(THREE.MathUtils.degToRad(18));
+    if (narrow) {
+      const titleBottom = labelEl.getBoundingClientRect().bottom;
+      const footTop = footEl.getBoundingClientRect().top;
+      if (footTop > titleBottom + 48) {
+        const freeMid = (titleBottom + footTop) * 0.5;
+        const desired = 1 - 2 * (freeMid / Math.max(1, innerHeight));
+        for (let i = 0; i < 2; i++) {
+          camera.lookAt(lookX, lookY, 0);
+          camera.updateMatrixWorld();
+          _proj.set(0, 0, 0).project(camera);
+          const err = desired - _proj.y;
+          if (Math.abs(err) < 0.015) break;
+          lookY -= err * (z * tanV);
+        }
+      }
+    }
+    const chips = document.getElementById('chips');
+    if (chips) {
+      const chipTop = chips.getBoundingClientRect().top;
+      const titleBottom = labelEl.getBoundingClientRect().bottom;
+      const amp = state.A + 0.1;
+      const limit = chipTop - 14;
+      for (let i = 0; i < 3; i++) {
+        camera.lookAt(lookX, lookY, 0);
+        camera.updateMatrixWorld();
+        let bot = -1e9;
+        let top = 1e9;
+        for (let k = 0; k <= 6; k++) {
+          const x = -L * 0.5 + (L * k) / 6;
+          _proj.set(x, -amp, 0).project(camera);
+          const sy = (1 - _proj.y) * 0.5 * innerHeight;
+          if (sy > bot) bot = sy;
+          _proj.set(x, amp, 0).project(camera);
+          const ty = (1 - _proj.y) * 0.5 * innerHeight;
+          if (ty < top) top = ty;
+        }
+        const over = bot - limit;
+        if (over <= 2) break;
+        const room = top - (titleBottom + 12);
+        if (room < 6) break;
+        lookY -= Math.min(over, room) * (z * tanV) * 2 / innerHeight;
+      }
+    }
+  }
 }
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
