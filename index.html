@@ -28,102 +28,243 @@
     --font-mono: "Space Mono", ui-monospace, monospace;
     --void: #140818;
     --pearl: #efe6f2;
-    --mute: rgba(239, 230, 242, 0.52);
-    --faint: rgba(239, 230, 242, 0.28);
+    --mute: rgba(239, 230, 242, 0.78);
+    --faint: rgba(239, 230, 242, 0.42);
     --accent: #ffb36b;
+    --honey: #f0c24b;
     --lilac: #b9a2ff;
-    --line: rgba(239, 230, 242, 0.12);
+    --ease-mass: cubic-bezier(0.16, 0.84, 0.28, 1);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100%; background: var(--void); color: var(--pearl); font-family: var(--font-sans); }
-  body {
-    background:
-      radial-gradient(ellipse at 50% 0%, rgba(255, 150, 80, 0.06), transparent 42%),
-      radial-gradient(ellipse at 80% 60%, rgba(185, 162, 255, 0.04), transparent 40%),
-      var(--void);
+  body { overflow-x: hidden; }
+  .ghost {
+    position: fixed; right: -0.12em; top: 8vh; z-index: 0; margin: 0;
+    font-family: var(--font-display); font-weight: 560; font-size: 26vw;
+    letter-spacing: -0.08em; line-height: 0.8; color: rgba(255, 179, 107, 0.055);
+    pointer-events: none; user-select: none;
   }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 40px 24px 64px; }
+  .page {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(200px, 0.6fr);
+    grid-template-areas:
+      "mast bench"
+      "index bench"
+      "foot foot";
+    gap: 6px 5vw;
+    padding: 28px 36px 28px;
+  }
+  .mast { grid-area: mast; align-self: start; padding-top: 6px; }
   .kicker {
-    margin: 0 0 10px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.22em;
-    text-transform: uppercase; color: rgba(255, 179, 107, 0.85);
+    margin: 0 0 10px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.24em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.92);
   }
   h1 {
-    margin: 0; font-family: var(--font-display); font-weight: 600;
-    font-size: clamp(2.4rem, 6vw, 4.2rem); letter-spacing: -0.04em; line-height: 0.95;
+    margin: 0; font-family: var(--font-display); font-weight: 580;
+    font-size: clamp(4.6rem, 11vw, 8.6rem); letter-spacing: -0.075em; line-height: 0.76;
   }
-  h1 em { font-style: normal; font-weight: 250; color: var(--mute); }
-  .intro { margin: 16px 0 0; max-width: 54ch; font-size: 1.02rem; line-height: 1.5; color: var(--mute); }
-  .meta { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; }
-  .pill {
-    border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px;
-    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--mute);
+  h1 .thin {
+    display: block; font-weight: 240; margin-left: 22%; margin-top: -0.02em;
+    color: rgba(239, 230, 242, 0.82);
   }
-  .pill b { color: var(--accent); font-weight: 400; }
-  .grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 12px; margin-top: 36px;
+  .lede {
+    max-width: 38ch; margin: 18px 0 0 2px;
+    font-size: 1.05rem; line-height: 1.45; color: var(--mute);
   }
-  .card {
-    display: flex; flex-direction: column; gap: 8px;
-    padding: 18px 16px 16px; min-height: 148px;
-    border: 1px solid var(--line); border-radius: 16px;
-    background: rgba(26, 10, 32, 0.55);
-    color: inherit; text-decoration: none;
-    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  .bench {
+    grid-area: bench; align-self: end; justify-self: end;
+    text-align: right; padding: 0 0 8vh 0; max-width: 16em;
   }
-  a.card:hover {
-    border-color: rgba(255, 179, 107, 0.45);
-    background: rgba(255, 179, 107, 0.06);
-    transform: translateY(-1px);
+  .bench .wlab {
+    margin: 0; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.9);
   }
-  .card.soon { opacity: 0.45; pointer-events: none; background: rgba(20, 8, 24, 0.35); }
-  .num { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--lilac); }
-  .card.live .num { color: var(--accent); }
-  .t { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; letter-spacing: -0.02em; line-height: 1.15; }
-  .d { font-size: 0.86rem; line-height: 1.4; color: var(--mute); flex: 1; }
-  .tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--faint); margin-top: 4px; }
+  .bench .wnum {
+    margin: 4px 0 0; font-family: var(--font-display); font-weight: 560;
+    font-size: clamp(4.2rem, 8vw, 7.2rem); letter-spacing: -0.06em; line-height: 0.82;
+    font-variant-numeric: tabular-nums;
+  }
+  .bench .wnum span { font-weight: 240; font-size: 0.42em; letter-spacing: 0; margin-left: 0.08em; }
+  .bench ul {
+    list-style: none; margin: 14px 0 0; padding: 0;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; color: var(--mute);
+  }
+  .bench li { display: flex; justify-content: flex-end; gap: 18px; padding: 3px 0; }
+  .bench li b { color: var(--pearl); font-weight: 400; }
+  .index { grid-area: index; display: flex; flex-direction: column; align-self: end; margin-top: 8px; }
+  .row {
+    display: grid; grid-template-columns: 3.2em minmax(0, 1fr) auto;
+    gap: 12px 16px; align-items: baseline;
+    text-decoration: none; color: inherit;
+    padding: 12px 0 14px;
+    border-top: 1px solid rgba(239, 230, 242, 0.16);
+  }
+  .row:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .row .n {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em; color: var(--accent);
+  }
+  .row .name {
+    font-family: var(--font-display); font-weight: 560; letter-spacing: -0.045em; line-height: 0.9;
+  }
+  .row .name em { font-style: normal; font-weight: 260; color: var(--mute); }
+  .row .meta {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--faint);
+    text-align: right;
+  }
+  .row.r1 { margin-left: 0; }
+  .row.r1 .name { font-size: clamp(1.7rem, 3vw, 2.5rem); }
+  .row.r2 { margin-left: 9vw; }
+  .row.r2 .name { font-size: clamp(1.7rem, 3vw, 2.55rem); }
+  .row.r3 { margin-left: 1.2vw; }
+  .row.r3 .name { font-size: clamp(2.5rem, 4.6vw, 4rem); }
+  .row.r3 .n { color: var(--honey); }
+  .row.r4 { margin-left: 6.5vw; }
+  .row.r4 .name { font-size: clamp(2.15rem, 3.9vw, 3.35rem); }
+  .row.r4 .n { color: var(--lilac); }
+  .soon {
+    margin: 0 0 8px 16vw; padding: 12px 0 4px;
+    border-top: 1px solid rgba(239, 230, 242, 0.1);
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .soon span {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; color: rgba(239, 230, 242, 0.62);
+  }
+  .soon span:nth-child(odd) { margin-left: 1.5vw; }
+  .soon span:nth-child(3n) { margin-left: 5vw; }
   footer {
-    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line);
-    font-family: var(--font-mono); font-size: 11px; color: var(--mute);
+    grid-area: foot; margin-top: 18px; padding-top: 14px;
+    border-top: 1px solid rgba(239, 230, 242, 0.12);
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--mute);
   }
   footer a { color: var(--accent); text-decoration: none; }
+  footer a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .row { transition: transform 0.55s var(--ease-mass); }
+    .row:hover { transform: translateY(6px); }
+    .row:active { transform: translateY(10px) scale(0.992, 0.96); transition-duration: 0.08s; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .row { transition: none; }
+    .row:active .name { color: var(--accent); }
+  }
+  @media (max-width: 860px) {
+    .page {
+      grid-template-columns: 1fr;
+      grid-template-areas: "mast" "bench" "index" "foot";
+      padding: 22px 18px 36px;
+      gap: 18px;
+    }
+    .ghost { font-size: 42vw; top: auto; bottom: 0; }
+    h1 { font-size: clamp(3.6rem, 18vw, 5.2rem); }
+    h1 .thin { margin-left: 18vw; }
+    .bench { justify-self: start; text-align: left; padding-bottom: 0; max-width: none; }
+    .bench li { justify-content: flex-start; }
+    .row.r2 { margin-left: 8vw; }
+    .row.r3 { margin-left: 0; }
+    .row.r4 { margin-left: 3vw; }
+    .soon { margin-left: 4vw; }
+    .row .meta { display: none; }
+  }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <p class="kicker">Classroom WebGL exhibits</p>
-    <h1>Physics Lab</h1>
-    <p class="intro">Classroom WebGL exhibits for teaching mechanics — Hooke, orbits, Newton’s laws, and more. Live numbers, guided lesson panels, soft night craft. Built for HS / intro college.</p>
-    <div class="meta">
-      <span class="pill"><b>three r170</b> local</span>
-      <span class="pill">Lesson · Watch · Now</span>
-      <span class="pill">?embed · ?still · ?nolesson</span>
-      <span class="pill">Virgil Renfroe</span>
-    </div>
-    <div class="grid">
-      <a class="card live" href="./spring-orbit-sketch.html">
-        <span class="num">01 · live</span>
-        <span class="t">Hooke’s law &amp; orbital motion</span>
-        <span class="d">HS / intro college — F = −kx, damping, gravity ellipses, Kepler III. Pull the mass, fling a planet.</span>
-        <span class="tag">oscillation · gravitation</span>
+  <p class="ghost" aria-hidden="true">ΔKE</p>
+  <div class="page">
+    <header class="mast">
+      <p class="kicker">HS / intro college · mechanics</p>
+      <h1>Physics<span class="thin">Lab</span></h1>
+      <p class="lede">Classroom exhibits for force, work, and motion. Live SI numbers. Guided lessons with Watch and Now. The bench on the right is a push you can follow: W and the change in KE stay equal.</p>
+    </header>
+    <aside class="bench" aria-label="Live bench, work equals the change in kinetic energy">
+      <p class="wlab">Bench · ΔKE = W</p>
+      <p class="wnum" id="b-w">0.0<span>J</span></p>
+      <ul>
+        <li>KE <b id="b-ke">0.00 J</b></li>
+        <li>m <b id="b-m">1.4 kg</b></li>
+        <li>F <b id="b-f">6.0 N</b></li>
+        <li>v <b id="b-v">0.00 m/s</b></li>
+      </ul>
+    </aside>
+    <nav class="index" aria-label="Exhibits">
+      <a class="row r1" href="./spring-orbit-sketch.html">
+        <span class="n">01</span>
+        <span class="name">Hooke’s law <em>&amp; orbits</em></span>
+        <span class="meta">F = −kx · Kepler</span>
       </a>
-      <a class="card live" href="./newton-laws-sketch.html">
-        <span class="num">02 · live</span>
-        <span class="t">Newton’s laws of motion</span>
-        <span class="d">HS / intro college — inertia, ΣF = ma, action–reaction. Large force arrows + live ΣF / m / a meters.</span>
-        <span class="tag">force · mass · acceleration</span>
+      <a class="row r2" href="./newton-laws-sketch.html">
+        <span class="n">02</span>
+        <span class="name">Newton’s laws <em>of motion</em></span>
+        <span class="meta">ΣF = ma</span>
       </a>
-      <div class="card soon"><span class="num">03 · coming</span><span class="t">Energy · work &amp; KE</span><span class="d">Work–energy theorem, potential wells.</span><span class="tag">mechanics</span></div>
-      <div class="card soon"><span class="num">04 · coming</span><span class="t">Momentum &amp; collisions</span><span class="d">1D elastic / inelastic, impulse.</span><span class="tag">mechanics</span></div>
-      <div class="card soon"><span class="num">05 · coming</span><span class="t">Circular motion</span><span class="d">Centripetal a, banked curves.</span><span class="tag">mechanics</span></div>
-      <div class="card soon"><span class="num">06 · coming</span><span class="t">Waves on a string</span><span class="d">Standing waves, harmonics.</span><span class="tag">waves</span></div>
-      <div class="card soon"><span class="num">07 · coming</span><span class="t">Electrostatics</span><span class="d">Coulomb field lines, potential.</span><span class="tag">E&amp;M</span></div>
-      <div class="card soon"><span class="num">08 · coming</span><span class="t">Geometric optics</span><span class="d">Mirrors, thin lenses, ray traces.</span><span class="tag">optics</span></div>
-    </div>
+      <a class="row r3" href="./work-energy-sketch.html">
+        <span class="n">03</span>
+        <span class="name">Work <em>&amp; energy</em></span>
+        <span class="meta">ΔKE = W_net · mgh</span>
+      </a>
+      <a class="row r4" href="./momentum-collisions-sketch.html">
+        <span class="n">04</span>
+        <span class="name">Momentum <em>&amp; collisions</em></span>
+        <span class="meta">p = mv · J = Δp</span>
+      </a>
+      <div class="soon">
+        <span>05 · circular motion · soon</span>
+        <span>06 · waves on a string · soon</span>
+        <span>07 · electrostatics · soon</span>
+        <span>08 · geometric optics · soon</span>
+      </div>
+    </nav>
     <footer>
-      Notes: <a href="./spring-orbit-sketch-NOTES.md">spring-orbit</a> · <a href="./newton-laws-sketch-NOTES.md">newton-laws</a> · <a href="./README.md">README</a>
+      Notes: <a href="./spring-orbit-sketch-NOTES.md">spring-orbit</a> · <a href="./newton-laws-sketch-NOTES.md">newton-laws</a> · <a href="./work-energy-sketch-NOTES.md">work-energy</a> · <a href="./momentum-collisions-sketch-NOTES.md">momentum</a> · <a href="./README.md">README</a>
     </footer>
   </div>
+<script>
+(function () {
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var m = 1.4, F = 6, v = 0, s = 0, W = 0;
+  var elW = document.getElementById('b-w');
+  var elK = document.getElementById('b-ke');
+  var elM = document.getElementById('b-m');
+  var elF = document.getElementById('b-f');
+  var elV = document.getElementById('b-v');
+  function paint() {
+    var KE = 0.5 * m * v * v;
+    elW.innerHTML = W.toFixed(1) + '<span>J</span>';
+    elK.textContent = KE.toFixed(2) + ' J';
+    elM.textContent = m.toFixed(1) + ' kg';
+    elF.textContent = F.toFixed(1) + ' N';
+    elV.textContent = v.toFixed(2) + ' m/s';
+  }
+  function tick(dt) {
+    var a = F / m;
+    var v0 = v;
+    v = v0 + a * dt;
+    var ds = v0 * dt + 0.5 * a * dt * dt;
+    s += ds;
+    W += F * ds;
+    if (s > 3.2) {
+      s = 0; v = 0; W = 0;
+      m = m > 2.8 ? 0.8 : +(m + 0.6).toFixed(1);
+      F = m > 2 ? 9 : 6;
+    }
+  }
+  if (reduced) {
+    tick(1.15);
+    paint();
+    return;
+  }
+  var last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    tick(dt);
+    paint();
+    requestAnimationFrame(frame);
+  }
+  paint();
+  requestAnimationFrame(frame);
+})();
+</script>
 </body>
 </html>

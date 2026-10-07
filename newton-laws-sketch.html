@@ -254,6 +254,81 @@
   html.embed, body.embed { background: transparent !important; }
   body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
   body.embed canvas { background: transparent !important; }
+
+  /* weighted lab chrome — shared with the work & energy exhibit */
+  .label h1 {
+    font-weight: 560; letter-spacing: -0.07em; line-height: 0.82;
+    font-size: clamp(2.5rem, 6vw, 5.1rem);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  }
+  .label h1 em { font-weight: 220; display: inline-block; transform: translate(0.05em, 0.03em); }
+  .label .tag { letter-spacing: 0.26em; }
+  .lesson {
+    background: rgba(10, 3, 14, 0.92);
+    border: 0; border-left: 5px solid #ffb36b; border-radius: 0;
+    box-shadow: 10px 16px 0 rgba(0, 0, 0, 0.4);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .lesson-head { border-bottom-color: rgba(255, 179, 107, 0.2); }
+  .lesson-body h3 { font-weight: 560; letter-spacing: -0.045em; font-size: 24px; }
+  .lesson-body .watch { border-radius: 0; border: 0; border-left: 3px solid #ffb36b; }
+  .chips button, .lesson-body .acts button, .lesson-nav > button, .lesson-toggle, .lesson-tabs button {
+    border-radius: 0;
+    transition: transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1), background 0.25s, border-color 0.25s, color 0.25s;
+  }
+  .chips button {
+    border: 0; border-left: 3px solid rgba(255, 179, 107, 0.9);
+    background: rgba(10, 3, 14, 0.88);
+    box-shadow: 4px 5px 0 rgba(0, 0, 0, 0.38);
+  }
+  .chips button[aria-pressed="true"] { background: rgba(255, 179, 107, 0.18); box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45); }
+  .lesson-body .acts button { border: 0; border-bottom: 2px solid rgba(255, 179, 107, 0.75); }
+  .lesson-nav > button, .lesson-toggle { border: 0; border-bottom: 2px solid rgba(239, 230, 242, 0.28); background: transparent; }
+  .lesson-tabs button[aria-selected="true"] { border-radius: 0; background: transparent; border-bottom: 2px solid #ffb36b; }
+  .meters {
+    border-radius: 0; border: 0; border-left: 4px solid #f0c24b;
+    background: rgba(10, 3, 14, 0.9);
+    box-shadow: 8px 12px 0 rgba(0, 0, 0, 0.32);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lesson { animation: slab-drop 0.75s cubic-bezier(0.16, 0.84, 0.28, 1) both; }
+    .lesson-body.is-settling { animation: weigh-in 0.5s cubic-bezier(0.16, 0.84, 0.3, 1); }
+    .chips button:active, .lesson-body .acts button:active, .lesson-nav > button:active, .lesson-toggle:active {
+      transform: translateY(3px) scale(0.99, 0.93);
+      transition-duration: 0.07s;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lesson, .lesson-body.is-settling { animation: none !important; }
+    .chips button:active, .lesson-body .acts button:active { background: rgba(255, 179, 107, 0.28); }
+  }
+  @keyframes slab-drop {
+    0% { transform: translateY(-32px); }
+    76% { transform: translateY(4px); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes slab-rise {
+    0% { transform: translateY(22px); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes weigh-in {
+    0% { transform: translateY(-12px); }
+    70% { transform: translateY(3px); }
+    100% { transform: translateY(0); }
+  }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(2rem, 4vw, 3.2rem); }
+  }
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .lesson {
+      border-left: 0; border-top: 5px solid #ffb36b; border-radius: 0;
+      box-shadow: 0 -8px 0 rgba(0, 0, 0, 0.28);
+      animation-name: slab-rise;
+    }
+    .meters { box-shadow: none; }
+    .lesson-body h3 { font-size: 18px; }
+  }
 </style>
 </head>
 <body>
@@ -299,7 +374,7 @@
     </div>
     <div class="foot">
       <div>
-        <div class="chips" id="chips" role="group" aria-label="Simulation controls">
+        <div class="chips" id="chips" role="group" aria-label="Actions">
           <button type="button" data-act="push">Apply push</button>
           <button type="button" data-act="double-f">Double F</button>
           <button type="button" data-act="double-m">Double m</button>
@@ -308,7 +383,7 @@
         </div>
         <div class="hint">
           <span><i style="background:#ffb36b"></i>drag force handle · set F<sub>app</sub></span><br />
-          <span><i style="background:#efe6f2"></i>drag cart when still · set mass</span><span class="long"> · empty space leans camera</span>
+          <span><i style="background:#efe6f2"></i>drag the cart at rest · set mass</span><span class="long"> · empty space tilts the view</span>
         </div>
       </div>
       <div class="meters" id="meters" aria-live="off">
@@ -341,6 +416,13 @@ let still = reduced || params.has('still');
 const stage = document.getElementById('stage');
 const errEl = document.getElementById('err');
 function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+function studentDisplayMessage(raw) {
+  const s = String(raw || '');
+  if (/fail|failed to create|not supported|unavailable/i.test(s)) {
+    return 'This exhibit needs a graphics display — try another browser or device.';
+  }
+  return 'The display paused — reload the page to continue.';
+}
 
 const ua = navigator.userAgent || '';
 const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -942,7 +1024,7 @@ const metersEl = document.getElementById('meters');
 const LS = [
   { topic: 'Meet the cart', focus: 'intro', html: `
     <h3>Meet the cart</h3>
-    <p>This is a teaching track. One cart, one applied force, optional friction. Every number on the right is computed live — nothing is canned.</p>
+    <p>This is a teaching track. One cart, one applied force, optional friction. Every number on the right comes from the cart’s motion.</p>
     <p><b>Orange arrow</b> = applied force F<sub>app</sub>. <b>Teal</b> = friction. <b>Gold (thick)</b> = net force ΣF. <b>Lilac</b> = acceleration a. The gold block on the cart is mass m.</p>
     <p class="watch"><b>Watch</b>Look at the meter bars on the right. F<sub>app</sub>, ΣF, and a should all point the same way when friction is off.</p>
     <p class="live"><b>Now</b>F<sub>app</sub> = <span data-live="Fapp">—</span> · m = <span data-live="m">—</span> · a = <span data-live="a">—</span></p>
@@ -1043,6 +1125,11 @@ function renderLesson() {
   lsKicker.innerHTML = `Lesson ${lsStep + 1}/${LS.length} · <b>${st.topic}</b>`;
   lsBody.innerHTML = st.html;
   lsBody.scrollTop = 0;
+  if (!motionQuery.matches) {
+    lsBody.classList.remove('is-settling');
+    void lsBody.offsetWidth;
+    lsBody.classList.add('is-settling');
+  }
   lsLive.length = 0;
   for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
   for (const d of lsDots.children) d.toggleAttribute('aria-current', false);
@@ -1203,7 +1290,7 @@ document.addEventListener('visibilitychange', () => {
 });
 canvas.addEventListener('webglcontextlost', (e) => {
   e.preventDefault(); cancelAnimationFrame(raf); raf = 0;
-  showErr('WebGL context lost — reload to resume.');
+  showErr('The display paused — reload the page to continue.');
 });
 
 function teardown() {
@@ -1230,7 +1317,7 @@ window.__newtonLaws = {
 window.__newtonLawsReady = true;
 
 } catch (e) {
-  showErr((e && e.message) ? e.message : String(e));
+  showErr(studentDisplayMessage(e && e.message));
   console.error('[newton-laws]', e);
 }
 </script>

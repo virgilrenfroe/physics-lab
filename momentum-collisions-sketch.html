@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>Momentum &amp; collisions · Physics Lab</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.74);
+    --faint: rgba(239, 230, 242, 0.42);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+    --ease-mass: cubic-bezier(0.16, 0.84, 0.28, 1);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  #stage canvas.can-grab { cursor: grab; }
+  #stage canvas.grabbing { cursor: grabbing; }
+  .vig {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      linear-gradient(115deg, rgba(5, 1, 8, 0.2), transparent 42%),
+      radial-gradient(ellipse at 70% 80%, transparent 30%, rgba(5, 1, 8, 0.55) 100%);
+  }
+  .tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .tags span {
+    position: absolute; left: 0; top: 0; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+    color: var(--pearl); background: rgba(10, 3, 14, 0.82);
+    border-left: 3px solid rgba(239, 230, 242, 0.35);
+    padding: 3px 8px; will-change: transform;
+  }
+  .tags span.a { border-left-color: #ffb36b; color: #ffe2c4; }
+  .tags span.b { border-left-color: #b9a2ff; color: #ddd0ff; }
+  .tags span.pt { border-left-color: #f0c24b; color: #ffe9a8; font-weight: 700; }
+  .tags span.j { border-left-color: #ffb36b; color: #ffe2c4; }
+  .chrome {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  .label .tag {
+    margin: 0 0 8px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.26em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.9);
+  }
+  .label h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 560;
+    font-size: clamp(2.5rem, 5.6vw, 4.8rem); letter-spacing: -0.07em; line-height: 0.82;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  }
+  .label h1 em {
+    font-style: normal; font-weight: 220; color: var(--mute);
+    display: inline-block; transform: translate(0.06em, 0.04em);
+  }
+  .label .sub {
+    margin: 12px 0 0; max-width: 40ch;
+    font-size: clamp(0.84rem, 1.2vw, 0.98rem); line-height: 1.45; color: var(--mute);
+  }
+  .foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .hint {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute); line-height: 1.7;
+  }
+  .hint i {
+    font-style: normal; display: inline-block; width: 7px; height: 7px;
+    margin: 0 6px 0 0; vertical-align: 0;
+    background: var(--accent);
+  }
+  .chips { display: flex; gap: 8px; margin: 0 0 10px; pointer-events: auto; flex-wrap: wrap; }
+  .chips button, .lesson-body .acts button, .lesson-nav > button, .lesson-toggle, .lesson-tabs button {
+    transition: transform 0.45s var(--ease-mass), background 0.25s, border-color 0.25s, color 0.25s;
+  }
+  .chips button {
+    appearance: none; border: 0; border-left: 3px solid rgba(255, 179, 107, 0.9);
+    background: rgba(10, 3, 14, 0.88); color: var(--pearl);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 550;
+    padding: 10px 14px; min-height: 42px; border-radius: 0; cursor: pointer;
+    box-shadow: 4px 5px 0 rgba(0, 0, 0, 0.38);
+  }
+  .chips button small { font-family: var(--font-mono); font-size: 10px; color: var(--mute); margin-left: 6px; }
+  .chips button[aria-pressed="true"] {
+    background: rgba(255, 179, 107, 0.18); color: #ffe2c4;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+  }
+  .chips button:focus-visible, .lesson button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .meters {
+    pointer-events: none; display: flex; flex-direction: column; gap: 7px;
+    min-width: min(320px, 46vw); padding: 12px 14px 10px;
+    background: rgba(10, 3, 14, 0.9);
+    border-left: 4px solid var(--honey);
+    border-radius: 0;
+    box-shadow: 8px 12px 0 rgba(0, 0, 0, 0.32);
+  }
+  .meters h2 {
+    margin: 0; font-family: var(--font-mono); font-weight: 400;
+    font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255, 179, 107, 0.92);
+  }
+  .meters .line {
+    font-family: var(--font-mono); font-size: 12px; color: var(--pearl); letter-spacing: 0.01em;
+  }
+  .meters .line b { font-weight: 400; color: var(--honey); }
+  .meter { display: grid; grid-template-columns: 72px 1fr 108px; gap: 8px; align-items: center; }
+  .meter .lab { font-family: var(--font-mono); font-size: 11px; color: var(--mute); }
+  .meter .track {
+    height: 12px; background: rgba(239, 230, 242, 0.08); position: relative; overflow: hidden;
+  }
+  .meter .fill {
+    position: absolute; top: 0; bottom: 0; left: 50%; width: 0;
+    transform-origin: left center;
+  }
+  .meter .fill.neg { transform: translateX(-100%); transform-origin: right center; }
+  .meter.m-p .fill { background: #f0c24b; }
+  .meter.m-j .fill { background: #ffb36b; }
+  .meter.m-ke .fill { background: #b9a2ff; }
+  .meter.m-p .track, .meter.m-ke .track { height: 16px; }
+  .meter .val { font-family: var(--font-mono); font-size: 11px; text-align: right; color: var(--pearl); }
+  .meters .eq {
+    margin-top: 2px; font-family: var(--font-mono); font-size: 12px; color: var(--honey);
+  }
+  .meters .eq.ke { color: var(--lilac); }
+  .meters .flag { min-height: 1.2em; font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+  .meters canvas { display: block; width: 100%; height: 36px; margin-top: 2px; }
+  .meters .cap {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--faint);
+  }
+  #err {
+    position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 300px;
+    font-family: var(--font-mono); font-size: 10px; color: #ffd6d6;
+    background: rgba(58, 18, 18, 0.9); padding: 8px 10px; display: none;
+  }
+  .lesson {
+    pointer-events: auto; margin-top: 14px; width: min(420px, 40vw); min-width: 300px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(10, 3, 14, 0.92);
+    border-left: 5px solid var(--accent);
+    border-radius: 0;
+    box-shadow: 10px 16px 0 rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+  }
+  body.has-lesson .label .sub { display: none; }
+  body.lesson-closed .label .sub { display: block; }
+  .lesson-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 14px;
+    border-bottom: 1px solid rgba(255, 179, 107, 0.2);
+  }
+  .lesson-kicker {
+    margin: 0; flex: 1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.9);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .lesson-kicker b { color: var(--pearl); font-weight: 400; }
+  .lesson button { font-family: var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .lesson-toggle {
+    appearance: none; border: 0; border-bottom: 2px solid rgba(255, 179, 107, 0.7);
+    background: transparent; color: var(--mute);
+    padding: 6px 12px; font-size: 12px; min-height: 32px;
+  }
+  .lesson-tabs { display: none; gap: 0; }
+  .lesson-tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--mute);
+    font-size: 12.5px; font-weight: 550; padding: 7px 12px; min-height: 32px;
+    border-bottom: 2px solid transparent;
+  }
+  .lesson-tabs button[aria-selected="true"] { color: #ffe2c4; border-bottom-color: var(--accent); }
+  .lesson-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 16px 6px;
+    font-size: 14.5px; line-height: 1.5; color: rgba(239, 230, 242, 0.92);
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .lesson-body h3 {
+    margin: 0 0 6px; font-family: var(--font-display); font-weight: 560; font-size: 24px;
+    letter-spacing: -0.045em; color: var(--pearl);
+  }
+  .lesson-body p { margin: 0 0 9px; }
+  .lesson-body .formula {
+    font-family: var(--font-mono); font-size: 14px; color: var(--accent); letter-spacing: 0.01em; margin-bottom: 10px;
+  }
+  .lesson-body .watch {
+    padding: 8px 10px; background: rgba(255, 179, 107, 0.08);
+    border-left: 3px solid var(--accent); color: #f6e7d8;
+  }
+  .lesson-body .watch b, .lesson-body .live b {
+    font-family: var(--font-mono); font-weight: 400; font-size: 9.5px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--accent); margin-right: 6px;
+  }
+  .lesson-body .live { font-family: var(--font-mono); font-size: 12px; color: var(--pearl); }
+  .lesson-body .live span { color: var(--honey); }
+  .lesson-body .acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .lesson-body .acts button {
+    appearance: none; border: 0; border-bottom: 2px solid rgba(255, 179, 107, 0.75);
+    background: rgba(255, 179, 107, 0.1);
+    color: #ffe2c4; padding: 8px 12px; font-size: 13px; font-weight: 550; min-height: 36px;
+  }
+  .lesson-body .acts button[aria-pressed="true"] { background: rgba(255, 179, 107, 0.28); }
+  .lesson-body details { border-top: 1px solid rgba(239, 230, 242, 0.1); padding: 8px 0; }
+  .lesson-body summary { cursor: pointer; color: var(--pearl); list-style: none; }
+  .lesson-body summary::before { content: "+ "; font-family: var(--font-mono); color: var(--accent); }
+  .lesson-body details[open] summary::before { content: "− "; }
+  .lesson-body details p { margin: 6px 0 2px; color: var(--mute); font-size: 13.5px; }
+  .lesson-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px 12px; border-top: 1px solid rgba(255, 179, 107, 0.16);
+  }
+  .lesson-nav > button {
+    appearance: none; border: 0; border-bottom: 2px solid rgba(239, 230, 242, 0.28);
+    background: transparent; color: var(--pearl); padding: 8px 12px; font-size: 13px; min-height: 38px;
+  }
+  .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
+  .lesson-nav .dots { display: flex; flex-wrap: wrap; gap: 0; justify-content: center; max-width: 190px; }
+  .lesson-nav .dots button {
+    appearance: none; border: 0; background: transparent; width: 16px; height: 28px; padding: 0;
+    display: grid; place-items: center;
+  }
+  .lesson-nav .dots button::after {
+    content: ""; width: 6px; height: 6px; background: rgba(239, 230, 242, 0.28);
+  }
+  .lesson-nav .dots button[aria-current="step"]::after { background: var(--accent); transform: scale(1.25); }
+  body.lesson-closed .lesson-body, body.lesson-closed .lesson-nav { display: none; }
+  body.lesson-closed .lesson { width: auto; min-width: 0; align-self: flex-start; display: inline-flex; }
+  body.lesson-closed .lesson-head { border-bottom: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .lesson { animation: slab-drop 0.75s var(--ease-mass) both; }
+    .lesson-body.is-settling { animation: weigh-in 0.5s var(--ease-mass); }
+    .chips button:active, .lesson-body .acts button:active, .lesson-nav > button:active, .lesson-toggle:active {
+      transform: translateY(3px) scale(0.99, 0.93);
+      transition-duration: 0.07s;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lesson, .lesson-body.is-settling { animation: none !important; }
+    .chips button, .lesson-body .acts button, .lesson-nav > button, .lesson-toggle, .lesson-tabs button {
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .chips button:active, .lesson-body .acts button:active { background: rgba(255, 179, 107, 0.28); }
+  }
+  @keyframes slab-drop {
+    0% { transform: translateY(-32px); }
+    76% { transform: translateY(4px); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes slab-rise {
+    0% { transform: translateY(22px); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes weigh-in {
+    0% { transform: translateY(-12px); }
+    70% { transform: translateY(3px); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes take-hit {
+    0% { transform: translate3d(var(--hit-x, 16px), 7px, 0); }
+    55% { transform: translate3d(calc(var(--hit-x, 16px) * -0.08), 1px, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .label h1.is-hit, .meters.is-hit { animation: take-hit 0.72s var(--ease-mass); }
+  }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(2rem, 4vw, 3.1rem); }
+    .lesson { margin-top: 10px; }
+    .lesson-body { font-size: 14px; }
+    .lesson-body h3 { font-size: 22px; }
+  }
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .label .sub, body.lesson-closed .label .sub { display: none; }
+    .label h1 { font-size: clamp(2.05rem, 10vw, 3rem); }
+    .lesson {
+      width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(40vh, 340px);
+      border-left: 0; border-top: 5px solid var(--accent);
+      box-shadow: 0 -8px 0 rgba(0, 0, 0, 0.28);
+      animation-name: slab-rise;
+    }
+    .lesson-head { padding: 8px 8px 8px 12px; }
+    .lesson-tabs { display: flex; }
+    .lesson-toggle { display: none; }
+    .lesson-kicker { font-size: 9.5px; }
+    .lesson-body { padding: 10px 14px 4px; font-size: 13.5px; }
+    .lesson-body h3 { font-size: 18px; }
+    body.m-learn .meters, body.m-learn .hint { display: none; }
+    body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
+    body.m-numbers .lesson { max-height: none; }
+    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .meters { min-width: 0; width: 100%; box-shadow: none; }
+    .chips button { font-size: 12px; padding: 8px 11px; min-height: 38px; }
+    .chips .lg { display: none; }
+    .hint .long { display: none; }
+    .tags span { font-size: 10px; padding: 2px 6px; }
+  }
+  html.embed, body.embed { background: transparent !important; }
+  body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
+  body.embed canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.has('embed')) {
+    document.body.classList.add('embed');
+    document.documentElement.classList.add('embed');
+  }
+})();
+</script>
+  <div id="stage"></div>
+  <div class="vig" aria-hidden="true"></div>
+  <div class="tags" aria-hidden="true">
+    <span id="tag-a" class="a">A</span>
+    <span id="tag-b" class="b">B</span>
+    <span id="tag-p" class="pt">p</span>
+    <span id="tag-j" class="j">J</span>
+  </div>
+  <div class="chrome">
+    <div class="label">
+      <p class="tag">Physics lab · mechanics · momentum &amp; collisions</p>
+      <h1>Momentum <em>&amp;</em><br />collisions</h1>
+      <p class="sub">High school / intro college: p = mv, impulse J = FΔt = Δp, and conservation of momentum when two carts collide.</p>
+      <section class="lesson" id="lesson" aria-label="Lesson: momentum and collisions">
+        <header class="lesson-head">
+          <div class="lesson-tabs" role="tablist" aria-label="Panel">
+            <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
+            <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
+          </div>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the carts</b></p>
+          <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
+        </header>
+        <div class="lesson-body" id="ls-body" aria-live="polite"></div>
+        <nav class="lesson-nav" aria-label="Lesson steps">
+          <button type="button" data-step="prev">← Back</button>
+          <div class="dots" id="ls-dots"></div>
+          <button type="button" data-step="next">Next →</button>
+        </nav>
+      </section>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="chips" id="chips" role="group" aria-label="Actions">
+          <button type="button" data-act="launch">Launch</button>
+          <button type="button" data-act="mode" id="chip-mode" aria-pressed="true">Bounce</button>
+          <button type="button" data-act="mass-a" id="chip-ma">Mass A<span class="lg"> 1 kg</span><small>1.0</small></button>
+          <button type="button" data-act="mass-b" id="chip-mb">Mass B<span class="lg"> 1 kg</span><small>1.0</small></button>
+          <button type="button" data-act="reset">Reset</button>
+        </div>
+        <div class="hint">
+          <span><i></i>orange cart A · lilac cart B</span><br />
+          <span><i style="background:#b9a2ff"></i>drag a cart to place it</span><span class="long"> · empty space tilts the view · ← → steps</span>
+        </div>
+      </div>
+      <div class="meters" id="meters" aria-live="off">
+        <h2>Live · p total stays if J = 0</h2>
+        <div class="line" id="h-a">A</div>
+        <div class="line" id="h-b">B</div>
+        <div class="meter m-p"><span class="lab">p total</span><div class="track"><div class="fill" id="bar-p"></div></div><span class="val" id="h-p">—</span></div>
+        <div class="meter m-j"><span class="lab">J</span><div class="track"><div class="fill" id="bar-j"></div></div><span class="val" id="h-j">—</span></div>
+        <div class="meter m-ke"><span class="lab">KE</span><div class="track"><div class="fill" id="bar-ke"></div></div><span class="val" id="h-ke">—</span></div>
+        <canvas id="spark" width="360" height="72" aria-hidden="true"></canvas>
+        <div class="cap">honey p total · lilac p from the start plus J</div>
+        <div class="eq" id="h-eq">p − p₀ − J = —</div>
+        <div class="eq ke" id="h-kec">KE —</div>
+        <div class="flag" id="h-flag"></div>
+      </div>
+    </div>
+  </div>
+  <div id="err" role="status"></div>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const VOID = 0x140818;
+const params = new URLSearchParams(location.search);
+const embed = params.has('embed');
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let still = reduced || params.has('still');
+
+const stage = document.getElementById('stage');
+const errEl = document.getElementById('err');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+function studentDisplayMessage(raw) {
+  const s = String(raw || '');
+  if (/fail|failed to create|not supported|unavailable/i.test(s)) {
+    return 'This exhibit needs a graphics display — try another browser or device.';
+  }
+  return 'The display paused — reload the page to continue.';
+}
+
+const ua = navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+const SEG = isMobile ? 12 : 20;
+
+try {
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, alpha: embed,
+  powerPreference: isIOS ? 'default' : 'high-performance',
+});
+if (!renderer.getContext()) throw new Error('WebGL context failed to create.');
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setClearColor(VOID, embed ? 0 : 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+stage.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+if (!embed) {
+  scene.background = new THREE.Color(VOID);
+  scene.fog = new THREE.Fog(VOID, 16, 32);
+}
+
+const camera = new THREE.PerspectiveCamera(34, 1, 0.08, 60);
+const camBase = new THREE.Vector3(3.05, 2.35, 8.4);
+const camLook = new THREE.Vector3(3.05, 0.7, 0);
+
+const disposables = [];
+const keep = (x) => { disposables.push(x); return x; };
+
+scene.add(new THREE.HemisphereLight(0xd4c4f0, 0x2a1020, 0.92));
+const key = new THREE.PointLight(0xffc090, 48, 24, 1.45);
+key.position.set(3.2, 4.6, 3.2);
+scene.add(key);
+
+const X_MIN = 0.28;
+const X_MAX = 5.92;
+const TRACK_LEN = 6.2;
+const M_CYCLE = [1, 2, 4];
+const PUSH_F = 10;
+const PUSH_T = 72 / 240;
+const H = 1 / 240;
+
+const state = {
+  x1: 1.35, v1: 0, m1: 1,
+  x2: 3.55, v2: 0, m2: 1,
+  mode: 'bounce',
+  stuck: false,
+  Jext: 0, pMark: 0,
+  pushWho: 1, pushLeft: 0, pushF: PUSH_F,
+  keBefore: 0, keAfter: 0, pBefore: 0, pAfter: 0, jHit: 0,
+  hits: 0, walls: 0, hitKind: '',
+  flash: 0, uiHit: 0,
+  p1: 0, p2: 0, p: 0, ke: 0, gap: 0,
+};
+
+function halfW(m) { return 0.28 * Math.cbrt(m); }
+function sgn(n, d) {
+  const s = n > 0.005 ? '+' : '';
+  return s + n.toFixed(d);
+}
+function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
+function derive() {
+  state.p1 = state.m1 * state.v1;
+  state.p2 = state.m2 * state.v2;
+  state.p = state.p1 + state.p2;
+  state.ke = 0.5 * state.m1 * state.v1 * state.v1 + 0.5 * state.m2 * state.v2 * state.v2;
+  state.gap = state.p - state.pMark - state.Jext;
+}
+function rebaseline() {
+  derive();
+  state.Jext = 0;
+  state.pMark = state.p;
+  state.keBefore = state.ke;
+  state.keAfter = state.ke;
+  state.pBefore = state.p;
+  state.pAfter = state.p;
+  state.jHit = 0;
+  state.hits = 0;
+  state.walls = 0;
+  state.hitKind = '';
+  state.flash = 0;
+  state.gap = 0;
+  clearTrace();
+}
+function separate() {
+  const hw1 = halfW(state.m1);
+  const hw2 = halfW(state.m2);
+  const overlap = (hw1 + hw2) - (state.x2 - state.x1);
+  if (overlap <= 1e-8) return;
+  const M = state.m1 + state.m2;
+  state.x1 -= overlap * (state.m2 / M);
+  state.x2 += overlap * (state.m1 / M);
+}
+function lockStuck() {
+  const hw1 = halfW(state.m1);
+  const hw2 = halfW(state.m2);
+  const target = hw1 + hw2;
+  const M = state.m1 + state.m2;
+  const mid = (state.m1 * state.x1 + state.m2 * state.x2) / M;
+  state.x1 = mid - (state.m2 * target) / M;
+  state.x2 = state.x1 + target;
+  state.v2 = state.v1;
+}
+
+let flagText = '';
+let flagHold = 0;
+function note(text, hold) {
+  flagText = text;
+  flagHold = hold == null ? 1.4 : hold;
+}
+function noteWall() {
+  state.walls += 1;
+  note('end stop · total momentum changes');
+}
+
+function resolveCollision() {
+  const u1 = state.v1;
+  const u2 = state.v2;
+  const m1 = state.m1;
+  const m2 = state.m2;
+  const M = m1 + m2;
+  state.pBefore = m1 * u1 + m2 * u2;
+  state.keBefore = 0.5 * m1 * u1 * u1 + 0.5 * m2 * u2 * u2;
+  const e = state.mode === 'stick' ? 0 : 1;
+  const v1 = (u1 * (m1 - e * m2) + u2 * m2 * (1 + e)) / M;
+  const v2 = (u2 * (m2 - e * m1) + u1 * m1 * (1 + e)) / M;
+  state.jHit = m1 * (v1 - u1);
+  state.v1 = v1;
+  state.v2 = v2;
+  state.hitKind = e === 0 ? 'stick' : 'bounce';
+  if (e === 0) {
+    const vcm = (m1 * u1 + m2 * u2) / M;
+    state.v1 = state.v2 = vcm;
+    state.stuck = true;
+    state.jHit = m1 * (vcm - u1);
+  }
+  separate();
+  if (state.stuck) lockStuck();
+  state.pAfter = state.m1 * state.v1 + state.m2 * state.v2;
+  state.keAfter = 0.5 * state.m1 * state.v1 * state.v1 + 0.5 * state.m2 * state.v2 * state.v2;
+  state.hits += 1;
+  state.flash = 1;
+  state.uiHit = state.jHit < 0 ? 1 : -1;
+  note(e === 0
+    ? 'stick · one speed · kinetic energy drops'
+    : 'bounce · momentum shared · kinetic energy stays');
+}
+
+function wallSingle(which) {
+  const m = which === 1 ? state.m1 : state.m2;
+  const hw = halfW(m);
+  let x = which === 1 ? state.x1 : state.x2;
+  let v = which === 1 ? state.v1 : state.v2;
+  if (x - hw < X_MIN) {
+    x = X_MIN + hw;
+    if (v < -0.02) {
+      const vNew = -v;
+      state.Jext += m * (vNew - v);
+      v = vNew;
+      noteWall();
+    } else if (v < 0) v = 0;
+  }
+  if (x + hw > X_MAX) {
+    x = X_MAX - hw;
+    if (v > 0.02) {
+      const vNew = -v;
+      state.Jext += m * (vNew - v);
+      v = vNew;
+      noteWall();
+    } else if (v > 0) v = 0;
+  }
+  if (which === 1) { state.x1 = x; state.v1 = v; }
+  else { state.x2 = x; state.v2 = v; }
+}
+function bounceCompound() {
+  const hw1 = halfW(state.m1);
+  const hw2 = halfW(state.m2);
+  const M = state.m1 + state.m2;
+  const left = state.x1 - hw1;
+  if (left < X_MIN) {
+    const pen = X_MIN - left;
+    state.x1 += pen;
+    state.x2 += pen;
+    if (state.v1 < -0.02) {
+      const vNew = -state.v1;
+      state.Jext += M * (vNew - state.v1);
+      state.v1 = state.v2 = vNew;
+      noteWall();
+    } else if (state.v1 < 0) state.v1 = state.v2 = 0;
+  }
+  const right = state.x2 + hw2;
+  if (right > X_MAX) {
+    const pen = right - X_MAX;
+    state.x1 -= pen;
+    state.x2 -= pen;
+    if (state.v1 > 0.02) {
+      const vNew = -state.v1;
+      state.Jext += M * (vNew - state.v1);
+      state.v1 = state.v2 = vNew;
+      noteWall();
+    } else if (state.v1 > 0) state.v1 = state.v2 = 0;
+  }
+}
+function solveContacts() {
+  if (state.stuck) {
+    lockStuck();
+    bounceCompound();
+    lockStuck();
+    return;
+  }
+  wallSingle(1);
+  wallSingle(2);
+  const overlap = (halfW(state.m1) + halfW(state.m2)) - (state.x2 - state.x1);
+  if (overlap > 1e-7) {
+    if (state.v1 > state.v2 + 1e-6) resolveCollision();
+    else separate();
+  }
+}
+function integrate(dt, pushing) {
+  if (state.pushLeft < 1e-8) state.pushLeft = 0;
+  if (state.stuck) {
+    const F = pushing ? state.pushF : 0;
+    const M = state.m1 + state.m2;
+    const a = F / M;
+    const v0 = state.v1;
+    state.v1 = state.v2 = v0 + a * dt;
+    const dx = v0 * dt + 0.5 * a * dt * dt;
+    state.x1 += dx;
+    state.x2 += dx;
+    state.Jext += F * dt;
+    if (pushing) state.pushLeft -= dt;
+    return;
+  }
+  let F1 = 0;
+  let F2 = 0;
+  if (pushing) {
+    if (state.pushWho === 1) F1 = state.pushF;
+    else F2 = state.pushF;
+    state.pushLeft -= dt;
+  }
+  const a1 = F1 / state.m1;
+  const a2 = F2 / state.m2;
+  const u1 = state.v1;
+  const u2 = state.v2;
+  state.v1 = u1 + a1 * dt;
+  state.v2 = u2 + a2 * dt;
+  state.x1 += u1 * dt + 0.5 * a1 * dt * dt;
+  state.x2 += u2 * dt + 0.5 * a2 * dt * dt;
+  state.Jext += (F1 + F2) * dt;
+}
+function stepPhysics(dt) {
+  let left = dt;
+  while (left > 1e-10) {
+    const slice = state.pushLeft > 1e-8 ? Math.min(left, state.pushLeft) : left;
+    integrate(slice, state.pushLeft > 1e-8);
+    left -= slice;
+  }
+  if (state.pushLeft < 1e-8) state.pushLeft = 0;
+  solveContacts();
+  derive();
+}
+
+const track = new THREE.Group();
+scene.add(track);
+const trackMat = keep(new THREE.MeshStandardMaterial({ color: 0x3a2444, roughness: 0.72, metalness: 0.08, emissive: 0x1a0c22, emissiveIntensity: 0.35 }));
+const edgeMat = keep(new THREE.MeshStandardMaterial({ color: 0xf0c24b, roughness: 0.45, metalness: 0.05, emissive: 0x4a3008, emissiveIntensity: 0.35 }));
+const deck = new THREE.Mesh(keep(new THREE.BoxGeometry(TRACK_LEN, 0.1, 0.92)), trackMat);
+deck.position.set(TRACK_LEN / 2, -0.05, 0);
+track.add(deck);
+const lip = new THREE.Mesh(keep(new THREE.BoxGeometry(TRACK_LEN, 0.025, 0.96)), edgeMat);
+lip.position.set(TRACK_LEN / 2, 0.012, 0);
+track.add(lip);
+const railMat = keep(new THREE.MeshStandardMaterial({ color: 0x6a4a78, roughness: 0.4, metalness: 0.3, emissive: 0x241428, emissiveIntensity: 0.3 }));
+const railGeo = keep(new THREE.BoxGeometry(TRACK_LEN, 0.06, 0.06));
+const railL = new THREE.Mesh(railGeo, railMat);
+const railR = new THREE.Mesh(railGeo, railMat);
+railL.position.set(TRACK_LEN / 2, 0.06, -0.42);
+railR.position.set(TRACK_LEN / 2, 0.06, 0.42);
+track.add(railL, railR);
+const tickGeo = keep(new THREE.BoxGeometry(0.02, 0.02, 0.7));
+const tickMat = keep(new THREE.MeshStandardMaterial({ color: 0xcbb8d4, roughness: 0.6, metalness: 0 }));
+for (let i = 0; i <= 6; i++) {
+  const t = new THREE.Mesh(tickGeo, tickMat);
+  t.position.set(i, 0.03, 0);
+  track.add(t);
+}
+const bumpMat = keep(new THREE.MeshStandardMaterial({ color: 0x5a3058, roughness: 0.45, emissive: 0x3a1838, emissiveIntensity: 0.45 }));
+const bumpGeo = keep(new THREE.BoxGeometry(0.1, 0.42, 0.7));
+const bumpL = new THREE.Mesh(bumpGeo, bumpMat);
+const bumpR = new THREE.Mesh(bumpGeo, bumpMat);
+bumpL.position.set(0.08, 0.22, 0);
+bumpR.position.set(TRACK_LEN - 0.08, 0.22, 0);
+track.add(bumpL, bumpR);
+
+function makeCart(color, emissive) {
+  const g = new THREE.Group();
+  const mat = keep(new THREE.MeshStandardMaterial({
+    color, roughness: 0.38, metalness: 0.06, emissive, emissiveIntensity: 0.32,
+  }));
+  const body = new THREE.Mesh(keep(new THREE.BoxGeometry(0.56, 0.34, 0.46)), mat);
+  g.add(body);
+  track.add(g);
+  return { g, body };
+}
+const cartA = makeCart(0xffb36b, 0x5a2808);
+const cartB = makeCart(0xb9a2ff, 0x2a1848);
+
+function makeArrow(color, shaftR, headR, headLen) {
+  const g = new THREE.Group();
+  const mat = keep(new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.02, emissive: color, emissiveIntensity: 0.35 }));
+  const shaft = new THREE.Mesh(keep(new THREE.CylinderGeometry(shaftR, shaftR, 1, 8)), mat);
+  shaft.rotation.z = -Math.PI / 2;
+  shaft.position.x = 0.5;
+  const head = new THREE.Mesh(keep(new THREE.ConeGeometry(headR, headLen, 10)), mat);
+  head.rotation.z = -Math.PI / 2;
+  head.position.x = 1 + headLen * 0.35;
+  g.add(shaft, head);
+  g.userData = { shaft, head, headLen };
+  track.add(g);
+  return g;
+}
+function setArrowLen(g, signedLen) {
+  const L = Math.abs(signedLen);
+  const sign = signedLen >= 0 ? 1 : -1;
+  if (L < 0.08) { g.visible = false; return; }
+  g.visible = true;
+  const headLen = g.userData.headLen;
+  const shaftLen = Math.max(0.12, L - headLen * 0.45);
+  g.userData.shaft.scale.set(1, shaftLen, 1);
+  g.userData.shaft.position.x = shaftLen / 2;
+  g.userData.head.position.x = shaftLen + headLen * 0.35;
+  g.scale.set(sign, 1, 1);
+}
+const arrowVA = makeArrow(0xffd7b0, 0.03, 0.09, 0.18);
+const arrowVB = makeArrow(0xddd0ff, 0.03, 0.09, 0.18);
+const arrowPA = makeArrow(0xffb36b, 0.045, 0.12, 0.22);
+const arrowPB = makeArrow(0xb9a2ff, 0.045, 0.12, 0.22);
+
+const linkMat = keep(new THREE.MeshStandardMaterial({ color: 0xf0c24b, roughness: 0.4, metalness: 0.05, emissive: 0xf0c24b, emissiveIntensity: 0.35 }));
+const link = new THREE.Mesh(keep(new THREE.BoxGeometry(1, 0.06, 0.08)), linkMat);
+track.add(link);
+
+const flashMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xfff1d2, roughness: 0.3, metalness: 0, emissive: 0xffb36b, emissiveIntensity: 1.4,
+  transparent: true, opacity: 0, depthWrite: false,
+}));
+const flashMesh = new THREE.Mesh(keep(new THREE.SphereGeometry(0.22, SEG, SEG)), flashMat);
+track.add(flashMesh);
+
+const barGroup = new THREE.Group();
+barGroup.position.set(3.05, 0, -1.28);
+scene.add(barGroup);
+const baseMat = keep(new THREE.MeshStandardMaterial({ color: 0x2a182f, roughness: 0.7, metalness: 0.05 }));
+const basePlate = new THREE.Mesh(keep(new THREE.BoxGeometry(1.15, 0.04, 0.42)), baseMat);
+basePlate.position.y = 0.02;
+barGroup.add(basePlate);
+const barPMat = keep(new THREE.MeshStandardMaterial({ color: 0xf0c24b, roughness: 0.4, metalness: 0.04, emissive: 0xf0c24b, emissiveIntensity: 0.25 }));
+const barRMat = keep(new THREE.MeshStandardMaterial({ color: 0xb9a2ff, roughness: 0.4, metalness: 0.04, emissive: 0xb9a2ff, emissiveIntensity: 0.28 }));
+const barP = new THREE.Mesh(keep(new THREE.BoxGeometry(0.26, 1, 0.26)), barPMat);
+const barR = new THREE.Mesh(keep(new THREE.BoxGeometry(0.26, 1, 0.26)), barRMat);
+barP.position.x = -0.24;
+barR.position.x = 0.24;
+barGroup.add(barP, barR);
+
+const floor = new THREE.Mesh(
+  keep(new THREE.BoxGeometry(14, 0.08, 6)),
+  keep(new THREE.MeshStandardMaterial({ color: 0x1a0c20, roughness: 0.95, metalness: 0 }))
+);
+floor.position.set(3.1, -0.18, 0);
+scene.add(floor);
+const glow = new THREE.Mesh(keep(new THREE.PlaneGeometry(12, 3.2)), keep(new THREE.MeshBasicMaterial({
+  color: 0xffb36b, transparent: true, opacity: 0.045, depthWrite: false,
+})));
+glow.rotation.x = -Math.PI / 2;
+glow.position.set(3.1, -0.12, 0);
+scene.add(glow);
+
+const pickPlane = new THREE.Mesh(
+  keep(new THREE.PlaneGeometry(8.4, 2.6)),
+  keep(new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide, depthWrite: false }))
+);
+pickPlane.position.set(TRACK_LEN / 2, 0.45, 0);
+track.add(pickPlane);
+
+let lastInteract = performance.now();
+const lean = new THREE.Vector2();
+const leanGoal = new THREE.Vector2();
+
+const TRACE = 180;
+const trP = new Float32Array(TRACE);
+const trR = new Float32Array(TRACE);
+let trI = 0;
+function clearTrace() { trP.fill(0); trR.fill(0); trI = 0; }
+function pushTrace() {
+  trP[trI] = state.p;
+  trR[trI] = state.pMark + state.Jext;
+  trI = (trI + 1) % TRACE;
+}
+
+function setPairBar(mesh, value, full) {
+  const h = Math.max(0.05, (Math.abs(value) / full) * 1.6);
+  mesh.scale.y = h;
+  mesh.position.y = (value >= 0 ? h / 2 : -h / 2) + 0.04;
+}
+function syncCart(cart, m, x, squeeze) {
+  const s = Math.cbrt(m);
+  const sx = s * squeeze;
+  const sy = s * (1 + (1 - squeeze) * 0.55);
+  cart.body.scale.set(sx, sy, s);
+  cart.body.position.y = 0.17 * sy;
+  cart.g.position.set(x, 0, 0);
+}
+function contactSqueeze(which) {
+  if (still) return state.stuck ? 0.96 : 1;
+  let q = state.stuck ? 0.94 : 1 - Math.min(1, state.flash) * 0.18;
+  if (drag.target === which) q *= 0.96;
+  return q;
+}
+function syncVisuals() {
+  syncCart(cartA, state.m1, state.x1, contactSqueeze('a'));
+  syncCart(cartB, state.m2, state.x2, contactSqueeze('b'));
+  const yV = 0.72;
+  const yP = 1.18;
+  setArrowLen(arrowVA, state.v1 * 0.42);
+  arrowVA.position.set(state.x1, yV, 0);
+  setArrowLen(arrowVB, state.v2 * 0.42);
+  arrowVB.position.set(state.x2, yV, 0);
+  setArrowLen(arrowPA, state.p1 * 0.22);
+  arrowPA.position.set(state.x1, yP, 0);
+  setArrowLen(arrowPB, state.p2 * 0.22);
+  arrowPB.position.set(state.x2, yP, 0);
+  const touching = state.stuck || (halfW(state.m1) + halfW(state.m2)) - (state.x2 - state.x1) > -0.02;
+  link.visible = state.stuck;
+  if (state.stuck) {
+    const span = Math.max(0.08, state.x2 - state.x1);
+    link.scale.set(span, 1, 1);
+    link.position.set((state.x1 + state.x2) / 2, 0.22, 0);
+  }
+  flashMesh.visible = state.flash > 0.04;
+  flashMat.opacity = Math.min(0.9, state.flash);
+  flashMat.emissiveIntensity = 0.4 + state.flash * 1.8;
+  flashMesh.position.set((state.x1 + state.x2) / 2, 0.28, touching ? 0.2 : 0);
+  flashMesh.scale.setScalar(0.7 + state.flash * 0.8);
+  const full = Math.max(4, Math.abs(state.p), Math.abs(state.pMark + state.Jext));
+  setPairBar(barP, state.p, full);
+  setPairBar(barR, state.pMark + state.Jext, full);
+}
+
+function placeClassic(v1) {
+  state.stuck = false;
+  state.pushLeft = 0;
+  state.x1 = 1.35;
+  state.x2 = 3.55;
+  state.v1 = v1;
+  state.v2 = 0;
+  separate();
+  rebaseline();
+}
+function canonicalLaunch() {
+  return state.m1 === 1 && state.m2 === 1 && !state.stuck && state.pushLeft === 0
+    && Math.abs(state.x1 - 1.35) < 0.03 && Math.abs(state.x2 - 3.55) < 0.03
+    && Math.abs(state.v1 - 1.5) < 0.03 && Math.abs(state.v2) < 0.03;
+}
+function doLaunch() {
+  const again = canonicalLaunch();
+  placeClassic(again ? 1.9 : 1.5);
+  note(again ? 'launched again · A is faster' : 'launch · A coasts into B');
+}
+function doReset() {
+  const again = state.mode === 'bounce' && canonicalLaunch();
+  state.mode = 'bounce';
+  state.m1 = 1;
+  state.m2 = 1;
+  placeClassic(again ? 1.95 : 1.5);
+  note(again ? 'reset · A starts faster' : 'reset · bounce, equal masses');
+  syncChips();
+}
+function doBounce() {
+  const repeat = state.mode === 'bounce' && !state.stuck;
+  state.mode = 'bounce';
+  if (state.stuck) {
+    state.stuck = false;
+    separate();
+    state.x1 -= 0.05;
+    state.x2 += 0.05;
+    state.v1 += 0.85;
+  } else if (state.v1 < state.v2 + 0.25) {
+    state.v1 = state.v2 + 1.35;
+  } else if (repeat) {
+    state.v1 += 0.35;
+  }
+  rebaseline();
+  note('bounce · they rebound and kinetic energy stays');
+  syncChips();
+}
+function doStick() {
+  const repeat = state.mode === 'stick';
+  state.mode = 'stick';
+  if (state.stuck && repeat) {
+    state.v1 += 0.3;
+    state.v2 = state.v1;
+  } else if (!state.stuck && state.v1 < state.v2 + 0.25) {
+    state.v1 = state.v2 + 1.25;
+  } else if (repeat && !state.stuck) {
+    state.v1 += 0.35;
+  }
+  rebaseline();
+  note('stick · they move as one and kinetic energy drops');
+  syncChips();
+}
+function doMode() {
+  if (state.mode === 'bounce') doStick();
+  else doBounce();
+}
+function doPush(who) {
+  state.pushWho = who;
+  state.pushF = who === 1 ? PUSH_F : -PUSH_F;
+  state.pushLeft = Math.min(1.2, state.pushLeft + PUSH_T);
+  note(who === 1 ? 'push on A · J = FΔt' : 'push on B · J = FΔt');
+}
+function cycleMass(which) {
+  if (which === 1) {
+    const i = M_CYCLE.indexOf(state.m1);
+    state.m1 = M_CYCLE[(i + 1) % M_CYCLE.length];
+  } else {
+    const i = M_CYCLE.indexOf(state.m2);
+    state.m2 = M_CYCLE[(i + 1) % M_CYCLE.length];
+  }
+  state.stuck = false;
+  state.v1 = 0;
+  state.v2 = 0;
+  state.pushLeft = 0;
+  const hw1 = halfW(state.m1);
+  const hw2 = halfW(state.m2);
+  state.x1 = clamp(state.x1, X_MIN + hw1, X_MAX - hw1);
+  state.x2 = clamp(state.x2, X_MIN + hw2, X_MAX - hw2);
+  if (state.x2 - state.x1 < hw1 + hw2 + 0.35) {
+    state.x1 = clamp(1.35, X_MIN + hw1, X_MAX - hw1);
+    state.x2 = clamp(Math.max(state.x1 + hw1 + hw2 + 0.4, 3.55), X_MIN + hw2, X_MAX - hw2);
+  }
+  separate();
+  rebaseline();
+  note(which === 1
+    ? `mA = ${state.m1.toFixed(0)} kg · momentum counted from here`
+    : `mB = ${state.m2.toFixed(0)} kg · momentum counted from here`);
+  syncChips();
+}
+function doHeavy() {
+  const again = state.m1 === 1 && state.m2 === 3 && Math.abs(state.v1 - 2) < 0.05 && Math.abs(state.v2) < 0.05;
+  state.m1 = 1;
+  state.m2 = 3;
+  state.mode = 'bounce';
+  state.stuck = false;
+  state.pushLeft = 0;
+  state.x1 = 1.2;
+  state.x2 = 3.7;
+  state.v1 = again ? 2.6 : 2;
+  state.v2 = 0;
+  rebaseline();
+  note('heavy B · 3 kg · watch A rebound');
+  syncChips();
+}
+function doEqual() {
+  const again = state.m1 === 1 && state.m2 === 1 && canonicalLaunch();
+  state.m1 = 1;
+  state.m2 = 1;
+  placeClassic(again ? 1.9 : 1.5);
+  note('equal masses · 1 kg each');
+  syncChips();
+}
+function doMeet() {
+  const again = state.m1 === 1 && state.m2 === 1 && Math.abs(state.v1 - 1.2) < 0.05 && Math.abs(state.v2 + 1.2) < 0.05;
+  state.m1 = 1;
+  state.m2 = 1;
+  state.stuck = false;
+  state.pushLeft = 0;
+  state.x1 = 1.45;
+  state.x2 = 4.35;
+  const sp = again ? 1.55 : 1.2;
+  state.v1 = sp;
+  state.v2 = -sp;
+  rebaseline();
+  note('head-on · equal and opposite');
+  syncChips();
+}
+function syncChips() {
+  const modeBtn = document.getElementById('chip-mode');
+  const bounce = state.mode === 'bounce';
+  modeBtn.textContent = bounce ? 'Bounce' : 'Stick';
+  modeBtn.setAttribute('aria-pressed', String(!bounce));
+  document.getElementById('chip-ma').innerHTML = `Mass A<span class="lg"> ${state.m1.toFixed(0)} kg</span><small>${state.m1.toFixed(1)}</small>`;
+  document.getElementById('chip-mb').innerHTML = `Mass B<span class="lg"> ${state.m2.toFixed(0)} kg</span><small>${state.m2.toFixed(1)}</small>`;
+}
+function dispatchAct(name) {
+  lastInteract = performance.now();
+  if (name === 'launch') doLaunch();
+  else if (name === 'reset') doReset();
+  else if (name === 'bounce') doBounce();
+  else if (name === 'stick') doStick();
+  else if (name === 'mode') doMode();
+  else if (name === 'push-a') doPush(1);
+  else if (name === 'push-b') doPush(2);
+  else if (name === 'mass-a') cycleMass(1);
+  else if (name === 'mass-b') cycleMass(2);
+  else if (name === 'heavy') doHeavy();
+  else if (name === 'equal') doEqual();
+  else if (name === 'meet') doMeet();
+  else return;
+  refreshAfterAction();
+}
+function refreshAfterAction() {
+  derive();
+  syncVisuals();
+  syncChips();
+  updateHud();
+  updateLessonLive();
+  if (still) render();
+}
+
+function setBar(el, value, full) {
+  const mag = Math.min(1, Math.abs(value) / full);
+  el.style.width = `${mag * 50}%`;
+  el.classList.toggle('neg', value < -0.02);
+}
+function updateHud() {
+  derive();
+  const matched = Math.abs(state.gap) < 0.02 + 0.005 * Math.abs(state.p);
+  document.getElementById('h-a').innerHTML =
+    `A · m <b>${state.m1.toFixed(2)} kg</b> · v <b>${sgn(state.v1, 2)} m/s</b> · p <b>${sgn(state.p1, 2)}</b>`;
+  document.getElementById('h-b').innerHTML =
+    `B · m <b>${state.m2.toFixed(2)} kg</b> · v <b>${sgn(state.v2, 2)} m/s</b> · p <b>${sgn(state.p2, 2)}</b>`;
+  document.getElementById('h-p').textContent = `${sgn(state.p, 2)} kg·m/s`;
+  document.getElementById('h-j').textContent = `${sgn(state.Jext, 2)} N·s`;
+  document.getElementById('h-ke').textContent = `${state.ke.toFixed(2)} J`;
+  const pFull = Math.max(6, Math.abs(state.p), Math.abs(state.pMark + state.Jext));
+  setBar(document.getElementById('bar-p'), state.p, pFull);
+  setBar(document.getElementById('bar-j'), state.Jext, Math.max(4, Math.abs(state.Jext)));
+  setBar(document.getElementById('bar-ke'), state.ke, Math.max(4, state.ke, state.keBefore));
+  document.getElementById('h-eq').textContent =
+    `p − p₀ − J = ${sgn(state.gap, 3)} kg·m/s${matched ? ' · conserved' : ''}`;
+  document.getElementById('h-kec').textContent =
+    state.hits
+      ? `last hit KE ${state.keBefore.toFixed(2)} → ${state.keAfter.toFixed(2)} J`
+      : `KE ${state.ke.toFixed(2)} J · no hit yet`;
+  const bits = state.mode === 'stick'
+    ? `stick · p ${sgn(state.p, 2)} · J ${sgn(state.Jext, 2)}`
+    : `bounce · p ${sgn(state.p, 2)} · J ${sgn(state.Jext, 2)}`;
+  document.getElementById('h-flag').textContent = flagHold > 0 ? flagText : bits;
+  drawSpark();
+}
+const spark = document.getElementById('spark');
+const sctx = spark.getContext('2d');
+function drawSpark() {
+  const w = spark.width, h = spark.height;
+  sctx.clearRect(0, 0, w, h);
+  let peak = 2;
+  for (let i = 0; i < TRACE; i++) peak = Math.max(peak, Math.abs(trP[i]), Math.abs(trR[i]));
+  sctx.strokeStyle = 'rgba(239,230,242,0.18)';
+  sctx.beginPath();
+  sctx.moveTo(0, h / 2);
+  sctx.lineTo(w, h / 2);
+  sctx.stroke();
+  function stroke(arr, color) {
+    sctx.beginPath();
+    sctx.strokeStyle = color;
+    sctx.lineWidth = 1.6;
+    for (let n = 0; n < TRACE; n++) {
+      const idx = (trI + n) % TRACE;
+      const x = (n / (TRACE - 1)) * w;
+      const y = h / 2 - (arr[idx] / peak) * (h * 0.42);
+      if (n === 0) sctx.moveTo(x, y);
+      else sctx.lineTo(x, y);
+    }
+    sctx.stroke();
+  }
+  stroke(trR, '#b9a2ff');
+  stroke(trP, '#f0c24b');
+}
+
+const tagA = document.getElementById('tag-a');
+const tagB = document.getElementById('tag-b');
+const tagP = document.getElementById('tag-p');
+const tagJ = document.getElementById('tag-j');
+const _pr = new THREE.Vector3();
+function projectTag(el, x, y, z, ox, oy) {
+  _pr.set(x, y, z);
+  _pr.project(camera);
+  if (_pr.z > 1) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const sx = (_pr.x * 0.5 + 0.5) * innerWidth + ox;
+  const sy = (-_pr.y * 0.5 + 0.5) * innerHeight + oy;
+  el.style.transform = `translate(${sx}px, ${sy}px)`;
+}
+function syncTags() {
+  if (embed) return;
+  projectTag(tagA, state.x1, 0.55 + 0.2 * Math.cbrt(state.m1), 0.42, 8, -8);
+  tagA.textContent = `A  p ${sgn(state.p1, 1)}`;
+  projectTag(tagB, state.x2, 0.55 + 0.2 * Math.cbrt(state.m2), 0.42, 8, -8);
+  tagB.textContent = `B  p ${sgn(state.p2, 1)}`;
+  projectTag(tagP, (state.x1 + state.x2) / 2, 1.7, 0, 8, -16);
+  tagP.textContent = `p total ${sgn(state.p, 1)}`;
+  barGroup.updateMatrixWorld(true);
+  _pr.setFromMatrixPosition(barR.matrixWorld);
+  projectTag(tagJ, _pr.x, _pr.y + 0.45, _pr.z, 6, -16);
+  tagJ.textContent = `J ${sgn(state.Jext, 1)} N·s`;
+}
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const drag = { target: null };
+const pickables = [cartA.body, cartB.body];
+function setPointer(e) {
+  const r = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+}
+function trackPoint() {
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObject(pickPlane, false);
+  if (!hits.length) return null;
+  return hits[0].point.x;
+}
+function onDown(e) {
+  if (e.button !== undefined && e.button !== 0) return;
+  canvas.setPointerCapture(e.pointerId);
+  setPointer(e);
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(pickables, false);
+  lastInteract = performance.now();
+  if (hits.length) {
+    drag.target = hits[0].object === cartA.body ? 'a' : 'b';
+    canvas.classList.add('grabbing');
+  } else {
+    drag.target = 'lean';
+    drag.sx = e.clientX;
+    drag.sy = e.clientY;
+  }
+}
+function onMove(e) {
+  setPointer(e);
+  if (!drag.target) {
+    raycaster.setFromCamera(pointer, camera);
+    canvas.classList.toggle('can-grab', raycaster.intersectObjects(pickables, false).length > 0);
+    return;
+  }
+  lastInteract = performance.now();
+  if (drag.target === 'a' || drag.target === 'b') {
+    const x = trackPoint();
+    if (x == null) return;
+    const hw1 = halfW(state.m1);
+    const hw2 = halfW(state.m2);
+    state.stuck = false;
+    state.pushLeft = 0;
+    if (drag.target === 'a') {
+      state.x1 = clamp(x, X_MIN + hw1, state.x2 - hw1 - hw2);
+      state.v1 = 0;
+    } else {
+      state.x2 = clamp(x, state.x1 + hw1 + hw2, X_MAX - hw2);
+      state.v2 = 0;
+    }
+    rebaseline();
+    note('placed · momentum counted from here', 0.9);
+    syncVisuals();
+    updateHud();
+    updateLessonLive();
+    if (still) render();
+  } else if (drag.target === 'lean') {
+    leanGoal.set(
+      clamp((e.clientX - drag.sx) * 0.001, -0.35, 0.35),
+      clamp((e.clientY - drag.sy) * -0.0008, -0.2, 0.2)
+    );
+  }
+}
+function onUp(e) {
+  drag.target = null;
+  canvas.classList.remove('grabbing');
+  leanGoal.set(0, 0);
+  try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+document.getElementById('chips').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  dispatchAct(btn.dataset.act);
+});
+
+const narrowMq = matchMedia('(max-width: 720px), (max-aspect-ratio: 5/6)');
+function chromeLeftEdge() {
+  if (embed || narrowMq.matches || !lsOpen) return 0;
+  return lessonEl.getBoundingClientRect().right;
+}
+function placeCamera(t) {
+  const left = chromeLeftEdge();
+  const shift = left > 40 ? (left / innerWidth) * 1.6 : 0;
+  const bob = still ? 0 : Math.sin(t * 0.12) * 0.012;
+  camera.position.set(camBase.x + lean.x * 1.1 + shift * 0.15, camBase.y + lean.y + bob, camBase.z);
+  const focus = (state.x1 + state.x2) / 2;
+  camera.lookAt(camLook.x + shift * 0.35 + (focus - 3.05) * 0.18, camLook.y, 0);
+}
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  camera.aspect = w / Math.max(1, h);
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+}
+
+const lessonEl = document.getElementById('lesson');
+const lsBody = document.getElementById('ls-body');
+const lsKicker = document.getElementById('ls-kicker');
+const lsDots = document.getElementById('ls-dots');
+const lsToggle = document.getElementById('ls-toggle');
+const labelEl = document.querySelector('.label');
+const footEl = document.querySelector('.foot');
+const metersEl = document.getElementById('meters');
+
+const LS = [
+  { topic: 'Meet the carts', html: `
+    <h3>Meet the carts</h3>
+    <p>Two carts on a level air track. <b>Orange is A. Lilac is B.</b> You will use them for <b>momentum</b>, <b>impulse</b>, and <b>collisions</b>.</p>
+    <p>The thin arrow on a cart is velocity v. The thicker arrow is momentum p. A brighter flash marks the moment they hit. Bounce means they rebound. Stick means they move off together.</p>
+    <p class="watch"><b>Watch</b>Launch. A coasts into B. The honey column is total momentum. It should hold steady through the hit.</p>
+    <p class="live"><b>Now</b>p total = <span data-live="p">—</span> · gap = <span data-live="gap">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="launch">Launch</button></div>` },
+  { topic: 'Momentum p = mv', html: `
+    <h3>Momentum</h3>
+    <p class="formula">p = m v &nbsp;·&nbsp; unit kg·m/s</p>
+    <p>Momentum is mass times velocity. It has direction: right is positive on this track. Double the mass at the same speed and p doubles. Double the speed at the same mass and p doubles. Kinetic energy is different — speed is squared there.</p>
+    <p class="watch"><b>Watch</b>Change mass A, then Launch. The thick arrow on A grows with p, not just with how big the cart looks.</p>
+    <p class="live"><b>Now</b>A <span data-live="pAeq">—</span> · B <span data-live="pBeq">—</span></p>
+    <div class="acts"><button type="button" data-act="mass-a">Change mass A</button><button type="button" data-act="launch">Launch</button></div>
+    <details><summary>2 kg at 3 m/s. What is p?</summary><p>p = 2 × 3 = 6 kg·m/s. Mass and speed both count once. Kinetic energy would square the 3.</p></details>` },
+  { topic: 'Impulse', html: `
+    <h3>Impulse changes momentum</h3>
+    <p class="formula">J = F Δt = Δp</p>
+    <p>A push delivers impulse. Here the push on A is 10 N and lasts 0.30 s, so J = 3 N·s if nothing else pushes during that time. The cart’s momentum changes by that same 3 kg·m/s. Impulse and momentum share a unit: N·s is kg·m/s.</p>
+    <p class="watch"><b>Watch</b>Reset, then Push A before they collide. The J meter climbs by about 3 N·s, and p of A climbs with it. The check line stays near 0.</p>
+    <p class="live"><b>Now</b>J = <span data-live="J">—</span> · Δp from the start = <span data-live="dp">—</span> · gap = <span data-live="gap">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="push-a">Push A · 10 N</button><button type="button" data-act="push-b">Push B · 10 N left</button></div>
+    <details><summary>8 N for 0.50 s. What is J, and what is Δp?</summary><p>J = 8 × 0.50 = 4 N·s, so Δp = 4 kg·m/s in the direction of the force. This track’s button is 10 N for 0.30 s, which is 3 N·s.</p></details>` },
+  { topic: 'Total momentum', html: `
+    <h3>Add the two momenta</h3>
+    <p class="formula">p total = pA + pB = mA vA + mB vB</p>
+    <p>Total momentum is the sum, signs included. Two equal carts with equal opposite speeds have p total = 0 even though both are moving. A cart at rest contributes 0.</p>
+    <p class="watch"><b>Watch</b>Head-on. Each thick arrow is large. The honey total should sit near 0 before and after they meet.</p>
+    <p class="live"><b>Now</b>pA = <span data-live="pA">—</span> · pB = <span data-live="pB">—</span> · p total = <span data-live="p">—</span></p>
+    <div class="acts"><button type="button" data-act="meet">Head-on</button><button type="button" data-act="launch">A into resting B</button></div>` },
+  { topic: 'Collision conserves p', html: `
+    <h3>A hit does not change the total</h3>
+    <p class="formula">p total before = p total after</p>
+    <p>During the hit, A pushes B and B pushes A. Those forces are equal and opposite, so the impulses on the two carts cancel in the total. Total momentum stays the same. The end stops are different: the track pushes from outside, so p total changes there.</p>
+    <p class="watch"><b>Watch</b>The honey and lilac columns, and the two traces. Through the flash they should stay matched. At an end stop, both jump together because J is no longer 0.</p>
+    <p class="live"><b>Now</b>p = <span data-live="p">—</span> · p₀ + J = <span data-live="pref">—</span> · gap = <span data-live="gap">—</span></p>
+    <div class="acts"><button type="button" data-act="launch">Launch</button><button type="button" data-act="bounce">Bounce</button></div>` },
+  { topic: 'Elastic bounce', html: `
+    <h3>Bounce keeps kinetic energy too</h3>
+    <p class="formula">e = 1 &nbsp;·&nbsp; KE before = KE after</p>
+    <p>Bounce on this track is elastic. The carts rebound, relative speed of separation equals relative speed of approach, and kinetic energy comes back. Momentum was already going to stay; energy staying is the extra fact.</p>
+    <p class="watch"><b>Watch</b>Set Bounce and Launch. After the flash, KE after should match KE before. The lilac line under the meters says so.</p>
+    <p class="live"><b>Now</b>KE now <span data-live="ke">—</span> · last hit <span data-live="kePair">—</span></p>
+    <div class="acts"><button type="button" data-act="bounce">Bounce</button><button type="button" data-act="launch">Launch</button></div>` },
+  { topic: 'Perfectly inelastic', html: `
+    <h3>Stick: momentum stays, KE drops</h3>
+    <p class="formula">e = 0 &nbsp;·&nbsp; both leave at v = p total / (mA + mB)</p>
+    <p>Stick is perfectly inelastic. The carts share one velocity after the hit, the gold link shows they move as one, and kinetic energy drops. The “lost” kinetic energy leaves as heat and deformation. It is not a failure of momentum conservation.</p>
+    <p class="watch"><b>Watch</b>Set Stick and Launch. One shared speed. p total holds. KE after is smaller than KE before.</p>
+    <p class="live"><b>Now</b>vA = <span data-live="vA">—</span> · vB = <span data-live="vB">—</span> · KE <span data-live="kePair">—</span></p>
+    <div class="acts"><button type="button" data-act="stick">Stick</button><button type="button" data-act="launch">Launch</button></div>
+    <details><summary>Why can KE fall while p total does not?</summary><p>The forces during the hit are internal, so they cancel in p total. They can still turn mechanical energy into heat and deformation. Momentum and kinetic energy measure different things.</p></details>` },
+  { topic: 'Equal masses', html: `
+    <h3>Equal mass, target at rest</h3>
+    <p class="formula">mA = mB, vB = 0, bounce → vA becomes 0, vB becomes vA’s old speed</p>
+    <p>On a bounce with equal masses, the moving cart stops and the resting cart leaves with the incoming speed. They trade velocities. Total p is just m times that speed, before and after. On a stick, they leave together at half the incoming speed, and KE is half.</p>
+    <p class="watch"><b>Watch</b>Equal, Bounce, Launch. After the flash, A’s thick arrow is gone and B carries it. Then try Stick.</p>
+    <p class="live"><b>Now</b>vA = <span data-live="vA">—</span> · vB = <span data-live="vB">—</span> · p = <span data-live="p">—</span></p>
+    <div class="acts"><button type="button" data-act="equal">Equal masses</button><button type="button" data-act="bounce">Bounce</button><button type="button" data-act="stick">Stick</button></div>` },
+  { topic: 'Unequal masses', html: `
+    <h3>A light cart hits a heavy one</h3>
+    <p class="formula">mB &gt; mA, vB = 0, bounce → A rebounds, B creeps forward</p>
+    <p>Momentum still adds up. The heavy cart barely speeds up. The light cart can reverse. p total stays equal to the incoming pA. A heavier mass does not “absorb” momentum; it takes a share m v.</p>
+    <p class="watch"><b>Watch</b>Heavy target, Bounce. A’s velocity arrow flips. B’s momentum arrow grows. The total column does not drop.</p>
+    <p class="live"><b>Now</b>mA = <span data-live="mA">—</span> · mB = <span data-live="mB">—</span> · pA = <span data-live="pA">—</span> · pB = <span data-live="pB">—</span></p>
+    <div class="acts"><button type="button" data-act="heavy">Heavy B · 3 kg</button><button type="button" data-act="bounce">Bounce</button><button type="button" data-act="stick">Stick</button></div>` },
+  { topic: 'Check both sides', html: `
+    <h3>Check both sides</h3>
+    <p class="formula">p − p₀ − J = 0</p>
+    <p>p₀ is total momentum at the last launch, reset, or placement. J is the impulse from your push and from the end stops. Internal hits add 0 to J. The gap should stay about 0. Separately, compare KE before and after the flash: equal on a bounce, smaller on a stick.</p>
+    <p class="watch"><b>Watch</b>The equation line and the overlapping traces. Run a bounce, a stick, and a push. The gap stays near 0. Only KE tells the collisions apart.</p>
+    <p class="live"><b>Now</b>gap = <span data-live="gap">—</span> · J = <span data-live="J">—</span> · KE <span data-live="kePair">—</span></p>
+    <div class="acts"><button type="button" data-act="launch">Launch</button><button type="button" data-act="push-a">Push A</button><button type="button" data-act="stick">Stick</button><button type="button" data-act="bounce">Bounce</button></div>` },
+  { topic: 'In the real world', html: `
+    <h3>In the real world</h3>
+    <p>A crash-test engineer uses impulse when designing a crumple zone. Stopping a car means changing its momentum, and stretching that change over a longer time lowers the force, because J = FΔt = Δp.</p>
+    <p>A sports scientist uses the same relation for a helmet liner and for a tackle. A longer impact delivers the same change in momentum with a smaller average force on the person.</p>
+    <p class="watch"><b>Watch</b>Set Stick and Launch. Kinetic energy drops while total momentum holds, which is the trade a crash-test engineer builds into a crumple zone.</p>
+    <p class="live"><b>Now</b>p = <span data-live="p">—</span> · gap = <span data-live="gap">—</span> · KE <span data-live="kePair">—</span></p>
+    <div class="acts"><button type="button" data-act="stick">Stick</button><button type="button" data-act="launch">Launch</button></div>` },
+  { topic: 'Questions', html: `
+    <h3>Questions to try</h3>
+    <p>Use the track, then open a hint. Momentum in kg·m/s, impulse in N·s, energy in joules.</p>
+    <p class="watch"><b>Watch</b>After each try, read the gap before you trust a new prediction. It should stay near 0.</p>
+    <p class="live"><b>Now</b>p = <span data-live="p">—</span> · J = <span data-live="J">—</span> · gap = <span data-live="gap">—</span> · KE <span data-live="ke">—</span></p>
+    <details><summary>1 kg cart, +4 m/s. What is p? What is KE?</summary><p>p = 4 kg·m/s. KE = ½ × 1 × 16 = 8 J. Same speed, different ideas.</p></details>
+    <details><summary>A 10 N push lasts 0.30 s. Predict J and Δp.</summary><p>J = 3 N·s and Δp = 3 kg·m/s, if the carts do not hit an end stop during the push. Push A on a fresh reset and read J.</p></details>
+    <details><summary>Equal masses, B at rest, bounce. What are the speeds after?</summary><p>They trade. A stops. B leaves at A’s incoming speed. p total is unchanged, and KE is unchanged.</p></details>
+    <details><summary>Same setup, but they stick. What is the shared speed? What happens to KE?</summary><p>Shared speed is half the incoming speed. KE becomes half, because speed is squared and both masses now move at v/2. p total is still the incoming p.</p></details>
+    <details><summary>Head-on, equal mass, equal speed. What is p total before and after a bounce?</summary><p>Zero before, zero after. The velocities trade sign. Each cart reverses.</p></details>
+    <details><summary>Why does an end stop change p total when a cart–cart hit does not?</summary><p>The stop is outside the two-cart system. Its impulse is a real J. The carts only push each other, so those impulses cancel in the total.</p></details>
+    <details><summary>Light A hits heavy B at rest and bounces. Which way is A’s momentum after?</summary><p>Backward, negative if right is positive. B’s momentum is forward and larger in mass, smaller in speed. The sum still matches incoming pA.</p></details>
+    <details><summary>You push only A. Whose p changes during the push? After they collide?</summary><p>During the push, only A’s. After the hit, the total is still A’s new momentum, now shared. The gap p − p₀ − J stays near 0 the whole time.</p></details>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="meet">Head-on</button><button type="button" data-act="stick">Stick</button><button type="button" data-act="heavy">Heavy B</button></div>` },
+];
+
+let lsStep = 0;
+let lsOpen = !params.has('nolesson');
+let mMode = 'learn';
+const lsLive = [];
+
+for (let i = 0; i < LS.length; i++) {
+  const d = document.createElement('button');
+  d.type = 'button';
+  d.dataset.go = String(i);
+  d.setAttribute('aria-label', `Step ${i + 1}: ${LS[i].topic}`);
+  lsDots.appendChild(d);
+}
+function settleCopy() {
+  if (motionQuery.matches) return;
+  lsBody.classList.remove('is-settling');
+  void lsBody.offsetWidth;
+  lsBody.classList.add('is-settling');
+}
+function renderLesson() {
+  const st = LS[lsStep];
+  lsKicker.innerHTML = `Lesson ${lsStep + 1}/${LS.length} · <b>${st.topic}</b>`;
+  lsBody.innerHTML = st.html;
+  lsBody.scrollTop = 0;
+  settleCopy();
+  lsLive.length = 0;
+  for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
+  for (const d of lsDots.children) d.toggleAttribute('aria-current', false);
+  lsDots.children[lsStep].setAttribute('aria-current', 'step');
+  lessonEl.querySelector('[data-step="prev"]').disabled = lsStep === 0;
+  lessonEl.querySelector('[data-step="next"]').disabled = lsStep === LS.length - 1;
+  updateLessonLive();
+}
+function updateLessonLive() {
+  if (!lsLive.length) return;
+  derive();
+  const vals = {
+    p: `${sgn(state.p, 2)} kg·m/s`,
+    pA: `${sgn(state.p1, 2)} kg·m/s`,
+    pB: `${sgn(state.p2, 2)} kg·m/s`,
+    J: `${sgn(state.Jext, 2)} N·s`,
+    gap: `${sgn(state.gap, 3)} kg·m/s`,
+    dp: `${sgn(state.p - state.pMark, 2)} kg·m/s`,
+    pref: `${sgn(state.pMark + state.Jext, 2)} kg·m/s`,
+    ke: `${state.ke.toFixed(2)} J`,
+    kePair: `${state.keBefore.toFixed(2)} → ${state.keAfter.toFixed(2)} J`,
+    vA: `${sgn(state.v1, 2)} m/s`,
+    vB: `${sgn(state.v2, 2)} m/s`,
+    mA: `${state.m1.toFixed(2)} kg`,
+    mB: `${state.m2.toFixed(2)} kg`,
+    pAeq: `${state.m1.toFixed(2)} × ${sgn(state.v1, 2)} = ${sgn(state.p1, 2)} kg·m/s`,
+    pBeq: `${state.m2.toFixed(2)} × ${sgn(state.v2, 2)} = ${sgn(state.p2, 2)} kg·m/s`,
+  };
+  for (const el of lsLive) el.textContent = vals[el.dataset.live] ?? '—';
+}
+function goStep(i) {
+  lsStep = Math.max(0, Math.min(LS.length - 1, i));
+  renderLesson();
+}
+function onLessonClick(e) {
+  const btn = e.target.closest('button');
+  if (!btn || !lessonEl.contains(btn)) return;
+  if (btn.dataset.step === 'prev') goStep(lsStep - 1);
+  else if (btn.dataset.step === 'next') goStep(lsStep + 1);
+  else if (btn.dataset.go) goStep(+btn.dataset.go);
+  else if (btn.dataset.mode) setMobileMode(btn.dataset.mode);
+  else if (btn === lsToggle) setLessonOpen(!lsOpen);
+  else if (btn.dataset.act) dispatchAct(btn.dataset.act);
+}
+function setLessonOpen(open) {
+  lsOpen = open;
+  document.body.classList.toggle('lesson-closed', !open);
+  lsToggle.setAttribute('aria-expanded', String(open));
+  lsToggle.textContent = open ? 'Hide' : 'Open lesson';
+  fitLesson();
+  resize();
+}
+function setMobileMode(mode) {
+  mMode = mode;
+  document.body.classList.toggle('m-learn', mode === 'learn');
+  document.body.classList.toggle('m-numbers', mode === 'numbers');
+  for (const b of lessonEl.querySelectorAll('[data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === mode));
+}
+function placeLesson() {
+  if (narrowMq.matches) {
+    if (lessonEl.parentElement !== footEl) footEl.insertBefore(lessonEl, metersEl);
+    if (!lsOpen) setLessonOpen(true);
+  } else if (lessonEl.parentElement !== labelEl) {
+    labelEl.appendChild(lessonEl);
+  }
+  fitLesson();
+}
+function fitLesson() {
+  if (narrowMq.matches) { lessonEl.style.maxHeight = ''; return; }
+  const top = lessonEl.getBoundingClientRect().top;
+  const footH = footEl.getBoundingClientRect().height;
+  const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 16;
+  lessonEl.style.maxHeight = `${Math.max(160, innerHeight - padB - footH - 20 - top)}px`;
+}
+function onLessonKey(e) {
+  if (e.target.closest && e.target.closest('input, textarea')) return;
+  if (e.key === 'ArrowRight') goStep(lsStep + 1);
+  else if (e.key === 'ArrowLeft') goStep(lsStep - 1);
+}
+
+let acc = 0, simT = 0, hudAcc = 0, raf = 0;
+const clock = new THREE.Clock();
+function simulate(dt) {
+  acc += dt;
+  let n = 0;
+  while (acc >= H && n < 16) { stepPhysics(H); acc -= H; n++; simT += H; }
+  if (n === 16) acc = 0;
+}
+function render() { renderer.render(scene, camera); }
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (!still && performance.now() - lastInteract > 14000 && Math.abs(state.v1) < 0.05 && Math.abs(state.v2) < 0.05 && state.pushLeft === 0) {
+    doLaunch();
+  }
+  simulate(dt);
+  if (state.uiHit && !motionQuery.matches && !still) {
+    const px = `${state.uiHit * 22}px`;
+    const title = document.querySelector('.label h1');
+    for (const el of [title, metersEl]) {
+      if (!el) continue;
+      el.style.setProperty('--hit-x', px);
+      el.classList.remove('is-hit');
+      void el.offsetWidth;
+      el.classList.add('is-hit');
+    }
+    state.uiHit = 0;
+  }
+  state.flash *= Math.exp(-dt * 3.2);
+  if (Math.floor(simT * 30) !== Math.floor((simT - dt) * 30)) pushTrace();
+  flagHold = Math.max(0, flagHold - dt);
+  lean.lerp(leanGoal, 1 - Math.exp(-dt * 4.5));
+  placeCamera(simT);
+  syncVisuals();
+  syncTags();
+  hudAcc += dt;
+  if (hudAcc > 0.08) { hudAcc = 0; updateHud(); updateLessonLive(); }
+  render();
+}
+function warmStill() {
+  state.mode = 'bounce';
+  state.m1 = 1;
+  state.m2 = 1;
+  placeClassic(1.5);
+  for (let i = 0; i < 500; i++) {
+    stepPhysics(H);
+    if (state.hits > 0) break;
+  }
+  state.flash = Math.max(state.flash, 0.85);
+  for (let i = 0; i < TRACE; i += 4) pushTrace();
+  refreshAfterAction();
+}
+function holdStill() {
+  cancelAnimationFrame(raf); raf = 0;
+  lean.set(0, 0); leanGoal.set(0, 0);
+  placeCamera(0); syncVisuals(); syncTags(); updateHud(); updateLessonLive(); render();
+}
+function start() {
+  if (still) { holdStill(); return; }
+  if (raf || document.hidden) return;
+  clock.getDelta();
+  raf = requestAnimationFrame(frame);
+}
+
+doReset();
+document.body.classList.add('has-lesson');
+setMobileMode('learn');
+lessonEl.addEventListener('click', onLessonClick);
+addEventListener('keydown', onLessonKey);
+narrowMq.addEventListener('change', () => { placeLesson(); resize(); });
+placeLesson();
+renderLesson();
+if (!lsOpen) setLessonOpen(false);
+const ro = new ResizeObserver(() => { fitLesson(); resize(); });
+ro.observe(stage);
+resize();
+if (still) warmStill();
+start();
+
+motionQuery.addEventListener('change', (e) => {
+  reduced = e.matches;
+  still = reduced || params.has('still');
+  if (still) { warmStill(); holdStill(); } else start();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else start();
+});
+function onLost(e) {
+  e.preventDefault();
+  cancelAnimationFrame(raf); raf = 0;
+  showErr('The display paused — reload the page to continue.');
+}
+canvas.addEventListener('webglcontextlost', onLost);
+
+function teardown() {
+  cancelAnimationFrame(raf); raf = 0;
+  ro.disconnect();
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup', onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  canvas.removeEventListener('webglcontextlost', onLost);
+  lessonEl.removeEventListener('click', onLessonClick);
+  removeEventListener('keydown', onLessonKey);
+  for (const d of disposables) d.dispose();
+  renderer.dispose();
+  canvas.remove();
+}
+addEventListener('pagehide', (e) => { if (!e.persisted) teardown(); });
+
+window.__momentumTeardown = teardown;
+window.__momentum = {
+  renderer, state,
+  get still() { return still; },
+  act: dispatchAct,
+  goStep,
+  step(n) {
+    const k = n == null ? 1 : n | 0;
+    for (let i = 0; i < k; i++) stepPhysics(H);
+    derive();
+    return state;
+  },
+};
+window.__momentumReady = true;
+
+} catch (e) {
+  showErr(studentDisplayMessage(e && e.message));
+  console.error('[momentum]', e);
+}
+</script>
+</body>
+</html>
