@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-<title>Hooke's law &amp; orbital motion · Noctuary physics exhibit</title>
+<title>Hooke&rsquo;s law &amp; orbital motion · Physics Lab</title>
 <style>
   :root {
     --font-display: "Bricolage Grotesque", system-ui, sans-serif;
@@ -276,7 +276,7 @@
             <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
             <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
           </div>
-          <p class="lesson-kicker" id="ls-kicker">Lesson 1/7 · <b>Hooke&rsquo;s law</b></p>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/9 · <b>Hooke&rsquo;s law</b></p>
           <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
         </header>
         <div class="lesson-body" id="ls-body" aria-live="polite"></div>
@@ -1209,6 +1209,13 @@ const LS = [
     <p class="watch"><b>Watch</b>Switch Light ↔ Heavy. The dashed <i>x = 0 · equilibrium</i> mark moves down for the heavy mass.</p>
     <p class="live"><b>Now</b>Δ = mg/k = <span data-live="m">—</span> × 9.81 / 28 = <span data-live="delta">—</span></p>
     <div class="acts"><button type="button" data-act="preset" data-p="light">Light · 0.8 kg</button><button type="button" data-act="preset" data-p="heavy">Heavy · 2.4 kg</button></div>` },
+  { topic: 'Real-world springs', focus: 'spring', html: `
+    <h3>Springs in the real world</h3>
+    <p class="formula">F = −k · x</p>
+    <p>Car suspension springs follow this same law. An automotive suspension engineer chooses the stiffness k so the car settles a comfortable amount under the passengers and still presses the tires back onto the road after a bump. A spring that is too soft can bottom out, and one that is too stiff makes the ride harsh.</p>
+    <p>Many bathroom and kitchen scales measure weight with a spring, or with a small metal piece that bends like a very stiff spring. A product engineer sets that stiffness so a known stretch matches a known weight. If the stiffness is wrong, the scale shows the wrong number.</p>
+    <p class="watch"><b>Watch</b>Stretch the orange mass and read F. Stiffness and stretch are the two numbers those engineers design around.</p>
+    <p class="live"><b>Now</b>x = <span data-live="x">—</span> → F = −kx = <span data-live="F">—</span></p>` },
   { topic: 'Gravity & orbits', focus: 'orbit', html: `
     <h3>Gravity makes an orbit</h3>
     <p class="formula">F = G·M·m / r²</p>
@@ -1232,6 +1239,13 @@ const LS = [
     <p>The ratio depends only on the sun (GM), not on the planet or its shape. Both planets orbit the same sun, so both get the same T²/a³, even though one orbit is a circle and one is an ellipse.</p>
     <p class="watch"><b>Watch</b>Fling the pearl planet to a new orbit. a and T both change in the numbers, but T²/a³ stays the same.</p>
     <p class="live"><b>Now</b>pearl <span data-live="k3A">—</span> · lilac <span data-live="k3B">—</span> · 4π²/GM = <span data-live="k3th">—</span></p>` },
+  { topic: 'Real-world orbits', focus: 'orbit', html: `
+    <h3>Orbits in the real world</h3>
+    <p class="formula">T² / a³ = 4π² / GM</p>
+    <p>GPS satellites orbit about 20,200 km above Earth and take about 12 hours to go around once. A satellite engineer sets that height and the matching speed together, because a larger orbit needs a longer period. Navigation on the ground depends on each satellite staying on that path.</p>
+    <p>Weather satellites use the same idea. A mission planner may place one about 36,000 km above the equator so one lap takes about a day and the satellite stays over the same region of Earth. Too little speed and the orbit dips closer in. Too much speed and the satellite climbs away from the path the mission needs.</p>
+    <p class="watch"><b>Watch</b>Fling the pearl planet faster or slower. Its distance and its lap time change together, just as they do for a satellite.</p>
+    <p class="live"><b>Now</b>r = <span data-live="r">—</span> · v = <span data-live="v">—</span></p>` },
   { topic: 'Try it · questions', focus: 'both', html: `
     <h3>Questions to try</h3>
     <p>Use the scene to test each idea. Then open the hint.</p>

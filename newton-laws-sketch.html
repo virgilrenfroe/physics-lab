@@ -286,7 +286,7 @@
             <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
             <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
           </div>
-          <p class="lesson-kicker" id="ls-kicker">Lesson 1/11 · <b>Meet the cart</b></p>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the cart</b></p>
           <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
         </header>
         <div class="lesson-body" id="ls-body" aria-live="polite"></div>
@@ -929,7 +929,7 @@ function resize() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 }
 
-/* ================= lesson (11 steps) ================= */
+/* ================= lesson (12 steps) ================= */
 const lessonEl = document.getElementById('lesson');
 const lsBody = document.getElementById('ls-body');
 const lsKicker = document.getElementById('ls-kicker');
@@ -1011,6 +1011,13 @@ const LS = [
     <p class="watch"><b>Watch</b>After each button, check that the thick gold ΣF arrow and lilac a arrow still agree in direction, and that the equation line matches.</p>
     <p class="live"><b>Now</b>ΣF = <span data-live="Fnet">—</span> · m = <span data-live="m">—</span> · a = <span data-live="a">—</span> · check <span data-live="aCalc">—</span></p>
     <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="push">Apply push</button><button type="button" data-act="double-f">Double F</button><button type="button" data-act="double-m">Double m</button><button type="button" data-act="friction">Friction</button></div>` },
+  { topic: 'In the real world', focus: 'both', html: `
+    <h3>In the real world</h3>
+    <p class="formula">a = ΣF / m &nbsp;·&nbsp; forces come in pairs</p>
+    <p>When a car stops suddenly, a passenger keeps moving until a force slows them down. An automotive safety engineer designs the seat belt and the airbag so the stopping force acts over more time. More time means a smaller acceleration for the same change in speed, and a = ΣF/m then means a smaller force on the person.</p>
+    <p>A sprint start uses the third law. The runner pushes back on the blocks, and the blocks push the runner forward with an equal force. A coach uses that net forward force and the athlete&rsquo;s mass, because a larger ΣF, or a smaller m, means a quicker change in speed off the line.</p>
+    <p class="watch"><b>Watch</b>Apply a push, then change the force or the mass. The gold ΣF arrow and the lilac a arrow are the pair those jobs compare.</p>
+    <p class="live"><b>Now</b>ΣF = <span data-live="Fnet">—</span> · m = <span data-live="m">—</span> · a = <span data-live="a">—</span></p>` },
   { topic: 'Try it · questions', focus: 'both', html: `
     <h3>Questions to try</h3>
     <p>Use the scene, then open each hint.</p>

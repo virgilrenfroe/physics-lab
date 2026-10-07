@@ -3,7 +3,7 @@
 ## Education use
 **High school / intro college physics: Newton’s 1st, 2nd, and 3rd laws; net force; a = ΣF / m.**
 
-Guided **11-step** lesson (slower pace, Watch / Now on every step, many try-it questions with hints):
+Guided **12-step** lesson (slower pace, Watch / Now on every step, many try-it questions with hints):
 
 1. **Meet the cart** — orange F_app, teal F_fric, thick gold ΣF, lilac a, mass block m; live meter bars.
 2. **1st law (inertia)** — ΣF = 0 → a = 0 → v constant. Coast with F→0.
@@ -15,7 +15,8 @@ Guided **11-step** lesson (slower pace, Watch / Now on every step, many try-it q
 8. **Double m** — ΣF fixed → a halves; mass block grows.
 9. **3rd law** — F on cart = −F on hand; reaction on lilac plate; pair does not cancel on the cart.
 10. **Put it together** — short button sequence lab.
-11. **Questions** — eight hints (predict a, double both, why pairs don’t cancel, μmg threshold, live ΣF/m check, …).
+11. **In the real world** — seat belts and airbags (automotive safety engineer: more stopping time, smaller a = ΣF/m) and a sprint start (coach: action–reaction, larger ΣF or smaller m).
+12. **Questions** — eight hints (predict a, double both, why pairs don’t cancel, μmg threshold, live ΣF/m check, …).
 
 Chips and lesson buttons share one dispatcher: Apply push · Double F · Double m · Friction · Reset · Coast · Halve F · Zero F.
 
