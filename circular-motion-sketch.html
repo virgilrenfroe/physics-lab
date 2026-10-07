@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>Circular motion · Physics Lab</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.55);
+    --faint: rgba(239, 230, 242, 0.3);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  #stage canvas.can-grab { cursor: grab; }
+  #stage canvas.grabbing { cursor: grabbing; }
+  .vig {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(ellipse at 58% 58%, transparent 36%, rgba(5, 1, 8, 0.58) 100%),
+      linear-gradient(to top, rgba(255, 150, 80, 0.045), transparent 30%);
+  }
+  .tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .tags span {
+    position: absolute; left: 0; top: 0; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+    color: var(--pearl); background: rgba(20, 8, 24, 0.72);
+    border: 1px solid rgba(239, 230, 242, 0.14); border-radius: 8px;
+    padding: 3px 8px; will-change: transform;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+  }
+  .tags span.vv { border-color: rgba(185,162,255,0.6); color: #ddd0ff; }
+  .tags span.aa { border-color: rgba(240,194,75,0.7); color: #ffe9a8; font-weight: 700; }
+  .tags span.ff { border-color: rgba(255,179,107,0.6); color: #ffe2c4; }
+  .tags span.rr { border-color: rgba(239,230,242,0.35); }
+  .tags span.mm { border-color: rgba(239,230,242,0.35); }
+  .tags span.cc { border-color: rgba(239,230,242,0.18); color: var(--mute); font-size: 10px; }
+  .tags span.gh { border-color: rgba(185,162,255,0.35); color: #ddd0ff; }
+  .chrome {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  .label .tag {
+    margin: 0 0 8px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.8);
+  }
+  .label h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 640;
+    font-size: clamp(2.35rem, 5.6vw, 4.6rem); letter-spacing: -0.055em; line-height: 0.86;
+    text-shadow: 0 2px 30px rgba(20, 8, 24, 0.7);
+  }
+  .label h1 em {
+    display: block; padding-left: 0.38em; font-style: normal; font-weight: 260; color: var(--mute);
+  }
+  .lock {
+    margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 6px 16px;
+    font-family: var(--font-mono); font-size: clamp(0.82rem, 1.45vw, 1.08rem);
+    letter-spacing: 0.01em; color: var(--honey);
+  }
+  .lock span { color: var(--accent); }
+  .label .sub {
+    margin: 10px 0 0; max-width: 38ch;
+    font-size: clamp(0.8rem, 1.2vw, 0.95rem); line-height: 1.4; color: var(--mute);
+  }
+  .foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .hint {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute); line-height: 1.7;
+  }
+  .hint i {
+    font-style: normal; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin: 0 5px 0 0; vertical-align: 0;
+  }
+  .chips { display: flex; gap: 8px; margin: 0 0 10px; pointer-events: auto; flex-wrap: wrap; }
+  .chips button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.18);
+    background: rgba(28, 12, 34, 0.72); color: var(--pearl);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    padding: 10px 14px; min-height: 42px; border-radius: 999px; cursor: pointer;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chips button:active { transform: scale(0.98); }
+  .meters {
+    pointer-events: none; display: flex; flex-direction: column; gap: 5px;
+    min-width: min(300px, 44vw); padding: 8px 12px 8px;
+    background: rgba(20, 8, 24, 0.72); border: 1px solid rgba(239,230,242,0.14);
+    border-radius: 14px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .meters h2 {
+    margin: 0 0 2px; font-family: var(--font-mono); font-weight: 400;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,179,107,0.9);
+  }
+  .meter { display: grid; grid-template-columns: 46px 1fr 104px; gap: 8px; align-items: center; }
+  .meter .lab { font-family: var(--font-mono); font-size: 11px; color: var(--mute); }
+  .meter .track {
+    height: 12px; border-radius: 7px; background: rgba(239,230,242,0.08);
+    overflow: hidden; position: relative;
+  }
+  .meter .fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 7px; }
+  .meter.m-r .fill { background: linear-gradient(90deg, #cfc4d8, #efe6f2); }
+  .meter.m-v .fill { background: linear-gradient(90deg, #8a72e8, #b9a2ff); }
+  .meter.m-a .fill { background: linear-gradient(90deg, #e0a820, #f0c24b); }
+  .meter.m-a .track { height: 16px; }
+  .meter.m-f .fill { background: linear-gradient(90deg, #ff8a3a, #ffb36b); }
+  .meter.m-f .track { height: 16px; }
+  .meter.m-m .fill { background: linear-gradient(90deg, #9a8aa8, #efe6f2); }
+  .meter .val { font-family: var(--font-mono); font-size: 11px; text-align: right; color: var(--pearl); }
+  .meters .eq {
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--honey);
+    letter-spacing: 0.01em; line-height: 1.45;
+  }
+  .meters .eq.f { color: var(--accent); }
+  .meters .flag { min-height: 1.05em; font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+  #err {
+    position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 300px;
+    font-family: var(--font-mono); font-size: 10px; color: #ffd6d6;
+    background: rgba(58, 18, 18, 0.82); border-radius: 8px; padding: 8px 10px; display: none;
+  }
+  .lesson {
+    pointer-events: auto; margin-top: 14px; width: min(400px, 36vw); min-width: 300px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(26, 10, 32, 0.72); border: 1px solid rgba(239, 230, 242, 0.13);
+    border-radius: 18px; box-shadow: 0 18px 50px rgba(5, 1, 8, 0.45);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  body.has-lesson .label .sub { display: none; }
+  body.lesson-closed .label .sub { display: block; }
+  .lesson-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px;
+    border-bottom: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-kicker {
+    margin: 0; flex: 1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.86);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .lesson-kicker b { color: var(--pearl); font-weight: 400; }
+  .lesson button { font-family: var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .lesson button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lesson-toggle {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: transparent; color: var(--mute);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; min-height: 32px;
+  }
+  .lesson-tabs { display: none; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(239, 230, 242, 0.06); }
+  .lesson-tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--mute);
+    font-size: 12.5px; font-weight: 500; padding: 7px 13px; border-radius: 999px; min-height: 32px;
+  }
+  .lesson-tabs button[aria-selected="true"] { background: rgba(255, 179, 107, 0.16); color: #ffe2c4; }
+  .lesson-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 18px 6px;
+    font-size: 14.5px; line-height: 1.5; color: rgba(239, 230, 242, 0.9);
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .lesson-body h3 {
+    margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 21px;
+    letter-spacing: -0.025em; color: var(--pearl);
+  }
+  .lesson-body p { margin: 0 0 9px; }
+  .lesson-body .formula {
+    font-family: var(--font-mono); font-size: 14.5px; color: var(--accent); letter-spacing: 0.02em; margin-bottom: 10px;
+  }
+  .lesson-body .watch {
+    padding: 9px 11px; border-radius: 12px; background: rgba(255, 179, 107, 0.08);
+    border: 1px solid rgba(255, 179, 107, 0.22); color: #f6e7d8;
+  }
+  .lesson-body .watch b, .lesson-body .live b {
+    font-family: var(--font-mono); font-weight: 400; font-size: 9.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-right: 6px;
+  }
+  .lesson-body .live { font-family: var(--font-mono); font-size: 12px; color: var(--pearl); }
+  .lesson-body .live span { color: var(--honey); }
+  .lesson-body .acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .lesson-body .acts button {
+    appearance: none; border: 1px solid rgba(255, 179, 107, 0.5); background: rgba(255, 179, 107, 0.12);
+    color: #ffe2c4; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 500; min-height: 36px;
+  }
+  .lesson-body details { border-top: 1px solid rgba(239, 230, 242, 0.08); padding: 8px 0; }
+  .lesson-body summary { cursor: pointer; color: var(--pearl); list-style: none; }
+  .lesson-body summary::before { content: "+ "; font-family: var(--font-mono); color: var(--accent); }
+  .lesson-body details[open] summary::before { content: "− "; }
+  .lesson-body details p { margin: 6px 0 2px; color: var(--mute); font-size: 13.5px; }
+  .lesson-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px 12px; border-top: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-nav > button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: rgba(239, 230, 242, 0.04);
+    color: var(--pearl); border-radius: 999px; padding: 8px 14px; font-size: 13px; min-height: 38px;
+  }
+  .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
+  .lesson-nav .dots { display: flex; flex-wrap: wrap; gap: 1px; justify-content: center; max-width: 210px; }
+  .lesson-nav .dots button {
+    appearance: none; border: 0; background: transparent; width: 18px; height: 28px; padding: 0;
+    display: grid; place-items: center;
+  }
+  .lesson-nav .dots button::after {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(239, 230, 242, 0.25);
+  }
+  .lesson-nav .dots button[aria-current="step"]::after { background: var(--accent); transform: scale(1.35); }
+  body.lesson-closed .lesson-body, body.lesson-closed .lesson-nav { display: none; }
+  body.lesson-closed .lesson { width: auto; min-width: 0; align-self: flex-start; display: inline-flex; }
+  body.lesson-closed .lesson-head { border-bottom: 0; }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(1.85rem, 4vw, 3.1rem); }
+    .label .sub { display: none; }
+    .lesson { margin-top: 10px; }
+    .lesson-body { font-size: 14px; }
+  }
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .label h1 { font-size: clamp(1.85rem, 9vw, 2.6rem); }
+    .label .sub, body.lesson-closed .label .sub { display: none; }
+    .lock { font-size: 0.78rem; margin-top: 8px; }
+    .lesson { width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(40vh, 340px); }
+    .lesson-head { padding: 8px 8px 8px 12px; }
+    .lesson-tabs { display: flex; }
+    .lesson-toggle { display: none; }
+    .lesson-kicker { font-size: 9.5px; }
+    .lesson-body { padding: 10px 14px 4px; font-size: 13.5px; }
+    .lesson-body h3 { font-size: 18px; }
+    body.m-learn .meters, body.m-learn .hint { display: none; }
+    body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
+    body.m-numbers .lesson { max-height: none; }
+    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .meters { min-width: 0; width: 100%; }
+    .chips button { font-size: 12px; padding: 8px 12px; min-height: 38px; }
+    .hint .long { display: none; }
+    .tags span { font-size: 10px; padding: 2px 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chips button:active { transform: none; }
+  }
+  html.embed, body.embed { background: transparent !important; }
+  body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
+  body.embed canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.has('embed')) {
+    document.body.classList.add('embed');
+    document.documentElement.classList.add('embed');
+  }
+  if (q.has('nolesson')) document.body.classList.add('lesson-closed');
+})();
+</script>
+  <div id="stage"></div>
+  <div class="vig" aria-hidden="true"></div>
+  <div class="tags" aria-hidden="true">
+    <span id="tag-v" class="vv">v</span>
+    <span id="tag-a" class="aa">a<sub>c</sub></span>
+    <span id="tag-f" class="ff">F<sub>c</sub></span>
+    <span id="tag-r" class="rr">r</span>
+    <span id="tag-m" class="mm">m</span>
+    <span id="tag-c" class="cc">center</span>
+    <span id="tag-g" class="gh">straight</span>
+  </div>
+  <div class="chrome">
+    <div class="label">
+      <p class="tag">Physics lab · mechanics · circular motion</p>
+      <h1>Circular<br /><em>motion</em></h1>
+      <p class="lock">a<sub>c</sub> = v²/r <span>F<sub>c</sub> = mv²/r</span></p>
+      <p class="sub">A mass on a string, one steady circle. The speed stays constant. The pull and the acceleration both point at the center.</p>
+      <section class="lesson" id="lesson" aria-label="Lesson: circular motion and centripetal force">
+        <header class="lesson-head">
+          <div class="lesson-tabs" role="tablist" aria-label="Panel">
+            <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
+            <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
+          </div>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the mass</b></p>
+          <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
+        </header>
+        <div class="lesson-body" id="ls-body" aria-live="polite"></div>
+        <nav class="lesson-nav" aria-label="Lesson steps">
+          <button type="button" data-step="prev">← Back</button>
+          <div class="dots" id="ls-dots"></div>
+          <button type="button" data-step="next">Next →</button>
+        </nav>
+      </section>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="chips" id="chips" role="group" aria-label="Simulation controls">
+          <button type="button" data-act="faster">Faster</button>
+          <button type="button" data-act="slower">Slower</button>
+          <button type="button" data-act="double-v">Double v</button>
+          <button type="button" data-act="double-m">Double m</button>
+          <button type="button" data-act="reset">Reset</button>
+        </div>
+        <div class="hint">
+          <span><i style="background:#ffb36b"></i>drag the mass · set the string length r</span><br />
+          <span><i style="background:#b9a2ff"></i>lilac v is tangent</span>
+          <span class="long"> · <i style="background:#f0c24b"></i>honey a<sub>c</sub> points at the center</span><br />
+          <span class="long">empty space tilts the stage</span>
+        </div>
+      </div>
+      <div class="meters" id="meters" aria-live="off">
+        <h2>Live · SI · a<sub>c</sub> = v²/r</h2>
+        <div class="meter m-r"><span class="lab">r</span><div class="track"><div class="fill" id="bar-r"></div></div><span class="val" id="h-r">—</span></div>
+        <div class="meter m-v"><span class="lab">v</span><div class="track"><div class="fill" id="bar-v"></div></div><span class="val" id="h-v">—</span></div>
+        <div class="meter m-a"><span class="lab">a<sub>c</sub></span><div class="track"><div class="fill" id="bar-a"></div></div><span class="val" id="h-a">—</span></div>
+        <div class="meter m-f"><span class="lab">F<sub>c</sub></span><div class="track"><div class="fill" id="bar-f"></div></div><span class="val" id="h-f">—</span></div>
+        <div class="meter m-m"><span class="lab">m</span><div class="track"><div class="fill" id="bar-m"></div></div><span class="val" id="h-m">—</span></div>
+        <div class="eq" id="h-eq">a<sub>c</sub> = v²/r = —</div>
+        <div class="eq f" id="h-eq2">F<sub>c</sub> = —</div>
+        <div class="flag" id="h-flag"></div>
+      </div>
+    </div>
+  </div>
+  <div id="err" role="status"></div>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const VOID = 0x140818;
+const params = new URLSearchParams(location.search);
+const embed = params.has('embed');
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let still = reduced || params.has('still');
+
+const R_MIN = 0.40, R_MAX = 1.60;
+const V_MIN = 0.40, V_MAX = 3.20;
+const M_MIN = 0.25, M_MAX = 4.00;
+const R0 = 0.80, V0 = 1.20, M0 = 0.50;
+const MASS_Y = 0.66;
+const BASE_R = 0.155;
+const PEG_R = 0.058;
+const DECK_R = 1.92;
+const R_BAR = 1.60, V_BAR = 3.20, A_BAR = 8.0, F_BAR = 4.0, M_BAR = 4.0;
+
+const stage = document.getElementById('stage');
+const errEl = document.getElementById('err');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+
+const ua = navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+const SEG = isMobile ? 20 : 32;
+
+const state = {
+  r: R0, v: V0, m: M0, theta: 0.95,
+  w: 0, ac: 0, Fc: 0, T: 0, f: 0,
+};
+
+try {
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, alpha: embed,
+  powerPreference: isIOS ? 'default' : 'high-performance',
+});
+if (!renderer.getContext()) throw new Error('WebGL context failed to create.');
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setClearColor(VOID, embed ? 0 : 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+stage.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+if (!embed) {
+  scene.background = new THREE.Color(VOID);
+  scene.fog = new THREE.Fog(VOID, 10, 22);
+}
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.08, 40);
+const disposables = [];
+const keep = (x) => { disposables.push(x); return x; };
+
+scene.add(new THREE.HemisphereLight(0xd4c4f0, 0x2a1020, 0.92));
+const key = new THREE.PointLight(0xffc090, 38, 18, 1.5);
+key.position.set(1.35, 3.5, 2.3);
+scene.add(key);
+
+const rig = new THREE.Group();
+scene.add(rig);
+
+/* —— deck texture: faint reference circles at 0.40, 0.80, 1.20, 1.60 m —— */
+function deckTexture() {
+  const s = 512;
+  const c = document.createElement('canvas');
+  c.width = c.height = s;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1a0e22';
+  g.fillRect(0, 0, s, s);
+  const cx = s / 2;
+  g.strokeStyle = 'rgba(239,230,242,0.14)';
+  g.lineWidth = 1.25;
+  for (const rad of [0.40, 0.80, 1.20, 1.60]) {
+    g.beginPath();
+    g.arc(cx, cx, (rad / DECK_R) * (s / 2 - 1), 0, Math.PI * 2);
+    g.stroke();
+  }
+  g.strokeStyle = 'rgba(239,230,242,0.07)';
+  g.beginPath();
+  g.moveTo(cx, 18); g.lineTo(cx, s - 18);
+  g.moveTo(18, cx); g.lineTo(s - 18, cx);
+  g.stroke();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return keep(tex);
+}
+
+const sideMat = keep(new THREE.MeshStandardMaterial({ color: 0x241428, roughness: 0.9, metalness: 0.04 }));
+const topMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffffff, map: deckTexture(), roughness: 0.92, metalness: 0.02,
+}));
+const botMat = sideMat;
+const deck = new THREE.Mesh(keep(new THREE.CylinderGeometry(DECK_R, DECK_R, 0.09, isMobile ? 48 : 72)), [sideMat, topMat, botMat]);
+deck.position.y = 0.045;
+rig.add(deck);
+
+const rim = new THREE.Mesh(
+  keep(new THREE.TorusGeometry(DECK_R, 0.012, 8, isMobile ? 48 : 80)),
+  keep(new THREE.MeshStandardMaterial({ color: 0xb9a2ff, roughness: 0.45, metalness: 0.25, emissive: 0x2a1848, emissiveIntensity: 0.35 }))
+);
+rim.rotation.x = Math.PI / 2;
+rim.position.y = 0.095;
+rig.add(rim);
+
+const tickGeo = keep(new THREE.BoxGeometry(0.11, 0.016, 0.028));
+const tickMat = keep(new THREE.MeshBasicMaterial({ color: 0x5c4a68 }));
+const lapMat = keep(new THREE.MeshBasicMaterial({ color: 0xf0c24b }));
+for (let i = 0; i < 12; i++) {
+  const a = (i / 12) * Math.PI * 2;
+  const t = new THREE.Mesh(tickGeo, i === 0 ? lapMat : tickMat);
+  t.position.set(Math.cos(a) * (DECK_R - 0.07), 0.1, Math.sin(a) * (DECK_R - 0.07));
+  t.rotation.y = -a;
+  rig.add(t);
+}
+
+const pegMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xd9cbb8, roughness: 0.38, metalness: 0.55, emissive: 0x3a2a22, emissiveIntensity: 0.18,
+}));
+const peg = new THREE.Mesh(keep(new THREE.CylinderGeometry(PEG_R, PEG_R * 1.05, 0.86, SEG)), pegMat);
+peg.position.y = 0.48;
+rig.add(peg);
+const pegCap = new THREE.Mesh(keep(new THREE.SphereGeometry(PEG_R * 1.25, SEG, SEG)), pegMat);
+pegCap.position.y = 0.92;
+rig.add(pegCap);
+const collar = new THREE.Mesh(keep(new THREE.TorusGeometry(PEG_R + 0.02, 0.016, 8, 20)), pegMat);
+collar.rotation.x = Math.PI / 2;
+collar.position.y = MASS_Y;
+rig.add(collar);
+
+const massMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffc48a, roughness: 0.32, metalness: 0.14,
+  emissive: 0x6a3010, emissiveIntensity: 0.42,
+}));
+const mass = new THREE.Group();
+rig.add(mass);
+const sphere = new THREE.Mesh(keep(new THREE.SphereGeometry(BASE_R, SEG, isMobile ? 16 : 24)), massMat);
+mass.add(sphere);
+const eye = new THREE.Mesh(keep(new THREE.TorusGeometry(0.042, 0.011, 8, 16)), pegMat);
+eye.rotation.y = Math.PI / 2;
+mass.add(eye);
+
+const stringMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xf4eadf, roughness: 0.42, metalness: 0.08,
+  emissive: 0xffb36b, emissiveIntensity: 0.35,
+}));
+const stringMesh = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.028, 0.028, 1, 12)), stringMat);
+rig.add(stringMesh);
+const chevron = new THREE.Mesh(
+  keep(new THREE.ConeGeometry(0.048, 0.13, 12)),
+  keep(new THREE.MeshBasicMaterial({ color: 0xffb36b, transparent: true, opacity: 0.95, depthWrite: false }))
+);
+rig.add(chevron);
+
+const pathMat = keep(new THREE.MeshBasicMaterial({
+  color: 0xf0c24b, transparent: true, opacity: 0.72, side: THREE.DoubleSide, depthWrite: false,
+}));
+const pathRing = new THREE.Mesh(keep(new THREE.RingGeometry(0.988, 1, isMobile ? 64 : 96)), pathMat);
+pathRing.rotation.x = -Math.PI / 2;
+pathRing.position.y = 0.102;
+rig.add(pathRing);
+
+const shadow = new THREE.Mesh(
+  keep(new THREE.CircleGeometry(1, 24)),
+  keep(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false }))
+);
+shadow.rotation.x = -Math.PI / 2;
+shadow.position.y = 0.098;
+rig.add(shadow);
+
+/* trail — fixed buffer, no per-frame alloc */
+const TRAIL_N = 72;
+const trailPos = new Float32Array(TRAIL_N * 3);
+const trailCol = new Float32Array(TRAIL_N * 3);
+for (let i = 0; i < TRAIL_N; i++) {
+  const u = i / (TRAIL_N - 1);
+  trailCol[i * 3] = 0.35 + u * 0.65;
+  trailCol[i * 3 + 1] = 0.18 + u * 0.48;
+  trailCol[i * 3 + 2] = 0.55 - u * 0.28;
+}
+function softDot() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.35, 'rgba(255,255,255,0.7)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return keep(tex);
+}
+const trailGeo = keep(new THREE.BufferGeometry());
+const trailAttr = new THREE.BufferAttribute(trailPos, 3);
+trailGeo.setAttribute('position', trailAttr);
+trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol, 3));
+const trail = new THREE.Points(trailGeo, keep(new THREE.PointsMaterial({
+  size: 0.105, map: softDot(), transparent: true, opacity: 0.9,
+  depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true, sizeAttenuation: true,
+})));
+trail.renderOrder = 2;
+rig.add(trail);
+
+function makeArrow(color, shaftR, headR, headLen, opacity) {
+  const g = new THREE.Group();
+  const mat = keep(new THREE.MeshBasicMaterial({
+    color, transparent: true, opacity, depthWrite: false,
+  }));
+  const shaft = new THREE.Mesh(keep(new THREE.CylinderGeometry(shaftR, shaftR, 1, 12)), mat);
+  shaft.rotation.z = -Math.PI / 2;
+  const head = new THREE.Mesh(keep(new THREE.ConeGeometry(headR, headLen, 14)), mat);
+  head.rotation.z = -Math.PI / 2;
+  g.add(shaft, head);
+  g.userData = { shaft, head, headLen, mat, tipDist: 0.4 };
+  g.renderOrder = 3;
+  return g;
+}
+function layoutArrow(g, len) {
+  const headLen = g.userData.headLen;
+  const L = Math.max(0.18, len);
+  const shaftLen = Math.max(0.05, L - headLen * 0.62);
+  g.userData.shaft.scale.set(1, shaftLen, 1);
+  g.userData.shaft.position.x = shaftLen / 2;
+  g.userData.head.position.x = shaftLen + headLen * 0.12;
+  g.userData.tipDist = shaftLen + headLen * 0.62;
+  return g.userData.tipDist;
+}
+const _x = new THREE.Vector3(1, 0, 0);
+const _y = new THREE.Vector3(0, 1, 0);
+const _dir = new THREE.Vector3();
+function placeArrow(g, ox, oy, oz, dx, dy, dz, len) {
+  layoutArrow(g, len);
+  g.position.set(ox, oy, oz);
+  _dir.set(dx, dy, dz);
+  if (_dir.lengthSq() < 1e-8) { g.visible = false; return; }
+  _dir.normalize();
+  g.visible = true;
+  if (_dir.x < -0.9995 && Math.abs(_dir.y) < 1e-3 && Math.abs(_dir.z) < 1e-3) g.quaternion.set(0, 1, 0, 0);
+  else g.quaternion.setFromUnitVectors(_x, _dir);
+  g.userData.tipX = ox + _dir.x * g.userData.tipDist;
+  g.userData.tipY = oy + _dir.y * g.userData.tipDist;
+  g.userData.tipZ = oz + _dir.z * g.userData.tipDist;
+}
+const arrowV = makeArrow(0xb9a2ff, 0.032, 0.078, 0.16, 0.96);
+const arrowA = makeArrow(0xf0c24b, 0.04, 0.095, 0.18, 0.98);
+const arrowG = makeArrow(0xb9a2ff, 0.02, 0.055, 0.14, 0.38);
+rig.add(arrowV, arrowA, arrowG);
+
+const grab = new THREE.Mesh(
+  keep(new THREE.SphereGeometry(0.5, 12, 10)),
+  keep(new THREE.MeshBasicMaterial({ visible: false }))
+);
+rig.add(grab);
+const pickPlane = new THREE.Mesh(
+  keep(new THREE.CircleGeometry(3.4, 32)),
+  keep(new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }))
+);
+pickPlane.rotation.x = -Math.PI / 2;
+pickPlane.position.y = MASS_Y;
+rig.add(pickPlane);
+
+/* spatial whispers — orbit lines in the void, not a city */
+if (!embed) {
+  const arcMat = keep(new THREE.MeshBasicMaterial({ color: 0x3a2848, transparent: true, opacity: 0.55, depthWrite: false }));
+  for (let i = 0; i < 3; i++) {
+    const arc = new THREE.Mesh(keep(new THREE.TorusGeometry(3.4 + i * 0.85, 0.006, 6, 72)), arcMat);
+    arc.rotation.x = 1.15 + i * 0.18;
+    arc.rotation.y = 0.4 + i * 0.55;
+    arc.position.set(0.2, 0.4 + i * 0.15, -0.6);
+    scene.add(arc);
+  }
+}
+
+const _pr = new THREE.Vector3();
+const _local = new THREE.Vector3();
+let showGhost = false;
+let focus = 'intro';
+let flagText = '';
+let flagHold = 0;
+const lean = new THREE.Vector2();
+const leanGoal = new THREE.Vector2();
+const drag = { target: null };
+
+function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+function fmt(n, d) { return Number.isFinite(n) ? n.toFixed(d) : '—'; }
+
+function compute() {
+  state.w = state.v / state.r;
+  state.ac = (state.v * state.v) / state.r;
+  state.Fc = state.m * state.ac;
+  state.T = (Math.PI * 2 * state.r) / state.v;
+  state.f = state.v / (Math.PI * 2 * state.r);
+}
+
+function massRadius() {
+  const grown = BASE_R * Math.cbrt(state.m / M0);
+  return Math.min(grown, state.r * 0.42);
+}
+
+function stepPhysics(dt) {
+  compute();
+  if (drag.target === 'mass') return;
+  state.theta += state.w * dt;
+  if (state.theta >= Math.PI * 2) {
+    state.theta -= Math.PI * 2;
+    if (flagHold <= 0) {
+      flagText = `lap · T = ${fmt(state.T, 2)} s`;
+      flagHold = 1.15;
+    }
+  }
+}
+
+function seedTrail() {
+  const y = MASS_Y;
+  for (let i = 0; i < TRAIL_N; i++) {
+    const u = i / (TRAIL_N - 1);
+    const th = state.theta - (1 - u) * 1.05;
+    trailPos[i * 3] = Math.cos(th) * state.r;
+    trailPos[i * 3 + 1] = y;
+    trailPos[i * 3 + 2] = Math.sin(th) * state.r;
+  }
+  trailAttr.needsUpdate = true;
+}
+function pushTrail() {
+  const y = MASS_Y;
+  trailPos.copyWithin(0, 3);
+  const i = (TRAIL_N - 1) * 3;
+  trailPos[i] = Math.cos(state.theta) * state.r;
+  trailPos[i + 1] = y;
+  trailPos[i + 2] = Math.sin(state.theta) * state.r;
+  trailAttr.needsUpdate = true;
+}
+
+function syncVisuals() {
+  compute();
+  const c = Math.cos(state.theta);
+  const s = Math.sin(state.theta);
+  const R = state.r;
+  const rad = massRadius();
+  mass.position.set(c * R, MASS_Y, s * R);
+  mass.rotation.y = -state.theta;
+  const k = rad / BASE_R;
+  sphere.scale.setScalar(k);
+  eye.position.x = -(rad + 0.012);
+  eye.scale.setScalar(Math.max(0.85, Math.min(1.15, k)));
+  grab.position.set(c * R, MASS_Y, s * R);
+
+  const inner = PEG_R + 0.01;
+  const outer = Math.max(inner + 0.04, R - rad - 0.01);
+  const len = outer - inner;
+  const mid = (inner + outer) * 0.5;
+  stringMesh.position.set(c * mid, MASS_Y, s * mid);
+  stringMesh.scale.y = len;
+  _dir.set(c, 0, s);
+  stringMesh.quaternion.setFromUnitVectors(_y, _dir);
+  const tension = clamp(state.Fc / 4, 0, 1);
+  stringMat.emissiveIntensity = 0.28 + tension * 1.25;
+  stringMesh.scale.x = stringMesh.scale.z = 1 + tension * 0.9;
+
+  chevron.position.set(c * (outer - 0.02), MASS_Y, s * (outer - 0.02));
+  _dir.set(-c, 0, -s);
+  chevron.quaternion.setFromUnitVectors(_y, _dir);
+  const cs = 0.85 + tension * 0.9;
+  chevron.scale.setScalar(cs);
+
+  pathRing.scale.set(R, R, 1);
+  shadow.position.set(c * R, 0.098, s * R);
+  shadow.scale.setScalar(0.2 + rad * 1.1);
+
+  const ay = MASS_Y + rad + 0.1;
+  const vLen = clamp(state.v * 0.36, 0.28, 1.25);
+  const aLen = clamp(state.ac * 0.103, 0.2, R * 0.9);
+  placeArrow(arrowV, c * R, ay, s * R, -s, 0, c, vLen);
+  placeArrow(arrowA, c * R, ay + 0.02, s * R, -c, 0, -s, aLen);
+  arrowV.userData.mat.opacity = (focus === 'force') ? 0.45 : 0.96;
+  arrowA.userData.mat.opacity = (focus === 'uniform' || focus === 'period') ? 0.4 : 0.98;
+
+  arrowG.visible = showGhost;
+  if (showGhost) {
+    placeArrow(arrowG, c * R, MASS_Y + 0.02, s * R, -s, 0, c, 1.15);
+  }
+}
+
+function setBar(id, value, full) {
+  const el = document.getElementById(id);
+  const mag = clamp(value / full, 0, 1);
+  el.style.width = `${mag * 100}%`;
+}
+function updateHud() {
+  compute();
+  const v2 = state.v * state.v;
+  const acW = state.w * state.w * state.r;
+  document.getElementById('h-r').textContent = `${fmt(state.r, 2)} m`;
+  document.getElementById('h-v').textContent = `${fmt(state.v, 2)} m/s`;
+  document.getElementById('h-a').textContent = `${fmt(state.ac, 2)} m/s²`;
+  document.getElementById('h-f').textContent = `${fmt(state.Fc, 2)} N`;
+  document.getElementById('h-m').textContent = `${fmt(state.m, 2)} kg`;
+  document.getElementById('h-eq').textContent =
+    `a_c = v²/r = ${fmt(v2, 2)}/${fmt(state.r, 2)} = ${fmt(state.ac, 2)} m/s²`;
+  document.getElementById('h-eq2').textContent =
+    `ω = ${fmt(state.w, 2)} rad/s · ω²r = ${fmt(acW, 2)} · F_c = m a_c = ${fmt(state.Fc, 2)} N`;
+  document.getElementById('h-flag').textContent = flagHold > 0
+    ? flagText
+    : `T = ${fmt(state.T, 2)} s · f = ${fmt(state.f, 2)} Hz`;
+  setBar('bar-r', state.r, R_BAR);
+  setBar('bar-v', state.v, V_BAR);
+  setBar('bar-a', state.ac, A_BAR);
+  setBar('bar-f', state.Fc, F_BAR);
+  setBar('bar-m', state.m, M_BAR);
+}
+
+const tagV = document.getElementById('tag-v');
+const tagA = document.getElementById('tag-a');
+const tagF = document.getElementById('tag-f');
+const tagR = document.getElementById('tag-r');
+const tagM = document.getElementById('tag-m');
+const tagC = document.getElementById('tag-c');
+const tagG = document.getElementById('tag-g');
+
+const _placed = [];
+function projectTag(el, x, y, z, ox, oy) {
+  _pr.set(x, y, z);
+  rig.localToWorld(_pr);
+  _pr.project(camera);
+  if (_pr.z > 1) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  let sx = (_pr.x * 0.5 + 0.5) * innerWidth + ox;
+  let sy = (-_pr.y * 0.5 + 0.5) * innerHeight + oy;
+  const peg = _placed.peg;
+  if (peg) {
+    let dx = sx - peg.x;
+    let dy = sy - peg.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    if (dist < 86) {
+      sx = peg.x + (dx / dist) * 86;
+      sy = peg.y + (dy / dist) * 86;
+    }
+  }
+  for (let pass = 0; pass < 3; pass++) {
+    for (const p of _placed.list) {
+      const dx = sx - p.x;
+      const dy = sy - p.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 1) { sx += 88; sy -= 20; continue; }
+      if (dist < 118) {
+        const k = (118 - dist) / dist;
+        sx += dx * k;
+        sy += dy * k;
+      }
+    }
+  }
+  const leftBound = (embed ? 8 : chromeLeftEdge() + 6);
+  const footTop = footEl ? footEl.getBoundingClientRect().top : innerHeight - 8;
+  sx = Math.max(leftBound, Math.min(innerWidth - 130, sx));
+  sy = Math.max(52, Math.min(footTop - 30, sy));
+  _placed.list.push({ x: sx, y: sy });
+  el.style.transform = `translate(${sx}px, ${sy}px)`;
+}
+function tagAlpha(which) {
+  if (focus === 'both' || focus === 'intro' || focus === 'params') return 1;
+  if (focus === 'uniform' && which === 'v') return 1;
+  if (focus === 'radius' && (which === 'r' || which === 'c')) return 1;
+  if (focus === 'period' && which === 'v') return 1;
+  if (focus === 'omega' && (which === 'v' || which === 'r')) return 1;
+  if (focus === 'accel' && (which === 'a' || which === 'v')) return 1;
+  if (focus === 'why' && (which === 'a' || which === 'v' || which === 'g')) return 1;
+  if (focus === 'force' && (which === 'f' || which === 'a' || which === 'm')) return 1;
+  if (focus === 'doublev' && (which === 'a' || which === 'v' || which === 'f')) return 1;
+  return 0.34;
+}
+function syncTags() {
+  if (embed) return;
+  const c = Math.cos(state.theta);
+  const s = Math.sin(state.theta);
+  const R = state.r;
+  const rad = massRadius();
+  _placed.list = [];
+  _pr.set(0, 0.95, 0);
+  rig.localToWorld(_pr);
+  _pr.project(camera);
+  _placed.peg = {
+    x: (_pr.x * 0.5 + 0.5) * innerWidth,
+    y: (-_pr.y * 0.5 + 0.5) * innerHeight,
+  };
+  projectTag(tagM, c * R, MASS_Y + rad + 0.55, s * R, -36, -28);
+  tagM.textContent = `m ${fmt(state.m, 2)} kg`;
+  tagM.style.opacity = String(tagAlpha('m'));
+  projectTag(tagV, arrowV.userData.tipX || c * R, arrowV.userData.tipY || MASS_Y, arrowV.userData.tipZ || s * R, 28, 14);
+  tagV.textContent = `v ${fmt(state.v, 2)} m/s`;
+  tagV.style.opacity = String(tagAlpha('v'));
+  projectTag(tagA, arrowA.userData.tipX || 0, (arrowA.userData.tipY || MASS_Y) + 0.22, arrowA.userData.tipZ || 0, -10, -46);
+  tagA.textContent = `a_c ${fmt(state.ac, 2)} m/s²`;
+  tagA.style.opacity = String(tagAlpha('a'));
+  if (showGhost) {
+    tagF.style.display = 'none';
+  } else {
+    projectTag(tagF, c * R * 0.42, MASS_Y - 0.16, s * R * 0.42, 18, 16);
+    tagF.textContent = `F_c ${fmt(state.Fc, 2)} N`;
+    tagF.style.opacity = String(tagAlpha('f'));
+  }
+  projectTag(tagR, c * R * 0.55, MASS_Y + 0.34, s * R * 0.55, -96, -6);
+  tagR.textContent = `r ${fmt(state.r, 2)} m`;
+  tagR.style.opacity = String(tagAlpha('r'));
+  if (focus === 'radius') {
+    projectTag(tagC, -0.35, 1.22, 0, -84, -14);
+    tagC.style.opacity = '0.9';
+  } else {
+    tagC.style.display = 'none';
+  }
+  if (showGhost && arrowG.visible) {
+    projectTag(tagG, arrowG.userData.tipX, arrowG.userData.tipY - 0.05, arrowG.userData.tipZ, 10, 70);
+    tagG.textContent = 'if the string snapped';
+    tagG.style.opacity = '0.9';
+  } else {
+    tagG.style.display = 'none';
+  }
+}
+
+/* —— actions —— */
+function refreshAfterAction() {
+  compute();
+  syncVisuals();
+  updateHud();
+  updateLessonLive();
+  if (still) {
+    seedTrail();
+    placeCamera(0);
+    applyLean();
+    syncTags();
+    render();
+  }
+}
+function setR(r, note) {
+  const next = clamp(r, R_MIN, R_MAX);
+  const hit = Math.abs(next - r) > 1e-6;
+  state.r = next;
+  flagText = hit ? `r at limit · ${fmt(state.r, 2)} m` : `${note} · r = ${fmt(state.r, 2)} m`;
+  flagHold = 1.25;
+  refreshAfterAction();
+}
+function setV(v, note) {
+  const next = clamp(v, V_MIN, V_MAX);
+  const hit = Math.abs(next - v) > 1e-6;
+  state.v = next;
+  flagText = hit ? `v at limit · ${fmt(state.v, 2)} m/s` : `${note} · v = ${fmt(state.v, 2)} m/s`;
+  flagHold = 1.25;
+  refreshAfterAction();
+}
+function setM(m, note) {
+  const next = clamp(m, M_MIN, M_MAX);
+  const hit = Math.abs(next - m) > 1e-6;
+  state.m = next;
+  flagText = hit ? `m at limit · ${fmt(state.m, 2)} kg` : `${note} · m = ${fmt(state.m, 2)} kg`;
+  flagHold = 1.25;
+  refreshAfterAction();
+}
+function doReset() {
+  state.r = R0;
+  state.v = V0;
+  state.m = M0;
+  state.theta = still ? 1.05 : 0.95;
+  flagText = 'reset · r 0.80 m · v 1.20 m/s · m 0.50 kg';
+  flagHold = 1.3;
+  compute();
+  seedTrail();
+  refreshAfterAction();
+}
+function dispatchAct(act) {
+  if (!act) return false;
+  if (act === 'faster') setV(state.v * 1.25, 'faster');
+  else if (act === 'slower') setV(state.v / 1.25, 'slower');
+  else if (act === 'double-v') setV(state.v * 2, 'v doubled · a_c and F_c ×4');
+  else if (act === 'halve-v') setV(state.v / 2, 'v halved · a_c and F_c ×1/4');
+  else if (act === 'double-r') setR(state.r * 2, 'r doubled · v fixed · a_c ×1/2');
+  else if (act === 'halve-r') setR(state.r / 2, 'r halved · v fixed · a_c ×2');
+  else if (act === 'wider') setR(state.r * 1.25, 'wider');
+  else if (act === 'tighter') setR(state.r / 1.25, 'tighter');
+  else if (act === 'double-m') setM(state.m * 2, 'm doubled · a_c same · F_c ×2');
+  else if (act === 'halve-m') setM(state.m / 2, 'm halved · a_c same · F_c ×1/2');
+  else if (act === 'reset') doReset();
+  else return false;
+  return true;
+}
+
+/* —— pointer —— */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+function setPointer(e) {
+  const r = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+}
+function planeHit() {
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObject(pickPlane, false);
+  if (!hits.length) return null;
+  _local.copy(hits[0].point);
+  rig.worldToLocal(_local);
+  return _local;
+}
+function onDown(e) {
+  if (e.button !== undefined && e.button !== 0) return;
+  canvas.setPointerCapture(e.pointerId);
+  setPointer(e);
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObject(grab, false);
+  if (hits.length) {
+    drag.target = 'mass';
+    canvas.classList.add('grabbing');
+  } else {
+    drag.target = 'lean';
+    drag.sx = e.clientX;
+    drag.sy = e.clientY;
+  }
+}
+function onMove(e) {
+  setPointer(e);
+  if (!drag.target) {
+    raycaster.setFromCamera(pointer, camera);
+    canvas.classList.toggle('can-grab', raycaster.intersectObject(grab, false).length > 0);
+    return;
+  }
+  if (drag.target === 'mass') {
+    const p = planeHit();
+    if (!p) return;
+    const dist = Math.hypot(p.x, p.z);
+    if (dist > 0.06) {
+      let th = Math.atan2(p.z, p.x);
+      if (th < 0) th += Math.PI * 2;
+      state.theta = th;
+    }
+    state.r = clamp(dist, R_MIN, R_MAX);
+    compute();
+    syncVisuals();
+    updateHud();
+    updateLessonLive();
+    if (still) {
+      seedTrail();
+      syncTags();
+      render();
+    }
+  } else if (drag.target === 'lean') {
+    leanGoal.set(
+      clamp((e.clientX - drag.sx) * 0.0016, -0.34, 0.34),
+      clamp((e.clientY - drag.sy) * -0.0014, -0.22, 0.22)
+    );
+    if (still) {
+      lean.copy(leanGoal);
+      applyLean();
+      placeCamera(0);
+      syncTags();
+      render();
+    }
+  }
+}
+function onUp(e) {
+  drag.target = null;
+  canvas.classList.remove('grabbing');
+  leanGoal.set(0, 0);
+  if (still) {
+    lean.set(0, 0);
+    applyLean();
+    seedTrail();
+    syncTags();
+    render();
+  }
+  try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+document.getElementById('chips').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (btn) dispatchAct(btn.dataset.act);
+});
+
+function applyLean() {
+  rig.rotation.z = lean.x * 0.55;
+  rig.rotation.x = -lean.y * 0.4;
+}
+
+const narrowMq = matchMedia('(max-width: 720px), (max-aspect-ratio: 5/6)');
+const lessonEl = document.getElementById('lesson');
+function chromeLeftEdge() {
+  if (embed || narrowMq.matches || !lsOpen) return 0;
+  return lessonEl.getBoundingClientRect().right;
+}
+function placeCamera(t) {
+  const narrow = narrowMq.matches;
+  if (narrow) {
+    camera.fov = 32;
+    camera.position.set(0.05 + lean.x * 0.2, 3.35, 5.15);
+    camera.lookAt(0, -0.05, 0);
+  } else {
+    const left = chromeLeftEdge();
+    const shift = left > 40 ? (left / innerWidth) : 0;
+    camera.fov = 30;
+    const breathe = still ? 0 : Math.sin(t * 0.35) * 0.012;
+    camera.position.set(0.05 - shift * 0.15 + lean.x * 0.25, 2.42 + breathe, 4.95);
+    camera.lookAt(-shift * 1.35, 0.22, 0);
+  }
+  camera.updateProjectionMatrix();
+}
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  camera.aspect = w / Math.max(1, h);
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+}
+
+/* ================= lesson · 12 steps ================= */
+const lsBody = document.getElementById('ls-body');
+const lsKicker = document.getElementById('ls-kicker');
+const lsDots = document.getElementById('ls-dots');
+const lsToggle = document.getElementById('ls-toggle');
+const labelEl = document.querySelector('.label');
+const footEl = document.querySelector('.foot');
+const metersEl = document.getElementById('meters');
+
+const LS = [
+  { topic: 'Meet the mass', focus: 'intro', html: `
+    <h3>Meet the mass</h3>
+    <p>A ball on a string, swung in a horizontal circle around a fixed peg. The floor does not spin. The string is what holds the ball on the circle.</p>
+    <p><b>Lilac arrow</b> = velocity v, tangent to the circle. <b>Honey arrow</b> = centripetal acceleration a<sub>c</sub>, toward the peg. The string is the centripetal force F<sub>c</sub>.</p>
+    <p class="formula">a<sub>c</sub> = v²/r &nbsp;&nbsp; F<sub>c</sub> = m v²/r</p>
+    <p class="watch"><b>Watch</b>The honey arrow aims at the center. The lilac arrow aims along the rim. They meet at a right angle on the mass.</p>
+    <p class="live"><b>Now</b>r = <span data-live="r">—</span> · v = <span data-live="v">—</span> · a<sub>c</sub> = <span data-live="ac">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset to start</button></div>` },
+  { topic: 'Uniform circle', focus: 'uniform', html: `
+    <h3>Uniform circular motion</h3>
+    <p class="formula">|v| is constant · the direction of v changes</p>
+    <p>Uniform means the <b>speed</b> stays the same the whole way around. The velocity does not. Velocity has a direction, and that direction turns with the mass.</p>
+    <p class="watch"><b>Watch</b>The v meter holds still while the lilac arrow swings around the peg. Faster and Slower change the speed; the arrow keeps pointing along the tangent.</p>
+    <p class="live"><b>Now</b>v = <span data-live="v">—</span> · ω = <span data-live="w">—</span> · T = <span data-live="T">—</span></p>
+    <div class="acts"><button type="button" data-act="faster">Faster</button><button type="button" data-act="slower">Slower</button></div>` },
+  { topic: 'Radius r', focus: 'radius', html: `
+    <h3>The radius is the string</h3>
+    <p class="formula">r = string length &nbsp;·&nbsp; circumference = 2πr</p>
+    <p>r is the distance from the peg to the mass. Drag the mass in or out. The glowing ring is that circle. Faint rings in the floor mark 0.40, 0.80, 1.20, and 1.60 m.</p>
+    <p class="watch"><b>Watch</b>Drag the mass. r on the string tag and the r meter follow your hand. Speed v stays what it was, so a<sub>c</sub> changes because r changed.</p>
+    <p class="live"><b>Now</b>r = <span data-live="r">—</span> · 2πr = <span data-live="circ">—</span> · v = <span data-live="v">—</span></p>
+    <div class="acts"><button type="button" data-act="wider">Wider</button><button type="button" data-act="tighter">Tighter</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Period T', focus: 'period', html: `
+    <h3>Period and frequency</h3>
+    <p class="formula">T = 2πr / v &nbsp;·&nbsp; f = 1/T</p>
+    <p>T is the time for one lap. f is how many laps fit in one second. A faster mass, or a tighter string, finishes the circle sooner.</p>
+    <p class="watch"><b>Watch</b>The honey tick on the rim is the lap line. Each time the mass passes it, the flag reads lap and T. Tap Faster and watch T drop.</p>
+    <p class="live"><b>Now</b>T = <span data-live="T">—</span> · f = <span data-live="f">—</span> · v = <span data-live="v">—</span> · r = <span data-live="r">—</span></p>
+    <div class="acts"><button type="button" data-act="faster">Faster</button><button type="button" data-act="slower">Slower</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Angular speed ω', focus: 'omega', html: `
+    <h3>Angular speed</h3>
+    <p class="formula">ω = v / r = 2π / T &nbsp;·&nbsp; a<sub>c</sub> = ω² r</p>
+    <p>ω is how fast the angle turns, in radians per second. The same motion has two speeds: v along the rim, and ω around the peg. Both formulas for a<sub>c</sub> agree.</p>
+    <p class="watch"><b>Watch</b>The second meter line shows ω and ω²r next to a<sub>c</sub>. They match. Wider orbit at the same v lowers ω.</p>
+    <p class="live"><b>Now</b>v/r = <span data-live="w">—</span> · v²/r = <span data-live="acV">—</span> · ω²r = <span data-live="acW">—</span></p>
+    <div class="acts"><button type="button" data-act="wider">Wider</button><button type="button" data-act="double-v">Double v</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Centripetal a', focus: 'accel', html: `
+    <h3>Centripetal acceleration</h3>
+    <p class="formula">a<sub>c</sub> = v² / r &nbsp; toward the center</p>
+    <p>A steady speedometer does not mean zero acceleration. Acceleration is any change in velocity, and here the velocity is turning. That acceleration points at the center. Its size is v²/r.</p>
+    <p class="watch"><b>Watch</b>The honey arrow never swings forward along v. It stays aimed at the peg. Read the equation under the meters: it is computed from the live v and r.</p>
+    <p class="live"><b>Now</b>v² = <span data-live="v2">—</span> · r = <span data-live="r">—</span> → a<sub>c</sub> = <span data-live="ac">—</span></p>
+    <div class="acts"><button type="button" data-act="faster">Faster</button><button type="button" data-act="tighter">Tighter</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Why inward', focus: 'why', html: `
+    <h3>Why the arrow points in</h3>
+    <p class="formula">No string → the mass goes straight, along v</p>
+    <p>Inertia carries the mass in a straight line, tangent to the circle. The string pulls inward, so the path bends toward the peg. Bending the velocity toward the center <b>is</b> an inward acceleration.</p>
+    <p class="watch"><b>Watch</b>A faint lilac arrow shows the straight path if the string snapped. The honey arrow is the turn, perpendicular to that line, toward the center.</p>
+    <p class="live"><b>Now</b>a<sub>c</sub> = <span data-live="ac">—</span> inward · v = <span data-live="v">—</span> tangent</p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="slower">Slower</button></div>` },
+  { topic: 'Centripetal force', focus: 'force', html: `
+    <h3>The string is the force</h3>
+    <p class="formula">F<sub>c</sub> = m a<sub>c</sub> = m v²/r = m ω² r</p>
+    <p>Newton’s second law still holds. The net force points the same way as a<sub>c</sub>: inward, along the string. That pull is the tension. In this lab frame there is no outward force on the mass.</p>
+    <p class="watch"><b>Watch</b>The F<sub>c</sub> tag sits on the string. A harder pull (larger F<sub>c</sub>) makes the string brighter and thicker. The meter checks F<sub>c</sub> = m × a<sub>c</sub>.</p>
+    <p class="live"><b>Now</b>m = <span data-live="m">—</span> · a<sub>c</sub> = <span data-live="ac">—</span> · m a<sub>c</sub> = <span data-live="FcMa">—</span> · F<sub>c</sub> = <span data-live="Fc">—</span></p>
+    <div class="acts"><button type="button" data-act="double-m">Double m</button><button type="button" data-act="double-v">Double v</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Double the speed', focus: 'doublev', html: `
+    <h3>What if v doubles?</h3>
+    <p class="formula">a′ = (2v)² / r = 4 v²/r = 4 a<sub>c</sub></p>
+    <p>The speed is squared. Double v, with r and m fixed, and both a<sub>c</sub> and F<sub>c</sub> become four times as large. The honey arrow grows toward the peg; the meters show the exact factor.</p>
+    <p class="watch"><b>Watch</b>Reset, read a<sub>c</sub> and F<sub>c</sub>, then tap <b>Double v</b>. a<sub>c</sub> and F<sub>c</sub> should each be about 4×. Tap it again only if v is not already at the max.</p>
+    <p class="live"><b>Now</b>v = <span data-live="v">—</span> · a<sub>c</sub> = <span data-live="ac">—</span> · F<sub>c</sub> = <span data-live="Fc">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="double-v">Double v</button><button type="button" data-act="halve-v">Halve v</button></div>` },
+  { topic: 'Change r or m', focus: 'params', html: `
+    <h3>Change the radius or the mass</h3>
+    <p class="formula">Fixed v: a<sub>c</sub> ∝ 1/r &nbsp;·&nbsp; fixed v and r: F<sub>c</sub> ∝ m, a<sub>c</sub> unchanged</p>
+    <p>Double the string at the same speed and a<sub>c</sub> halves — the mass has more room to turn. Double the mass at the same v and r and a<sub>c</sub> stays put; the string has to pull twice as hard. The ball grows with m.</p>
+    <p class="watch"><b>Watch</b>Reset, note a<sub>c</sub>, tap <b>Double r</b>. a<sub>c</sub> should halve. Reset, note F<sub>c</sub>, tap <b>Double m</b>. a<sub>c</sub> stays; F<sub>c</sub> doubles.</p>
+    <p class="live"><b>Now</b>r = <span data-live="r">—</span> · m = <span data-live="m">—</span> · a<sub>c</sub> = <span data-live="ac">—</span> · F<sub>c</sub> = <span data-live="Fc">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="double-r">Double r</button><button type="button" data-act="double-m">Double m</button></div>` },
+  { topic: 'In the real world', focus: 'both', html: `
+    <h3>In the real world</h3>
+    <p class="formula">a<sub>c</sub> = v²/r &nbsp;·&nbsp; the inward force has to match the curve</p>
+    <p>Mechanical engineers at a ride manufacturer such as Bolliger &amp; Mabillard design roller-coaster loops so the track pushes the train inward and keeps it on the curve. They make the radius larger at the bottom, where the train is fastest, so a<sub>c</sub> = v²/r stays inside the g-force limit set for riders.</p>
+    <p>On a rotor ride such as the Gravitron from Wisdom Rides, the spinning wall is that inward push. Engineers choose the wall’s radius and spin rate so riders stay safely pressed in place when the floor drops, and so the force does not exceed the ride’s limit.</p>
+    <p class="watch"><b>Watch</b>The string is doing the job of the track or the wall. Wider, at the same speed, is a gentler turn. Double v on the same radius is a much harder one.</p>
+    <p class="live"><b>Now</b>r = <span data-live="r">—</span> · v = <span data-live="v">—</span> · a<sub>c</sub> = <span data-live="ac">—</span> · F<sub>c</sub> = <span data-live="Fc">—</span></p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="wider">Wider</button><button type="button" data-act="double-v">Double v</button></div>` },
+  { topic: 'Questions', focus: 'both', html: `
+    <h3>Questions to try</h3>
+    <p>Use the live scene, then open a hint.</p>
+    <p class="watch"><b>Watch</b>Reset, then try Double v, Double r, and Double m. The honey arrow stays aimed at the peg. Read a<sub>c</sub> and F<sub>c</sub> before you open the hint.</p>
+    <p class="live"><b>Now</b>a<sub>c</sub> = <span data-live="ac">—</span> · v²/r = <span data-live="acV">—</span> · ω²r = <span data-live="acW">—</span> · F<sub>c</sub> = <span data-live="Fc">—</span></p>
+    <details><summary>The speed is constant. What is a<sub>c</sub>, and which way does it point?</summary><p>a<sub>c</sub> = v²/r, toward the center. A steady speed still has a changing direction, and that change is inward.</p></details>
+    <details><summary>Predict a<sub>c</sub> for v = 2.0 m/s and r = 1.0 m.</summary><p>a<sub>c</sub> = 2²/1 = 4.0 m/s², inward. Set Wider / Faster until the meters are close, or just compute it.</p></details>
+    <details><summary>You double v. r and m stay fixed. What happens to a<sub>c</sub> and F<sub>c</sub>?</summary><p>Both ×4, because of v². Reset, read the meters, tap Double v.</p></details>
+    <details><summary>You double r and hold v fixed. What happens to a<sub>c</sub>?</summary><p>It halves. a<sub>c</sub> = v²/r, so twice the radius, half the acceleration.</p></details>
+    <details><summary>You double m. v and r stay fixed. What happens to a<sub>c</sub> and F<sub>c</sub>?</summary><p>a<sub>c</sub> is unchanged (it does not depend on m). F<sub>c</sub> = m a<sub>c</sub> doubles. The ball gets larger.</p></details>
+    <details><summary>Where is F<sub>c</sub> in this scene?</summary><p>Tension in the string, toward the peg. The F<sub>c</sub> tag sits on the string. Same direction as a<sub>c</sub>.</p></details>
+    <details><summary>Why is there no outward arrow on the mass?</summary><p>In this lab frame the only horizontal force is the inward string. The “outward” feeling is inertia — the mass wanting the straight tangent path.</p></details>
+    <details><summary>Live check: does a<sub>c</sub> equal both v²/r and ω²r?</summary><p>v²/r = <span data-live="acV">—</span>, ω²r = <span data-live="acW">—</span>, meter a<sub>c</sub> = <span data-live="ac">—</span>. They match. F<sub>c</sub> = <span data-live="Fc">—</span> and m a<sub>c</sub> = <span data-live="FcMa">—</span>.</p></details>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="double-v">Double v</button><button type="button" data-act="double-r">Double r</button><button type="button" data-act="double-m">Double m</button></div>` },
+];
+
+let lsStep = 0;
+let lsOpen = !params.has('nolesson');
+let mMode = 'learn';
+const lsLive = [];
+
+for (let i = 0; i < LS.length; i++) {
+  const d = document.createElement('button');
+  d.type = 'button';
+  d.dataset.go = String(i);
+  d.setAttribute('aria-label', `Step ${i + 1}: ${LS[i].topic}`);
+  lsDots.appendChild(d);
+}
+
+function renderLesson() {
+  const st = LS[lsStep];
+  lsKicker.innerHTML = `Lesson ${lsStep + 1}/${LS.length} · <b>${st.topic}</b>`;
+  lsBody.innerHTML = st.html;
+  lsBody.scrollTop = 0;
+  lsLive.length = 0;
+  for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
+  for (const d of lsDots.children) d.toggleAttribute('aria-current', false);
+  lsDots.children[lsStep].setAttribute('aria-current', 'step');
+  lessonEl.querySelector('[data-step="prev"]').disabled = lsStep === 0;
+  lessonEl.querySelector('[data-step="next"]').disabled = lsStep === LS.length - 1;
+  focus = lsOpen ? st.focus : 'both';
+  showGhost = focus === 'why';
+  document.body.dataset.focus = focus;
+  updateLessonLive();
+  syncVisuals();
+  syncTags();
+}
+function updateLessonLive() {
+  if (!lsLive.length) return;
+  compute();
+  const v2 = state.v * state.v;
+  const vals = {
+    r: `${fmt(state.r, 2)} m`,
+    v: `${fmt(state.v, 2)} m/s`,
+    w: `${fmt(state.w, 2)} rad/s`,
+    ac: `${fmt(state.ac, 2)} m/s²`,
+    Fc: `${fmt(state.Fc, 2)} N`,
+    m: `${fmt(state.m, 2)} kg`,
+    T: `${fmt(state.T, 2)} s`,
+    f: `${fmt(state.f, 2)} Hz`,
+    v2: fmt(v2, 2),
+    acV: `${fmt(v2 / state.r, 2)} m/s²`,
+    acW: `${fmt(state.w * state.w * state.r, 2)} m/s²`,
+    FcMa: `${fmt(state.m * state.ac, 2)} N`,
+    circ: `${fmt(Math.PI * 2 * state.r, 2)} m`,
+  };
+  for (const el of lsLive) el.textContent = vals[el.dataset.live] ?? '—';
+}
+function goStep(i) {
+  lsStep = Math.max(0, Math.min(LS.length - 1, i));
+  renderLesson();
+  if (still) {
+    placeCamera(0);
+    syncTags();
+    render();
+  }
+}
+function onLessonClick(e) {
+  const btn = e.target.closest('button');
+  if (!btn || !lessonEl.contains(btn)) return;
+  if (btn.dataset.step === 'prev') goStep(lsStep - 1);
+  else if (btn.dataset.step === 'next') goStep(lsStep + 1);
+  else if (btn.dataset.go) goStep(+btn.dataset.go);
+  else if (btn.dataset.mode) setMobileMode(btn.dataset.mode);
+  else if (btn === lsToggle) setLessonOpen(!lsOpen);
+  else if (btn.dataset.act) dispatchAct(btn.dataset.act);
+}
+function setLessonOpen(open) {
+  lsOpen = open;
+  document.body.classList.toggle('lesson-closed', !open);
+  lsToggle.setAttribute('aria-expanded', String(open));
+  lsToggle.textContent = open ? 'Hide' : 'Open lesson';
+  focus = open ? LS[lsStep].focus : 'both';
+  showGhost = focus === 'why';
+  document.body.dataset.focus = focus;
+  fitLesson();
+  resize();
+  syncVisuals();
+  syncTags();
+}
+function setMobileMode(mode) {
+  mMode = mode;
+  document.body.classList.toggle('m-learn', mode === 'learn');
+  document.body.classList.toggle('m-numbers', mode === 'numbers');
+  for (const b of lessonEl.querySelectorAll('[data-mode]')) {
+    b.setAttribute('aria-selected', String(b.dataset.mode === mode));
+  }
+}
+function placeLesson() {
+  if (narrowMq.matches) {
+    if (lessonEl.parentElement !== footEl) footEl.insertBefore(lessonEl, metersEl);
+    if (!lsOpen) setLessonOpen(true);
+  } else if (lessonEl.parentElement !== labelEl) {
+    labelEl.appendChild(lessonEl);
+  }
+  fitLesson();
+}
+function fitLesson() {
+  if (narrowMq.matches) { lessonEl.style.maxHeight = ''; return; }
+  const top = lessonEl.getBoundingClientRect().top;
+  const footH = footEl.getBoundingClientRect().height;
+  const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 16;
+  lessonEl.style.maxHeight = `${Math.max(150, innerHeight - padB - footH - 28 - top)}px`;
+}
+function onLessonKey(e) {
+  if (e.target.closest && e.target.closest('input, textarea, select')) return;
+  if (e.key === 'ArrowRight') goStep(lsStep + 1);
+  else if (e.key === 'ArrowLeft') goStep(lsStep - 1);
+}
+
+const H = 1 / 240;
+let acc = 0;
+let simT = 0;
+let hudAcc = 0;
+let raf = 0;
+const clock = new THREE.Clock();
+
+function simulate(dt) {
+  acc += dt;
+  let n = 0;
+  while (acc >= H && n < 16) { stepPhysics(H); acc -= H; n++; }
+  if (n === 16) acc = 0;
+}
+function render() { renderer.render(scene, camera); }
+
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  simulate(dt);
+  pushTrail();
+  flagHold = Math.max(0, flagHold - dt);
+  lean.lerp(leanGoal, 1 - Math.exp(-dt * 4.5));
+  applyLean();
+  simT += dt;
+  placeCamera(simT);
+  syncVisuals();
+  syncTags();
+  hudAcc += dt;
+  if (hudAcc > 0.08) { hudAcc = 0; updateHud(); updateLessonLive(); }
+  render();
+}
+
+function holdStill() {
+  cancelAnimationFrame(raf);
+  raf = 0;
+  lean.set(0, 0);
+  leanGoal.set(0, 0);
+  applyLean();
+  compute();
+  seedTrail();
+  placeCamera(0);
+  syncVisuals();
+  syncTags();
+  updateHud();
+  updateLessonLive();
+  render();
+}
+function start() {
+  if (still) { holdStill(); return; }
+  if (raf || document.hidden) return;
+  clock.getDelta();
+  raf = requestAnimationFrame(frame);
+}
+
+document.body.classList.add('has-lesson');
+setMobileMode('learn');
+lessonEl.addEventListener('click', onLessonClick);
+addEventListener('keydown', onLessonKey);
+narrowMq.addEventListener('change', () => { placeLesson(); resize(); if (still) holdStill(); });
+placeLesson();
+doReset();
+renderLesson();
+if (!lsOpen) setLessonOpen(false);
+const ro = new ResizeObserver(() => { fitLesson(); resize(); if (still) { placeCamera(0); syncTags(); render(); } });
+ro.observe(stage);
+resize();
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => {
+    fitLesson();
+    if (still) { placeCamera(0); syncTags(); render(); }
+  });
+}
+if (still) {
+  state.theta = 1.05;
+  holdStill();
+} else start();
+
+motionQuery.addEventListener('change', (e) => {
+  reduced = e.matches;
+  still = reduced || params.has('still');
+  if (still) {
+    state.theta = 1.05;
+    holdStill();
+  } else start();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else start();
+});
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  cancelAnimationFrame(raf);
+  raf = 0;
+  showErr('WebGL context lost — reload to resume.');
+});
+
+let dead = false;
+function teardown() {
+  if (dead) return;
+  dead = true;
+  cancelAnimationFrame(raf);
+  raf = 0;
+  ro.disconnect();
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup', onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  lessonEl.removeEventListener('click', onLessonClick);
+  removeEventListener('keydown', onLessonKey);
+  for (const d of disposables) d.dispose();
+  renderer.dispose();
+  canvas.remove();
+}
+addEventListener('pagehide', (e) => { if (!e.persisted) teardown(); });
+
+window.__circularMotionTeardown = teardown;
+window.__circularMotion = {
+  renderer,
+  state,
+  get still() { return still; },
+  get step() { return lsStep; },
+  act: dispatchAct,
+  goStep,
+};
+window.__circularMotionReady = true;
+
+} catch (e) {
+  showErr((e && e.message) ? e.message : String(e));
+  console.error('[circular-motion]', e);
+}
+</script>
+</body>
+</html>
