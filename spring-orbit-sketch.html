@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-<title>Hooke's law &amp; orbital motion · Noctuary physics exhibit</title>
+<title>Hooke&rsquo;s law &amp; orbital motion · Physics Lab</title>
 <style>
   :root {
     --font-display: "Bricolage Grotesque", system-ui, sans-serif;
@@ -66,6 +66,34 @@
     margin: 12px 0 0; max-width: 34ch;
     font-size: clamp(0.82rem, 1.25vw, 0.98rem); line-height: 1.4; color: var(--mute);
   }
+  .label {
+    display: flex; flex-direction: column; min-height: 0;
+    max-height: calc(100vh - 168px);
+  }
+  .geo-lead {
+    pointer-events: auto;
+    margin: 10px 0 0;
+    max-width: 48ch;
+    max-height: min(34vh, 280px);
+    overflow: auto;
+    font-size: 14.5px;
+    line-height: 1.45;
+    color: rgba(239, 230, 242, 0.88);
+    padding-right: 6px;
+  }
+  .geo-lead::-webkit-scrollbar { width: 8px; }
+  .geo-lead::-webkit-scrollbar-thumb { background: rgba(239, 230, 242, 0.22); border-radius: 8px; }
+  .geo-lead p { margin: 0 0 8px; }
+  .geo-lead h2 {
+    margin: 10px 0 4px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    color: var(--pearl);
+  }
+  .geo-lead ul { margin: 0; padding: 0 0 0 1.15em; }
+  .geo-lead li { margin: 0 0 6px; }
   .foot {
     display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap;
   }
@@ -189,7 +217,7 @@
     color: var(--pearl); border-radius: 999px; padding: 8px 14px; font-size: 13px; min-height: 38px;
   }
   .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
-  .lesson-nav .dots { display: flex; gap: 2px; }
+  .lesson-nav .dots { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; max-width: 148px; }
   .lesson-nav .dots button {
     appearance: none; border: 0; background: transparent; width: 22px; height: 30px; padding: 0;
     display: grid; place-items: center;
@@ -204,6 +232,8 @@
   body.lesson-closed .lesson-head { border-bottom: 0; }
   @media (max-height: 820px) and (min-width: 721px) {
     .label h1 { font-size: clamp(2rem, 4.2vw, 3.3rem); }
+    .geo-lead { font-size: 13.5px; line-height: 1.4; margin-top: 8px; }
+    .geo-lead h2 { font-size: 0.98rem; margin-top: 8px; }
     .lesson { margin-top: 12px; }
     .lesson-body { font-size: 14px; }
   }
@@ -217,6 +247,10 @@
 
   @media (max-width: 720px), (max-aspect-ratio: 5/6) {
     .label .sub, body.lesson-closed .label .sub { display: none; }
+    .geo-lead {
+      max-height: 26vh; overflow: auto; font-size: 13px; line-height: 1.4;
+      -webkit-overflow-scrolling: touch;
+    }
     .lesson { width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(35vh, 300px); }
     .lesson-head { padding: 8px 8px 8px 12px; }
     .lesson-tabs { display: flex; }
@@ -270,13 +304,25 @@
       <p class="tag">Physics lab · mechanics · oscillation + gravitation</p>
       <h1>Hooke&rsquo;s law <em>&amp;</em><br />orbital motion</h1>
       <p class="sub">Stretch the spring: it pulls back with F = −kx, and damping bleeds the energy away. Fling the planet: gravity bends it into an ellipse — Kepler&rsquo;s laws, live. Every number is computed, softly lit.</p>
+      <section class="geo-lead" aria-label="The idea, before the interactive">
+        <p>Hooke&rsquo;s law says the restoring force of a spring is F = −kx. The stretch x is how far the mass sits from its rest point, k is the stiffness, and the minus sign means the force points back toward rest. Gravity pulls a planet toward the sun with F = GMm/r², and a sideways speed turns that fall into an ellipse.</p>
+        <h2>In the world</h2>
+        <p>An automotive suspension engineer chooses the stiffness k so a car settles a comfortable amount under the passengers and still presses the tires back onto the road after a bump. A product engineer sets the stiffness of a bathroom or kitchen scale so a known stretch matches a known weight. A satellite engineer sets a satellite&rsquo;s height and speed together, because a larger orbit needs a longer period. GPS satellites orbit about 20,200 km above Earth and take about 12 hours to go around once.</p>
+        <h2>Common mistakes</h2>
+        <ul>
+          <li>The minus sign in F = −kx is a direction. It means the pull points back toward rest, not that the spring is weaker.</li>
+          <li>A heavier mass does not change k. The same spring stretches farther at rest, Δ = mg/k, and it swings with a longer period.</li>
+          <li>Speeding a planet up does not always make a bigger closed orbit. Past escape speed, the path does not come back.</li>
+          <li>Kepler&rsquo;s third law keeps T²/a³ the same for one sun. A longer period and a larger orbit change together, and the ratio does not.</li>
+        </ul>
+      </section>
       <section class="lesson" id="lesson" aria-label="Lesson: how it works">
         <header class="lesson-head">
           <div class="lesson-tabs" role="tablist" aria-label="Panel">
             <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
             <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
           </div>
-          <p class="lesson-kicker" id="ls-kicker">Lesson 1/7 · <b>Hooke&rsquo;s law</b></p>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/9 · <b>Hooke&rsquo;s law</b></p>
           <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
         </header>
         <div class="lesson-body" id="ls-body" aria-live="polite"></div>
@@ -1209,6 +1255,13 @@ const LS = [
     <p class="watch"><b>Watch</b>Switch Light ↔ Heavy. The dashed <i>x = 0 · equilibrium</i> mark moves down for the heavy mass.</p>
     <p class="live"><b>Now</b>Δ = mg/k = <span data-live="m">—</span> × 9.81 / 28 = <span data-live="delta">—</span></p>
     <div class="acts"><button type="button" data-act="preset" data-p="light">Light · 0.8 kg</button><button type="button" data-act="preset" data-p="heavy">Heavy · 2.4 kg</button></div>` },
+  { topic: 'In the world · springs', focus: 'spring', html: `
+    <h3>In the world</h3>
+    <p class="formula">F = −k · x</p>
+    <p>Car suspension springs follow this same law. An automotive suspension engineer chooses the stiffness k so the car settles a comfortable amount under the passengers and still presses the tires back onto the road after a bump. A spring that is too soft can bottom out, and one that is too stiff makes the ride harsh.</p>
+    <p>Many bathroom and kitchen scales measure weight with a spring, or with a small metal piece that bends like a very stiff spring. A product engineer sets that stiffness so a known stretch matches a known weight. If the stiffness is wrong, the scale shows the wrong number.</p>
+    <p class="watch"><b>Watch</b>Stretch the orange mass and read F. Stiffness and stretch are the two numbers those engineers design around.</p>
+    <p class="live"><b>Now</b>x = <span data-live="x">—</span> → F = −kx = <span data-live="F">—</span></p>` },
   { topic: 'Gravity & orbits', focus: 'orbit', html: `
     <h3>Gravity makes an orbit</h3>
     <p class="formula">F = G·M·m / r²</p>
@@ -1232,6 +1285,13 @@ const LS = [
     <p>The ratio depends only on the sun (GM), not on the planet or its shape. Both planets orbit the same sun, so both get the same T²/a³, even though one orbit is a circle and one is an ellipse.</p>
     <p class="watch"><b>Watch</b>Fling the pearl planet to a new orbit. a and T both change in the numbers, but T²/a³ stays the same.</p>
     <p class="live"><b>Now</b>pearl <span data-live="k3A">—</span> · lilac <span data-live="k3B">—</span> · 4π²/GM = <span data-live="k3th">—</span></p>` },
+  { topic: 'In the world · orbits', focus: 'orbit', html: `
+    <h3>In the world</h3>
+    <p class="formula">T² / a³ = 4π² / GM</p>
+    <p>GPS satellites orbit about 20,200 km above Earth and take about 12 hours to go around once. A satellite engineer sets that height and the matching speed together, because a larger orbit needs a longer period. Navigation on the ground depends on each satellite staying on that path.</p>
+    <p>Weather satellites use the same idea. A mission planner may place one about 36,000 km above the equator so one lap takes about a day and the satellite stays over the same region of Earth. Too little speed and the orbit dips closer in. Too much speed and the satellite climbs away from the path the mission needs.</p>
+    <p class="watch"><b>Watch</b>Fling the pearl planet faster or slower. Its distance and its lap time change together, just as they do for a satellite.</p>
+    <p class="live"><b>Now</b>r = <span data-live="r">—</span> · v = <span data-live="v">—</span></p>` },
   { topic: 'Try it · questions', focus: 'both', html: `
     <h3>Questions to try</h3>
     <p>Use the scene to test each idea. Then open the hint.</p>
