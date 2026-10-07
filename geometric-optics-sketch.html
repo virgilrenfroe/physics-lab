@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<title>Geometric optics · Physics Lab</title>
+<style>
+  :root {
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, sans-serif;
+    --font-mono: "Space Mono", ui-monospace, monospace;
+    --void: #140818;
+    --pearl: #efe6f2;
+    --mute: rgba(239, 230, 242, 0.55);
+    --faint: rgba(239, 230, 242, 0.3);
+    --accent: #ffb36b;
+    --honey: #f0c24b;
+    --lilac: #b9a2ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--void); color: var(--pearl);
+    font-family: var(--font-sans);
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  #stage canvas.can-grab { cursor: grab; }
+  #stage canvas.grabbing { cursor: grabbing; }
+  .vig {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(ellipse at 50% 58%, transparent 36%, rgba(5, 1, 8, 0.66) 100%),
+      linear-gradient(to top, rgba(255, 150, 80, 0.045), transparent 30%);
+  }
+  .tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .tags span {
+    position: absolute; left: 0; top: 0; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+    color: var(--pearl); background: rgba(20, 8, 24, 0.76);
+    border: 1px solid rgba(239, 230, 242, 0.14); border-radius: 8px;
+    padding: 3px 8px; will-change: transform;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+  }
+  .tags span.obj { border-color: rgba(255,179,107,0.55); color: #ffe2c4; }
+  .tags span.real { border-color: rgba(239,230,242,0.45); }
+  .tags span.virt { border-color: rgba(185,162,255,0.65); color: #ddd0ff; }
+  .tags span.f { border-color: rgba(255,179,107,0.4); color: #ffe2c4; }
+  .tags span.fp { border-color: rgba(185,162,255,0.55); color: #ddd0ff; }
+  .chrome {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  .label .tag {
+    margin: 0 0 8px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.8);
+  }
+  .label h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(1.9rem, 4.6vw, 3.6rem); letter-spacing: -0.045em; line-height: 0.94;
+    text-shadow: 0 2px 30px rgba(20, 8, 24, 0.7);
+  }
+  .label h1 em { font-style: normal; font-weight: 250; color: var(--mute); }
+  .label .sub {
+    margin: 10px 0 0; max-width: 42ch;
+    font-size: clamp(0.8rem, 1.2vw, 0.95rem); line-height: 1.4; color: var(--mute);
+  }
+  .foot {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .hint {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--mute); line-height: 1.7;
+  }
+  .hint i {
+    font-style: normal; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin: 0 5px 0 10px; vertical-align: 0;
+  }
+  .hint i:first-child { margin-left: 0; }
+  .chips { display: flex; gap: 8px; margin: 0 0 10px; pointer-events: auto; flex-wrap: wrap; }
+  .chips button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.18);
+    background: rgba(28, 12, 34, 0.72); color: var(--pearl);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    padding: 10px 14px; min-height: 42px; border-radius: 999px; cursor: pointer;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .chips button small { font-family: var(--font-mono); font-size: 10px; color: var(--mute); margin-left: 6px; }
+  .chips button[aria-pressed="true"] {
+    border-color: rgba(255, 179, 107, 0.7); background: rgba(255, 179, 107, 0.16); color: #ffe2c4;
+  }
+  .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chips button:active { transform: scale(0.98); }
+
+  .meters {
+    pointer-events: none; display: flex; flex-direction: column; gap: 6px;
+    min-width: min(340px, 48vw); padding: 12px 14px;
+    background: rgba(20, 8, 24, 0.76); border: 1px solid rgba(239,230,242,0.14);
+    border-radius: 14px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .meters h2 {
+    margin: 0; font-family: var(--font-mono); font-weight: 400;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,179,107,0.9);
+  }
+  .meters .note {
+    margin: 0 0 2px; font-size: 12.5px; line-height: 1.35; color: var(--mute);
+  }
+  .meter { display: grid; grid-template-columns: 52px 1fr 118px; gap: 8px; align-items: center; }
+  .meter.snell { display: none; }
+  body.show-surface .meter.snell { display: grid; }
+  .meter .lab { font-family: var(--font-mono); font-size: 11px; color: var(--mute); }
+  .meter .track {
+    height: 11px; border-radius: 7px; background: rgba(239,230,242,0.08);
+    overflow: hidden; position: relative;
+  }
+  .meter .fill {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+    border-radius: 7px;
+  }
+  .meter.bi .fill { left: 50%; }
+  .meter.bi .fill.neg { transform: translateX(-100%); }
+  .meter.m-do .fill { background: linear-gradient(90deg, #ff8a3a, #ffb36b); }
+  .meter.m-di .fill { background: linear-gradient(90deg, #cfc4d8, #efe6f2); }
+  .meter.m-f .fill { background: linear-gradient(90deg, #8a72e8, #b9a2ff); }
+  .meter.m-m .track { height: 15px; }
+  .meter.m-m .fill { background: linear-gradient(90deg, #e0a820, #f0c24b); }
+  .meter.m-th .fill { background: linear-gradient(90deg, #ff8a3a, #ffb36b); }
+  .meter.m-th2 .fill { background: linear-gradient(90deg, #b9a2ff, #efe6f2); }
+  .meter .val { font-family: var(--font-mono); font-size: 11px; text-align: right; color: var(--pearl); }
+  .meters .eq {
+    margin-top: 2px; font-family: var(--font-mono); font-size: 11.5px; color: var(--honey);
+    letter-spacing: 0.01em; line-height: 1.45;
+  }
+  .meters .flag {
+    min-height: 2.6em; font-size: 13px; line-height: 1.35; color: var(--pearl);
+  }
+
+  #err {
+    position: fixed; right: 14px; top: 18px; z-index: 6; max-width: 300px;
+    font-family: var(--font-mono); font-size: 10px; color: #ffd6d6;
+    background: rgba(58, 18, 18, 0.82); border-radius: 8px; padding: 8px 10px; display: none;
+  }
+
+  .lesson {
+    pointer-events: auto; margin-top: 14px; width: min(420px, 40vw); min-width: 300px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(26, 10, 32, 0.78); border: 1px solid rgba(239, 230, 242, 0.13);
+    border-radius: 18px; box-shadow: 0 18px 50px rgba(5, 1, 8, 0.5);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  body.has-lesson .label .sub { display: none; }
+  body.lesson-closed .label .sub { display: block; }
+  .lesson-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px;
+    border-bottom: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-kicker {
+    margin: 0; flex: 1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255, 179, 107, 0.86);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .lesson-kicker b { color: var(--pearl); font-weight: 400; }
+  .lesson button { font-family: var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .lesson button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lesson-toggle {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: transparent; color: var(--mute);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; min-height: 32px;
+  }
+  .lesson-tabs { display: none; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(239, 230, 242, 0.06); }
+  .lesson-tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--mute);
+    font-size: 12.5px; font-weight: 500; padding: 7px 13px; border-radius: 999px; min-height: 32px;
+  }
+  .lesson-tabs button[aria-selected="true"] { background: rgba(255, 179, 107, 0.16); color: #ffe2c4; }
+  .lesson-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 18px 6px;
+    font-size: 14.5px; line-height: 1.5; color: rgba(239, 230, 242, 0.9);
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .lesson-body h3 {
+    margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 21px;
+    letter-spacing: -0.025em; color: var(--pearl);
+  }
+  .lesson-body p { margin: 0 0 9px; }
+  .lesson-body .formula {
+    font-family: var(--font-mono); font-size: 13.5px; color: var(--accent); letter-spacing: 0.02em; margin-bottom: 10px;
+  }
+  .lesson-body .watch {
+    padding: 9px 11px; border-radius: 12px; background: rgba(255, 179, 107, 0.08);
+    border: 1px solid rgba(255, 179, 107, 0.22); color: #f6e7d8;
+  }
+  .lesson-body .watch b, .lesson-body .live b {
+    font-family: var(--font-mono); font-weight: 400; font-size: 9.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-right: 6px;
+  }
+  .lesson-body .live { font-family: var(--font-mono); font-size: 12px; color: var(--pearl); line-height: 1.45; }
+  .lesson-body .live span { color: var(--honey); }
+  .lesson-body .acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .lesson-body .acts button {
+    appearance: none; border: 1px solid rgba(255, 179, 107, 0.5); background: rgba(255, 179, 107, 0.12);
+    color: #ffe2c4; border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 500; min-height: 36px;
+  }
+  .lesson-body .acts button[aria-pressed="true"] { background: rgba(255, 179, 107, 0.28); border-color: rgba(255, 179, 107, 0.85); }
+  .lesson-body details { border-top: 1px solid rgba(239, 230, 242, 0.08); padding: 8px 0; }
+  .lesson-body summary { cursor: pointer; color: var(--pearl); list-style: none; }
+  .lesson-body summary::before { content: "+ "; font-family: var(--font-mono); color: var(--accent); }
+  .lesson-body details[open] summary::before { content: "− "; }
+  .lesson-body details p { margin: 6px 0 2px; color: var(--mute); font-size: 13.5px; }
+  .lesson-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px 12px; border-top: 1px solid rgba(239, 230, 242, 0.08);
+  }
+  .lesson-nav > button {
+    appearance: none; border: 1px solid rgba(239, 230, 242, 0.16); background: rgba(239, 230, 242, 0.04);
+    color: var(--pearl); border-radius: 999px; padding: 8px 14px; font-size: 13px; min-height: 38px;
+  }
+  .lesson-nav > button[disabled] { opacity: 0.35; cursor: default; }
+  .lesson-nav .dots { display: flex; flex-wrap: wrap; gap: 1px; justify-content: center; max-width: 196px; }
+  .lesson-nav .dots button {
+    appearance: none; border: 0; background: transparent; width: 16px; height: 28px; padding: 0;
+    display: grid; place-items: center;
+  }
+  .lesson-nav .dots button::after {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(239, 230, 242, 0.25);
+  }
+  .lesson-nav .dots button[aria-current="step"]::after { background: var(--accent); transform: scale(1.35); }
+  body.lesson-closed .lesson-body, body.lesson-closed .lesson-nav { display: none; }
+  body.lesson-closed .lesson { width: auto; min-width: 0; align-self: flex-start; display: inline-flex; }
+  body.lesson-closed .lesson-head { border-bottom: 0; }
+  @media (max-height: 820px) and (min-width: 721px) {
+    .label h1 { font-size: clamp(1.7rem, 3.6vw, 2.8rem); }
+    .lesson { margin-top: 10px; }
+    .lesson-body { font-size: 14px; }
+  }
+  @media (max-width: 720px), (max-aspect-ratio: 5/6) {
+    .label .sub, body.lesson-closed .label .sub { display: none; }
+    .lesson { width: auto; min-width: 0; max-width: 100%; margin-top: 0; max-height: min(38vh, 320px); }
+    .lesson-head { padding: 8px 8px 8px 12px; }
+    .lesson-tabs { display: flex; }
+    .lesson-toggle { display: none; }
+    .lesson-kicker { font-size: 9.5px; }
+    .lesson-body { padding: 10px 14px 4px; font-size: 13.5px; }
+    .lesson-body h3 { font-size: 18px; }
+    body.m-learn .meters, body.m-learn .hint { display: none; }
+    body.m-numbers .lesson-body, body.m-numbers .lesson-nav { display: none; }
+    body.m-numbers .lesson { max-height: none; }
+    .foot { flex-direction: column; align-items: stretch; gap: 10px; }
+    .meters { min-width: 0; width: 100%; }
+    .chips button { font-size: 12px; padding: 8px 12px; min-height: 38px; }
+    .hint .long { display: none; }
+    .tags span { font-size: 10px; padding: 2px 6px; }
+  }
+  html.embed, body.embed { background: transparent !important; }
+  body.embed .chrome, body.embed .vig, body.embed .tags, body.embed .lesson { display: none !important; }
+  body.embed canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.has('embed')) {
+    document.body.classList.add('embed');
+    document.documentElement.classList.add('embed');
+  }
+})();
+</script>
+  <div id="stage"></div>
+  <div class="vig" aria-hidden="true"></div>
+  <div class="tags" aria-hidden="true">
+    <span id="tag-obj" class="obj">object</span>
+    <span id="tag-img" class="real">image</span>
+    <span id="tag-f" class="f">F</span>
+    <span id="tag-fp" class="fp">F′</span>
+    <span id="tag-air">air</span>
+    <span id="tag-glass">glass</span>
+    <span id="tag-n">normal</span>
+  </div>
+  <div class="chrome">
+    <div class="label">
+      <p class="tag">Physics lab · geometric optics</p>
+      <h1>Geometric optics<br /><em>mirrors &amp; lenses</em></h1>
+      <p class="sub">An optical bench in the dark. Drag the object, follow the three principal rays, and read the image.</p>
+      <section class="lesson" id="lesson" aria-label="Lesson: reflection, refraction, and thin lenses">
+        <header class="lesson-head">
+          <div class="lesson-tabs" role="tablist" aria-label="Panel">
+            <button type="button" role="tab" data-mode="learn" aria-selected="true">Learn</button>
+            <button type="button" role="tab" data-mode="numbers" aria-selected="false">Numbers</button>
+          </div>
+          <p class="lesson-kicker" id="ls-kicker">Lesson 1/12 · <b>Meet the bench</b></p>
+          <button type="button" class="lesson-toggle" id="ls-toggle" aria-expanded="true" aria-controls="ls-body">Hide</button>
+        </header>
+        <div class="lesson-body" id="ls-body"></div>
+        <nav class="lesson-nav" aria-label="Lesson steps">
+          <button type="button" data-step="prev">← Back</button>
+          <div class="dots" id="ls-dots"></div>
+          <button type="button" data-step="next">Next →</button>
+        </nav>
+      </section>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="chips" id="chips" role="group" aria-label="Simulation controls">
+          <button type="button" data-act="cycle-type" id="type-chip">Change type <small id="type-now">converging lens</small></button>
+          <button type="button" data-act="double-f">Double f</button>
+          <button type="button" data-act="halve-f">Halve f</button>
+          <button type="button" data-act="flip-side">Flip side</button>
+          <button type="button" data-act="move-object">Move object</button>
+          <button type="button" data-act="reset">Reset</button>
+        </div>
+        <div class="hint">
+          <span><i style="background:#ffb36b"></i>parallel ray</span>
+          <span><i style="background:#efe6f2"></i>center ray</span>
+          <span><i style="background:#b9a2ff"></i>focal ray</span><br />
+          <span>drag the object along the bench</span>
+          <span class="long"> · drag empty space to lean the view</span>
+        </div>
+      </div>
+      <div class="meters" id="meters">
+        <h2 id="meter-title">Live · object, image, focus</h2>
+        <p class="note" id="meter-note">These readings are calculated from the object distance and the focal length right now.</p>
+        <div class="meter m-do"><span class="lab">d<sub>o</sub></span><div class="track"><div class="fill" id="bar-do"></div></div><span class="val" id="h-do">—</span></div>
+        <div class="meter bi m-di"><span class="lab">d<sub>i</sub></span><div class="track"><div class="fill" id="bar-di"></div></div><span class="val" id="h-di">—</span></div>
+        <div class="meter bi m-f"><span class="lab">f</span><div class="track"><div class="fill" id="bar-f"></div></div><span class="val" id="h-f">—</span></div>
+        <div class="meter bi m-m"><span class="lab">m</span><div class="track"><div class="fill" id="bar-m"></div></div><span class="val" id="h-m">—</span></div>
+        <div class="meter snell m-th"><span class="lab">θ₁</span><div class="track"><div class="fill" id="bar-th"></div></div><span class="val" id="h-th">—</span></div>
+        <div class="meter snell m-th2"><span class="lab">θ₂</span><div class="track"><div class="fill" id="bar-th2"></div></div><span class="val" id="h-th2">—</span></div>
+        <div class="eq" id="h-eq">1/f = 1/d_o + 1/d_i</div>
+        <div class="flag" id="h-flag"></div>
+      </div>
+    </div>
+  </div>
+  <div id="err" role="status"></div>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const VOID = 0x140818;
+const H_OBJ = 0.15;
+const LENS_H = 0.42;
+const BENCH_EDGE = 0.90;
+const FAR_DI = 1.05;
+const MIN_F = 0.10;
+const MAX_F = 0.40;
+const MIN_DO = 0.06;
+const MAX_DO = 0.86;
+const N_AIR = 1;
+const N_GLASS = 1.5;
+const TH_MIN = 6 * Math.PI / 180;
+const TH_MAX = 78 * Math.PI / 180;
+
+const TYPES = [
+  { id: 'converging', optic: 'lens', fSign: 1, name: 'converging lens' },
+  { id: 'diverging', optic: 'lens', fSign: -1, name: 'diverging lens' },
+  { id: 'concave', optic: 'mirror', fSign: 1, name: 'concave mirror' },
+  { id: 'convex', optic: 'mirror', fSign: -1, name: 'convex mirror' },
+];
+const MOVES = ['beyond', '2f', 'between', 'inside', 'atf'];
+
+const params = new URLSearchParams(location.search);
+const embed = params.has('embed');
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let still = reduced || params.has('still');
+
+const state = {
+  typeIndex: 0,
+  fAbs: 0.20,
+  do: 0.40,
+  side: 1,
+  view: 'bench',
+  theta: 32 * Math.PI / 180,
+  fromGlass: false,
+  showC: false,
+  moveCursor: 1,
+};
+
+const stage = document.getElementById('stage');
+const errEl = document.getElementById('err');
+function showErr(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+
+const ua = navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function clampF(v) { return clamp(v, MIN_F, MAX_F); }
+function clampDo(v) { return clamp(v, MIN_DO, MAX_DO); }
+function typeNow() { return TYPES[state.typeIndex]; }
+function signedF() { return state.fAbs * typeNow().fSign; }
+
+function fmtCm(meters) {
+  if (!Number.isFinite(meters)) return 'very far';
+  const cm = meters * 100;
+  const abs = Math.abs(cm);
+  const body = abs >= 10 ? abs.toFixed(1) : abs.toFixed(2);
+  return (cm < -0.05 ? '−' : '') + body + ' cm';
+}
+function fmtM(tr) {
+  if (!tr || tr.far || !Number.isFinite(tr.m)) return 'very large';
+  const sign = tr.m < -0.005 ? '−' : '+';
+  return sign + Math.abs(tr.m).toFixed(2);
+}
+function fmtDeg(rad) {
+  if (!Number.isFinite(rad)) return '—';
+  return (Math.abs(rad) * 180 / Math.PI).toFixed(1) + '°';
+}
+function fmtPower(fMeters) {
+  if (!Number.isFinite(fMeters) || Math.abs(fMeters) < 1e-6) return '—';
+  const p = 1 / fMeters;
+  return (p < 0 ? '−' : '') + Math.abs(p).toFixed(2) + ' D';
+}
+
+function solve(do_, f) {
+  const inv = 1 / f - 1 / do_;
+  if (!Number.isFinite(inv) || Math.abs(inv) < 1 / FAR_DI) {
+    const positive = inv > 1e-6;
+    const negative = inv < -1e-6;
+    return {
+      di: Math.abs(inv) < 1e-4 ? Infinity : 1 / inv,
+      m: Infinity,
+      atInfinity: Math.abs(inv) < 1e-4,
+      far: true,
+      real: positive,
+      upright: negative,
+    };
+  }
+  const di = 1 / inv;
+  const m = -di / do_;
+  return { di, m, atInfinity: false, far: false, real: di > 0, upright: m > 0 };
+}
+
+function focusPhrase(do_, fAbs) {
+  const ratio = do_ / fAbs;
+  if (Math.abs(ratio - 1) < 0.06) return 'at the focal point';
+  if (ratio < 1) return 'inside the focal length';
+  if (Math.abs(ratio - 2) < 0.1) return 'at twice the focal length';
+  if (ratio < 2) return 'between the focal point and twice the focal length';
+  return 'beyond twice the focal length';
+}
+function imageWord(tr) {
+  if (tr.atInfinity) return 'not formed on the bench, because the outgoing rays are parallel';
+  if (tr.far && tr.real) return 'a real image past the end of the bench';
+  if (tr.far) return 'a virtual, upright image past the end of the bench';
+  const kind = tr.real ? 'real' : 'virtual';
+  const ori = tr.upright ? 'upright' : 'inverted';
+  return 'a ' + kind + ', ' + ori + ' image';
+}
+function placePhrase(tr, optic) {
+  if (tr.atInfinity) return 'with the rays still parallel as they leave';
+  if (tr.far) return optic === 'lens'
+    ? (tr.real ? 'on the far side, past the bench' : 'on the object side, past the bench')
+    : (tr.real ? 'in front of the mirror, past the bench' : 'behind the mirror, past the bench');
+  if (optic === 'lens') return tr.real ? 'on the far side of the lens' : 'on the same side as the object';
+  return tr.real ? 'in front of the mirror' : 'behind the mirror';
+}
+function magWord(tr) {
+  if (tr.far || !Number.isFinite(tr.m)) return 'too large to fit on the bench';
+  const same = Math.abs(Math.abs(tr.m) - 1) < 0.06;
+  const size = same ? 'the same size as the object' : (Math.abs(tr.m) > 1 ? 'larger than the object' : 'smaller than the object');
+  return (tr.m < 0 ? 'inverted and ' : 'upright and ') + size;
+}
+
+function snellNow() {
+  const n1 = state.fromGlass ? N_GLASS : N_AIR;
+  const n2 = state.fromGlass ? N_AIR : N_GLASS;
+  const th = state.theta;
+  const s = n1 * Math.sin(th) / n2;
+  const tir = s >= 1 - 1e-8;
+  const th2 = tir ? null : Math.asin(clamp(s, 0, 1));
+  const left = n1 * Math.sin(th);
+  const right = tir ? null : n2 * Math.sin(th2);
+  return { n1, n2, th, th2, tir, left, right, crit: Math.asin(N_AIR / N_GLASS) };
+}
+
+try {
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, alpha: embed,
+  powerPreference: isIOS ? 'default' : 'high-performance',
+});
+if (!renderer.getContext()) throw new Error('WebGL context failed to create.');
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setClearColor(VOID, embed ? 0 : 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+stage.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+canvas.setAttribute('role', 'img');
+canvas.setAttribute('aria-label', 'Optical bench showing an object, a lens or mirror, and the rays that form the image');
+
+const scene = new THREE.Scene();
+if (!embed) {
+  scene.background = new THREE.Color(VOID);
+  scene.fog = new THREE.Fog(VOID, 6.5, 16);
+}
+const camera = new THREE.PerspectiveCamera(34, 1, 0.05, 40);
+const camBench = new THREE.Vector3(0.58, 0.78, 2.12);
+const camSurf = new THREE.Vector3(0.18, 0.48, 1.52);
+const lookBench = new THREE.Vector3(-0.02, -0.04, 0);
+const lookSurf = new THREE.Vector3(0.02, 0.0, 0);
+const camNarrow = new THREE.Vector3(0.16, 0.9, 4.5);
+const camNarrowSurf = new THREE.Vector3(0.08, 0.55, 2.7);
+const lookNarrow = new THREE.Vector3(0, 0.02, 0);
+const lookNarrowSurf = new THREE.Vector3(0.02, 0.0, 0);
+
+const disposables = [];
+const keep = (x) => { disposables.push(x); return x; };
+
+scene.add(new THREE.HemisphereLight(0xd4c4f0, 0x2a1020, 0.94));
+const key = new THREE.PointLight(0xffc090, 42, 16, 1.6);
+key.position.set(0.35, 1.65, 1.05);
+scene.add(key);
+
+const floorMat = keep(new THREE.MeshStandardMaterial({ color: 0x1a0c22, roughness: 0.95, metalness: 0 }));
+const floor = new THREE.Mesh(keep(new THREE.CircleGeometry(3.6, isMobile ? 40 : 56)), floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -0.08;
+scene.add(floor);
+
+{
+  const gridPos = [];
+  const gridMat = keep(new THREE.LineBasicMaterial({ color: 0xefe6f2, transparent: true, opacity: 0.07 }));
+  for (let i = -8; i <= 8; i++) {
+    const t = i * 0.14;
+    gridPos.push(-1.3, -0.075, t, 1.3, -0.075, t);
+    gridPos.push(t * 0.9, -0.075, -1.05, t * 0.9, -0.075, 1.05);
+  }
+  const g = keep(new THREE.BufferGeometry());
+  g.setAttribute('position', new THREE.Float32BufferAttribute(gridPos, 3));
+  scene.add(new THREE.LineSegments(g, gridMat));
+}
+
+const rig = new THREE.Group();
+scene.add(rig);
+
+const benchMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x241028, roughness: 0.72, metalness: 0.08,
+  emissive: 0x140810, emissiveIntensity: 0.35,
+}));
+const bench = new THREE.Mesh(keep(new THREE.BoxGeometry(1.92, 0.045, 0.26)), benchMat);
+bench.position.y = -0.022;
+rig.add(bench);
+
+const edgeMat = keep(new THREE.MeshStandardMaterial({
+  color: 0x6a4a78, roughness: 0.4, metalness: 0.2,
+  emissive: 0x2a1438, emissiveIntensity: 0.3,
+}));
+const lip = new THREE.Mesh(keep(new THREE.BoxGeometry(1.92, 0.012, 0.02)), edgeMat);
+lip.position.set(0, 0.004, 0.12);
+rig.add(lip);
+
+const axisMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xefe6f2, roughness: 0.45, metalness: 0.05,
+  emissive: 0x3a3048, emissiveIntensity: 0.4,
+}));
+const axis = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.006, 0.006, 1.8, 12)), axisMat);
+axis.rotation.z = Math.PI / 2;
+axis.position.y = 0.012;
+rig.add(axis);
+
+{
+  const tickMat = keep(new THREE.MeshStandardMaterial({ color: 0xb9a2ff, roughness: 0.5, metalness: 0.05, emissive: 0x2a1848, emissiveIntensity: 0.3 }));
+  const tickGeo = keep(new THREE.BoxGeometry(0.008, 0.02, 0.02));
+  for (let x = -0.8; x <= 0.8 + 1e-6; x += 0.1) {
+    if (Math.abs(x) < 0.04) continue;
+    const t = new THREE.Mesh(tickGeo, tickMat);
+    t.position.set(x, 0.012, 0.09);
+    rig.add(t);
+  }
+}
+
+function profileShape(samples) {
+  const shape = new THREE.Shape();
+  shape.moveTo(samples[0].x, samples[0].y);
+  for (let i = 1; i < samples.length; i++) shape.lineTo(samples[i].x, samples[i].y);
+  shape.closePath();
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false, curveSegments: 1 });
+  geo.translate(0, 0, -0.03);
+  geo.computeVertexNormals();
+  return keep(geo);
+}
+function lensSamples(converging) {
+  const N = isMobile ? 20 : 28;
+  const right = [];
+  for (let i = 0; i <= N; i++) {
+    const y = -LENS_H + (2 * LENS_H * i) / N;
+    const u = y / LENS_H;
+    const belly = 1 - u * u;
+    const half = converging ? (0.012 + 0.034 * belly) : (0.012 + 0.034 * u * u);
+    right.push({ x: half, y });
+  }
+  const pts = right.slice();
+  for (let i = right.length - 1; i >= 0; i--) pts.push({ x: -right[i].x, y: right[i].y });
+  return pts;
+}
+function mirrorSamples(concave) {
+  const N = isMobile ? 22 : 32;
+  const sag = 0.055;
+  const front = [];
+  for (let i = 0; i <= N; i++) {
+    const y = -LENS_H + (2 * LENS_H * i) / N;
+    const u = y / LENS_H;
+    const x = concave ? -sag * u * u : sag * u * u;
+    front.push({ x, y });
+  }
+  const pts = front.slice();
+  for (let i = front.length - 1; i >= 0; i--) pts.push({ x: front[i].x + 0.028, y: front[i].y });
+  return pts;
+}
+
+const geoConv = profileShape(lensSamples(true));
+const geoDiv = profileShape(lensSamples(false));
+const geoConcave = profileShape(mirrorSamples(true));
+const geoConvex = profileShape(mirrorSamples(false));
+
+const glassMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xcbbdff, roughness: 0.16, metalness: 0.06,
+  emissive: 0x2a1848, emissiveIntensity: 0.42,
+  transparent: true, opacity: 0.62, side: THREE.DoubleSide,
+}));
+const metalMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xe7d2b4, roughness: 0.22, metalness: 0.84,
+  emissive: 0x4a2c18, emissiveIntensity: 0.28, side: THREE.DoubleSide,
+}));
+const opticMesh = new THREE.Mesh(geoConv, glassMat);
+opticMesh.position.y = 0;
+rig.add(opticMesh);
+
+function makeArrow(color, emissive) {
+  const mat = keep(new THREE.MeshStandardMaterial({
+    color, emissive, emissiveIntensity: 0.4, roughness: 0.42, metalness: 0.08, side: THREE.DoubleSide,
+  }));
+  const g = new THREE.Group();
+  const shaft = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.012, 0.012, H_OBJ * 0.72, isMobile ? 12 : 16)), mat);
+  shaft.position.y = H_OBJ * 0.36;
+  const head = new THREE.Mesh(keep(new THREE.ConeGeometry(0.032, H_OBJ * 0.28, isMobile ? 12 : 16)), mat);
+  head.position.y = H_OBJ * 0.86;
+  const foot = new THREE.Mesh(keep(new THREE.SphereGeometry(0.02, 14, 10)), mat);
+  foot.position.y = 0.012;
+  g.add(shaft, head, foot);
+  return { group: g, mat };
+}
+const objectArrow = makeArrow(0xffb36b, 0x8a3a10);
+const imageArrow = makeArrow(0xefe6f2, 0x4a3a58);
+rig.add(objectArrow.group);
+rig.add(imageArrow.group);
+
+const grabMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, transparent: true, opacity: 0, depthWrite: false,
+}));
+const grab = new THREE.Mesh(keep(new THREE.BoxGeometry(0.18, 0.46, 0.22)), grabMat);
+grab.position.y = H_OBJ * 0.5;
+objectArrow.group.add(grab);
+
+const screenMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xefe6f2, roughness: 0.55, metalness: 0.04,
+  emissive: 0x2a2038, emissiveIntensity: 0.25,
+  transparent: true, opacity: 0.16, side: THREE.DoubleSide,
+}));
+const screen = new THREE.Mesh(keep(new THREE.PlaneGeometry(0.012, 0.56)), screenMat);
+screen.rotation.y = Math.PI / 2;
+rig.add(screen);
+
+function makeMark(color, emissive) {
+  const mat = keep(new THREE.MeshStandardMaterial({
+    color, emissive, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.1,
+  }));
+  const m = new THREE.Mesh(keep(new THREE.SphereGeometry(0.02, 16, 12)), mat);
+  m.visible = false;
+  rig.add(m);
+  return m;
+}
+const markF = makeMark(0xffb36b, 0x8a3a10);
+const markFp = makeMark(0xb9a2ff, 0x3a2070);
+
+const RAY_COLORS = [0xffb36b, 0xefe6f2, 0xb9a2ff, 0xf0c24b];
+const RAY_EMISSIVE = [0x8a3a10, 0x4a3a58, 0x3a2070, 0x6a4a10];
+const rayGroup = new THREE.Group();
+rayGroup.position.z = 0.045;
+rig.add(rayGroup);
+const solidLines = [];
+const dashLines = [];
+const heads = [];
+const coneGeo = keep(new THREE.ConeGeometry(0.02, 0.055, 12));
+function makeDynLine(material, maxPts) {
+  const geo = keep(new THREE.BufferGeometry());
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(maxPts * 3), 3));
+  geo.setDrawRange(0, 0);
+  const line = new THREE.Line(geo, material);
+  line.frustumCulled = false;
+  line.visible = false;
+  rayGroup.add(line);
+  return line;
+}
+for (let i = 0; i < 4; i++) {
+  const lineMat = keep(new THREE.LineBasicMaterial({ color: RAY_COLORS[i], transparent: true, opacity: 0.95 }));
+  const dashMat = keep(new THREE.LineDashedMaterial({
+    color: i === 1 ? 0xcbbdff : RAY_COLORS[i],
+    transparent: true, opacity: 0.75,
+    dashSize: 0.028, gapSize: 0.018, scale: 1,
+  }));
+  const headMat = keep(new THREE.MeshStandardMaterial({
+    color: RAY_COLORS[i], emissive: RAY_EMISSIVE[i], emissiveIntensity: 0.55,
+    roughness: 0.4, metalness: 0.08,
+  }));
+  solidLines.push(makeDynLine(lineMat, 6));
+  dashLines.push(makeDynLine(dashMat, 4));
+  const head = new THREE.Mesh(coneGeo, headMat);
+  head.visible = false;
+  rayGroup.add(head);
+  heads.push(head);
+}
+
+const surfaceRig = new THREE.Group();
+surfaceRig.visible = false;
+scene.add(surfaceRig);
+const blockMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xcbb6ef, roughness: 0.12, metalness: 0.04,
+  emissive: 0x2a1848, emissiveIntensity: 0.35,
+  transparent: true, opacity: 0.45, side: THREE.DoubleSide,
+}));
+const block = new THREE.Mesh(keep(new THREE.BoxGeometry(0.42, 0.84, 0.1)), blockMat);
+block.position.set(0.21, 0, 0);
+surfaceRig.add(block);
+const faceMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xefe6f2, roughness: 0.35, metalness: 0.08,
+  emissive: 0x3a3048, emissiveIntensity: 0.4,
+}));
+const face = new THREE.Mesh(keep(new THREE.BoxGeometry(0.012, 0.86, 0.12)), faceMat);
+face.position.set(0, 0, 0);
+surfaceRig.add(face);
+const snellLines = [];
+const snellArcs = [];
+const snellCols = [0xffb36b, 0xefe6f2, 0xb9a2ff];
+for (let i = 0; i < 2; i++) {
+  const mat = keep(new THREE.LineBasicMaterial({ color: i === 0 ? 0xffb36b : 0xb9a2ff, transparent: true, opacity: 0.9 }));
+  const geo = keep(new THREE.BufferGeometry());
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(16 * 3), 3));
+  const line = new THREE.Line(geo, mat);
+  line.frustumCulled = false;
+  line.position.z = 0.08;
+  line.visible = false;
+  surfaceRig.add(line);
+  snellArcs.push(line);
+}
+for (let i = 0; i < 3; i++) {
+  const mat = keep(new THREE.LineBasicMaterial({ color: snellCols[i], transparent: true, opacity: 0.95 }));
+  const geo = keep(new THREE.BufferGeometry());
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+  const line = new THREE.Line(geo, mat);
+  line.frustumCulled = false;
+  line.position.z = 0.07;
+  surfaceRig.add(line);
+  snellLines.push(line);
+}
+const normalMat = keep(new THREE.LineBasicMaterial({ color: 0xefe6f2, transparent: true, opacity: 0.35 }));
+const normalGeo = keep(new THREE.BufferGeometry());
+normalGeo.setAttribute('position', new THREE.Float32BufferAttribute([-0.34, 0, 0.06, 0.34, 0, 0.06], 3));
+surfaceRig.add(new THREE.Line(normalGeo, normalMat));
+const handleMat = keep(new THREE.MeshStandardMaterial({
+  color: 0xffb36b, emissive: 0x8a3a10, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.08,
+}));
+const handle = new THREE.Mesh(keep(new THREE.SphereGeometry(0.045, 18, 14)), handleMat);
+surfaceRig.add(handle);
+
+const UP = new THREE.Vector3(0, 1, 0);
+const DIR = new THREE.Vector3();
+let latest = null;
+let flagText = '';
+let flagHold = 0;
+let lift = 0;
+let liftGoal = 0;
+let camBlend = 0;
+let dragging = null;
+
+function setPolyline(line, pts) {
+  const attr = line.geometry.attributes.position;
+  const arr = attr.array;
+  const n = Math.min(pts.length, arr.length / 3);
+  if (n < 2) {
+    line.visible = false;
+    line.geometry.setDrawRange(0, 0);
+    return;
+  }
+  for (let i = 0; i < n; i++) {
+    arr[i * 3] = pts[i].x;
+    arr[i * 3 + 1] = pts[i].y;
+    arr[i * 3 + 2] = 0;
+  }
+  const lx = arr[(n - 1) * 3];
+  const ly = arr[(n - 1) * 3 + 1];
+  for (let i = n; i < arr.length / 3; i++) {
+    arr[i * 3] = lx;
+    arr[i * 3 + 1] = ly;
+    arr[i * 3 + 2] = 0;
+  }
+  attr.needsUpdate = true;
+  line.geometry.setDrawRange(0, n);
+  line.geometry.computeBoundingSphere();
+  line.computeLineDistances();
+  line.visible = true;
+}
+function placeHead(mesh, pts) {
+  let a = null;
+  let b = null;
+  for (let i = pts.length - 1; i > 0; i--) {
+    if (Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y) > 0.05) {
+      a = pts[i - 1];
+      b = pts[i];
+      break;
+    }
+  }
+  if (!a) { mesh.visible = false; return; }
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  mesh.visible = true;
+  mesh.position.set(a.x + dx * 0.62, a.y + dy * 0.62, 0.02);
+  DIR.set(dx / len, dy / len, 0);
+  if (DIR.y < -0.999) mesh.quaternion.set(1, 0, 0, 0);
+  else mesh.quaternion.setFromUnitVectors(UP, DIR);
+}
+function norm2(x, y) {
+  const l = Math.hypot(x, y) || 1;
+  return { x: x / l, y: y / l };
+}
+function lineErr(origin, dir, image) {
+  const t = (image.x - origin.x) * dir.x + (image.y - origin.y) * dir.y;
+  const cx = origin.x + t * dir.x;
+  const cy = origin.y + t * dir.y;
+  return { t, err: Math.hypot(cx - image.x, cy - image.y), closest: { x: cx, y: cy } };
+}
+function toEdge(origin, dir) {
+  const edgeX = dir.x >= 0 ? BENCH_EDGE : -BENCH_EDGE;
+  if (Math.abs(dir.x) < 1e-5) return { x: origin.x, y: origin.y };
+  const t = (edgeX - origin.x) / dir.x;
+  return { x: origin.x + t * dir.x, y: origin.y + t * dir.y };
+}
+
+function traceBench() {
+  const typ = typeNow();
+  const f = signedF();
+  const d = state.do;
+  const h = H_OBJ;
+  const img = solve(d, f);
+  const xObj = -d;
+  const xImg = typ.optic === 'lens' ? img.di : -img.di;
+  const yImg = img.far ? 0 : img.m * h;
+  const shortened = !img.far && Math.abs(yImg) > 0.48;
+  const image = img.far ? null : { x: xImg, y: yImg };
+  const rays = [null, null, null, null];
+  let rayError = 0;
+  let rayCount = 0;
+
+  function commit(index, start, hit, dir, forwardSign) {
+    if (!dir || dir.x * forwardSign <= 0.02) return;
+    const solid = [start, hit];
+    const dash = [];
+    let err = null;
+    if (!image) {
+      const end = toEdge(hit, dir);
+      if (Math.hypot(end.x - hit.x, end.y - hit.y) > 0.04) solid.push(end);
+    } else {
+      const hitLine = lineErr(hit, dir, image);
+      err = hitLine.err;
+      if (hitLine.t > 0.025 && hitLine.err < 0.04) solid.push(hitLine.closest);
+      else if (hitLine.t > 0.025) solid.push(toEdge(hit, dir));
+      else {
+        const end = toEdge(hit, dir);
+        if (Math.hypot(end.x - hit.x, end.y - hit.y) > 0.04) solid.push(end);
+        dash.push(hit, { x: image.x, y: image.y });
+      }
+    }
+    rays[index] = { solid, dash };
+    if (err != null) {
+      rayError = Math.max(rayError, err);
+      rayCount++;
+    }
+  }
+
+  const tip = { x: xObj, y: h };
+  const yFocal = h * f / (f - d);
+  const focalSane = Number.isFinite(yFocal) && Math.abs(yFocal) < 1.4;
+
+  if (typ.optic === 'lens') {
+    const parallelDir = norm2(Math.abs(f), -h * Math.sign(f));
+    commit(0, tip, { x: 0, y: h }, parallelDir, 1);
+    commit(1, tip, { x: 0, y: 0 }, norm2(d, -h), 1);
+    if (focalSane) commit(2, tip, { x: 0, y: yFocal }, norm2(1, 0), 1);
+  } else {
+    const v = { x: -f, y: -h };
+    const parallelDir = v.x > 0 ? norm2(-v.x, -v.y) : norm2(v.x, v.y);
+    commit(0, tip, { x: 0, y: h }, parallelDir, -1);
+    commit(1, tip, { x: 0, y: 0 }, norm2(-d, -h), -1);
+    if (focalSane) commit(2, tip, { x: 0, y: yFocal }, norm2(-1, 0), -1);
+    if (state.showC) {
+      const cRay = curvatureRay(tip, f, d, h);
+      if (cRay) commit(3, cRay.start, cRay.hit, cRay.dir, -1);
+    }
+  }
+
+  return {
+    ...img,
+    f, d, h, xObj, xImg, yImg, shortened,
+    optic: typ.optic,
+    kind: typ.id,
+    name: typ.name,
+    rays,
+    rayError: rayCount ? rayError : (img.far ? null : null),
+    rayCount,
+  };
+}
+
+function curvatureRay(tip, f, d, h) {
+  if (Math.abs(d - 2 * f) < 0.012) return null;
+  const Cx = -2 * f;
+  const dx = Cx - tip.x;
+  const dy = 0 - h;
+  if (Math.abs(dx) < 1e-4) return null;
+  const t = (0 - tip.x) / dx;
+  const yHit = h + t * dy;
+  if (!Number.isFinite(yHit) || Math.abs(yHit) > LENS_H + 0.02) return null;
+  const dirIn = norm2(-tip.x, yHit - h);
+  const dir = norm2(-dirIn.x, -dirIn.y);
+  if (dir.x >= -0.02) return null;
+  return { start: tip, hit: { x: 0, y: yHit }, dir };
+}
+
+function applyBench(tr) {
+  const typ = typeNow();
+  rig.visible = state.view === 'bench';
+  surfaceRig.visible = state.view === 'surface';
+  document.body.classList.toggle('show-surface', state.view === 'surface');
+  rig.rotation.y = state.side === 1 ? 0 : Math.PI;
+
+  const converging = typ.id === 'converging';
+  const concave = typ.id === 'concave';
+  opticMesh.geometry = typ.optic === 'lens' ? (converging ? geoConv : geoDiv) : (concave ? geoConcave : geoConvex);
+  opticMesh.material = typ.optic === 'lens' ? glassMat : metalMat;
+
+  objectArrow.group.position.set(tr.xObj, lift, 0);
+  objectArrow.group.scale.set(1, 1, 1);
+  objectArrow.group.rotation.z = 0;
+
+  const showImg = state.view === 'bench' && !tr.far && Number.isFinite(tr.xImg) && Math.abs(tr.xImg) <= BENCH_EDGE + 0.02;
+  const coincide = showImg && Math.abs(tr.xImg - tr.xObj) < 0.08;
+  imageArrow.group.visible = showImg;
+  if (showImg) {
+    const sc = Math.min(Math.abs(tr.m), 0.48 / H_OBJ);
+    imageArrow.group.position.set(tr.xImg, 0, coincide ? 0.22 : 0.04);
+    imageArrow.group.scale.set(1, sc, 1);
+    imageArrow.group.rotation.z = tr.upright ? 0 : Math.PI;
+    imageArrow.mat.color.setHex(tr.real ? 0xefe6f2 : 0xb9a2ff);
+    imageArrow.mat.emissive.setHex(tr.real ? 0x4a3a58 : 0x3a2070);
+    imageArrow.mat.opacity = tr.real ? 1 : 0.82;
+    imageArrow.mat.transparent = true;
+  }
+
+  const showScreen = showImg && tr.real && !coincide;
+  screen.visible = showScreen;
+  if (showScreen) {
+    const fullH = clamp(Math.abs(tr.yImg) * 2 + 0.16, 0.28, 0.9);
+    screen.position.set(tr.xImg, 0, -0.02);
+    screen.scale.set(1, fullH / 0.56, 1);
+  }
+
+  const f = tr.f;
+  let xF = 0;
+  let xFp = 0;
+  let labelFp = 'F′';
+  if (typ.optic === 'lens') {
+    xF = -f;
+    xFp = f;
+    labelFp = 'F′';
+  } else {
+    xF = -f;
+    xFp = -2 * f;
+    labelFp = 'C';
+  }
+  placeMark(markF, xF);
+  placeMark(markFp, xFp);
+  markF.userData.label = 'F';
+  markFp.userData.label = labelFp;
+
+  for (let i = 0; i < 4; i++) {
+    const ray = tr.rays[i];
+    if (!ray || state.view !== 'bench') {
+      solidLines[i].visible = false;
+      dashLines[i].visible = false;
+      heads[i].visible = false;
+      continue;
+    }
+    setPolyline(solidLines[i], ray.solid);
+    setPolyline(dashLines[i], ray.dash);
+    placeHead(heads[i], ray.solid);
+  }
+}
+
+function placeMark(mesh, x) {
+  const on = state.view === 'bench' && Number.isFinite(x) && Math.abs(x) <= BENCH_EDGE && Math.abs(x) > 0.03;
+  mesh.visible = on;
+  if (on) mesh.position.set(x, 0.02, 0.03);
+}
+
+function applySnell(sn) {
+  const up = 1;
+  let start;
+  let refl;
+  let refr = null;
+  if (!state.fromGlass) {
+    start = { x: -Math.cos(sn.th) * 0.62, y: up * Math.sin(sn.th) * 0.62 };
+    refl = { x: -Math.cos(sn.th) * 0.58, y: -up * Math.sin(sn.th) * 0.58 };
+    if (!sn.tir) refr = { x: Math.cos(sn.th2) * 0.36, y: -up * Math.sin(sn.th2) * 0.36 };
+  } else {
+    start = { x: Math.cos(sn.th) * 0.36, y: up * Math.sin(sn.th) * 0.36 };
+    refl = { x: Math.cos(sn.th) * 0.34, y: -up * Math.sin(sn.th) * 0.34 };
+    if (!sn.tir) refr = { x: -Math.cos(sn.th2) * 0.55, y: -up * Math.sin(sn.th2) * 0.55 };
+  }
+  setRawLine(snellLines[0], start, { x: 0, y: 0 });
+  setRawLine(snellLines[1], { x: 0, y: 0 }, refl);
+  if (refr) setRawLine(snellLines[2], { x: 0, y: 0 }, refr);
+  else snellLines[2].visible = false;
+  const inSide = state.fromGlass ? 1 : -1;
+  const outSide = -inSide;
+  setArc(snellArcs[0], inSide, sn.th, 0.16, 1);
+  if (!sn.tir && sn.th2 != null) setArc(snellArcs[1], outSide, sn.th2, 0.22, -1);
+  else snellArcs[1].visible = false;
+  handle.position.set(start.x, start.y, 0.08);
+  handle.userData.point = start;
+}
+
+function setArc(line, sideSign, theta, radius, ySign) {
+  const arr = line.geometry.attributes.position.array;
+  const n = 13;
+  for (let i = 0; i < n; i++) {
+    const a = theta * (i / (n - 1));
+    arr[i * 3] = sideSign * Math.cos(a) * radius;
+    arr[i * 3 + 1] = ySign * Math.sin(a) * radius;
+    arr[i * 3 + 2] = 0;
+  }
+  for (let i = n; i < arr.length / 3; i++) {
+    arr[i * 3] = arr[(n - 1) * 3];
+    arr[i * 3 + 1] = arr[(n - 1) * 3 + 1];
+    arr[i * 3 + 2] = 0;
+  }
+  line.geometry.attributes.position.needsUpdate = true;
+  line.geometry.setDrawRange(0, n);
+  line.geometry.computeBoundingSphere();
+  line.visible = theta > 0.05;
+}
+function setRawLine(line, a, b) {
+  const arr = line.geometry.attributes.position.array;
+  arr[0] = a.x; arr[1] = a.y; arr[2] = 0;
+  arr[3] = b.x; arr[4] = b.y; arr[5] = 0;
+  line.geometry.attributes.position.needsUpdate = true;
+  line.geometry.setDrawRange(0, 2);
+  line.geometry.computeBoundingSphere();
+  line.visible = true;
+}
+
+function describe(tr, sn) {
+  if (state.view === 'surface') {
+    if (sn.tir) return 'The ray is steep enough that it reflects completely inside the glass. There is no refracted ray in the air.';
+    if (!state.fromGlass) return 'The ray bends toward the normal as it enters the glass, because glass is optically denser than air.';
+    return 'The ray bends away from the normal as it leaves the glass and enters the air.';
+  }
+  if (tr.atInfinity) return 'The object is at the focal point, so the outgoing rays are parallel and the image is not on the bench.';
+  let s = 'This is ' + imageWord(tr) + ', ' + placePhrase(tr, tr.optic) + '. The image is ' + magWord(tr) + '.';
+  if (!tr.far && Math.abs(tr.xImg - tr.xObj) < 0.08) s += ' It sits at the same place along the bench as the object, so the inverted arrow is drawn just in front, where you can see it.';
+  if (tr.shortened) s += ' The arrow is shortened so it stays in view. The magnification meter shows the true size.';
+  return s;
+}
+
+function rebuildOptics() {
+  latest = traceBench();
+  const sn = snellNow();
+  latest.snell = sn;
+  applyBench(latest);
+  applySnell(sn);
+  return latest;
+}
+
+function flag(s, t = 2.8) { flagText = s; flagHold = t; }
+
+function setBarUni(el, t) {
+  el.style.width = `${clamp(t, 0, 1) * 100}%`;
+  el.classList.remove('neg');
+}
+function setBarBi(el, value, full) {
+  if (!Number.isFinite(value)) {
+    el.style.width = '0%';
+    el.classList.remove('neg');
+    return;
+  }
+  const mag = Math.min(1, Math.abs(value) / full);
+  el.style.width = `${mag * 50}%`;
+  el.classList.toggle('neg', value < -1e-8);
+}
+
+function updateHud() {
+  const tr = latest || traceBench();
+  const sn = tr.snell || snellNow();
+  document.getElementById('h-do').textContent = fmtCm(tr.d);
+  document.getElementById('h-di').textContent = tr.far ? (tr.atInfinity ? 'very far' : (tr.real ? 'past the bench' : 'virtual, past bench')) : fmtCm(tr.di);
+  document.getElementById('h-f').textContent = fmtCm(tr.f);
+  document.getElementById('h-m').textContent = fmtM(tr);
+  document.getElementById('h-th').textContent = fmtDeg(sn.th);
+  document.getElementById('h-th2').textContent = sn.tir ? 'none' : fmtDeg(sn.th2);
+  const title = document.getElementById('meter-title');
+  const note = document.getElementById('meter-note');
+  if (state.view === 'surface') {
+    title.textContent = 'Live · Snell and the bench';
+    note.textContent = 'The glass surface is up. Object distance, image distance, focal length, and magnification still describe the lens or mirror.';
+    const a = sn.n1.toFixed(2) + ' sin ' + fmtDeg(sn.th);
+    const b = sn.tir ? 'no refracted ray' : (sn.n2.toFixed(2) + ' sin ' + fmtDeg(sn.th2));
+    document.getElementById('h-eq').textContent = 'n₁ sin θ₁ = n₂ sin θ₂ · ' + a + ' = ' + (sn.tir ? '—' : sn.right.toFixed(3));
+    if (!sn.tir) document.getElementById('h-eq').textContent = 'n₁ sin θ₁ = n₂ sin θ₂ · ' + sn.left.toFixed(3) + ' = ' + sn.right.toFixed(3);
+  } else {
+    title.textContent = 'Live · object, image, focus';
+    note.textContent = 'These readings are calculated from the object distance and the focal length right now.';
+    if (tr.far) document.getElementById('h-eq').textContent = '1/f = 1/d_o + 1/d_i · the image is past this bench';
+    else document.getElementById('h-eq').textContent = '1/f = 1/d_o + 1/d_i · ' + fmtCm(tr.f) + ', ' + fmtCm(tr.d) + ', ' + fmtCm(tr.di);
+  }
+  const flagEl = document.getElementById('h-flag');
+  flagEl.textContent = flagHold > 0 ? flagText : describe(tr, sn);
+  setBarUni(document.getElementById('bar-do'), tr.d / MAX_DO);
+  setBarBi(document.getElementById('bar-di'), tr.far ? 0 : tr.di, 0.9);
+  setBarBi(document.getElementById('bar-f'), tr.f, MAX_F);
+  setBarBi(document.getElementById('bar-m'), tr.far ? 0 : tr.m, 3);
+  setBarUni(document.getElementById('bar-th'), sn.th / TH_MAX);
+  setBarUni(document.getElementById('bar-th2'), sn.th2 == null ? 0 : sn.th2 / TH_MAX);
+  const typeNowEl = document.getElementById('type-now');
+  if (typeNowEl) typeNowEl.textContent = tr.name;
+}
+
+const tagObj = document.getElementById('tag-obj');
+const tagImg = document.getElementById('tag-img');
+const tagF = document.getElementById('tag-f');
+const tagFp = document.getElementById('tag-fp');
+const tagAir = document.getElementById('tag-air');
+const tagGlass = document.getElementById('tag-glass');
+const tagN = document.getElementById('tag-n');
+const _pr = new THREE.Vector3();
+const _wp = new THREE.Vector3();
+function projectTag(el, obj, x, y, z) {
+  if (!obj) _wp.set(x, y, z);
+  else obj.localToWorld(_wp.set(x, y, z));
+  _pr.copy(_wp).project(camera);
+  if (_pr.z > 1) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const rect = canvas.getBoundingClientRect();
+  const px = (_pr.x * 0.5 + 0.5) * rect.width + rect.left;
+  const py = (-_pr.y * 0.5 + 0.5) * rect.height + rect.top;
+  el.style.transform = `translate(${px}px, ${py}px) translate(-50%, -130%)`;
+}
+function hideTag(el) { el.style.display = 'none'; }
+function syncTags() {
+  if (embed || !latest) return;
+  const tr = latest;
+  if (state.view !== 'bench') {
+    hideTag(tagObj); hideTag(tagImg); hideTag(tagF); hideTag(tagFp);
+    projectTag(tagAir, surfaceRig, -0.28, 0.22, 0);
+    tagAir.textContent = state.fromGlass ? 'glass side' : 'air';
+    projectTag(tagGlass, surfaceRig, 0.24, 0.22, 0);
+    tagGlass.textContent = state.fromGlass ? 'air' : 'glass';
+    projectTag(tagN, surfaceRig, 0.18, -0.02, 0);
+    tagN.textContent = 'normal';
+    return;
+  }
+  hideTag(tagAir); hideTag(tagGlass); hideTag(tagN);
+  projectTag(tagObj, rig, tr.xObj, H_OBJ + lift + 0.02, 0);
+  tagObj.textContent = 'object';
+  if (imageArrow.group.visible) {
+    const tip = tr.upright ? Math.min(Math.abs(tr.yImg), 0.48) : -Math.min(Math.abs(tr.yImg), 0.48);
+    projectTag(tagImg, rig, tr.xImg, tip, 0.02);
+    tagImg.textContent = tr.real ? 'real image' : 'virtual image';
+    tagImg.classList.toggle('virt', !tr.real);
+    tagImg.classList.toggle('real', tr.real);
+  } else hideTag(tagImg);
+  if (markF.visible) {
+    projectTag(tagF, rig, markF.position.x, 0.08, 0.03);
+    tagF.textContent = 'F';
+  } else hideTag(tagF);
+  if (markFp.visible) {
+    projectTag(tagFp, rig, markFp.position.x, 0.08, 0.03);
+    tagFp.textContent = markFp.userData.label || 'F′';
+  } else hideTag(tagFp);
+}
+
+function doSetType(id) {
+  const i = TYPES.findIndex((t) => t.id === id);
+  if (i < 0) return false;
+  state.typeIndex = i;
+  flag('This is a ' + TYPES[i].name + '. The focal length is ' + fmtCm(signedF()) + '.');
+  return true;
+}
+function doCycleType() {
+  state.typeIndex = (state.typeIndex + 1) % TYPES.length;
+  flag('This is a ' + typeNow().name + '. The focal length is ' + fmtCm(signedF()) + '.');
+}
+function doDoubleF() {
+  const next = clampF(state.fAbs * 2);
+  if (Math.abs(next - state.fAbs) < 1e-6) {
+    flag('The focal length is already as long as this bench can show.');
+    return;
+  }
+  const exact = Math.abs(next - state.fAbs * 2) < 1e-6;
+  state.fAbs = next;
+  flag(exact
+    ? 'The focal length is doubled. The object stays where it was, so the image moves.'
+    : 'The focal length is as long as this bench can show. The object stays where it was.');
+}
+function doHalveF() {
+  const next = clampF(state.fAbs * 0.5);
+  if (Math.abs(next - state.fAbs) < 1e-6) {
+    flag('The focal length is already as short as this bench can show.');
+    return;
+  }
+  const exact = Math.abs(next - state.fAbs * 0.5) < 1e-6;
+  state.fAbs = next;
+  flag(exact
+    ? 'The focal length is halved. A shorter focal length bends the rays more.'
+    : 'The focal length is as short as this bench can show.');
+}
+function doFlipSide() {
+  state.side = state.side === 1 ? -1 : 1;
+  flag(state.side === 1
+    ? 'The object is on the left again. A lens follows the same rule from either side, and a mirror turns so the reflecting face still points at the object.'
+    : 'The object is on the right. A lens follows the same rule from either side, and a mirror turns so the reflecting face still points at the object.');
+}
+function doPlace(which) {
+  if (which === '2f') state.do = clampDo(state.fAbs * 2);
+  else if (which === 'between') state.do = clampDo(state.fAbs * 1.5);
+  else if (which === 'inside') state.do = clampDo(Math.max(MIN_DO, state.fAbs * 0.55));
+  else if (which === 'beyond') state.do = clampDo(Math.min(MAX_DO, state.fAbs * 3.1));
+  else if (which === 'atf') state.do = clampDo(state.fAbs);
+  else return false;
+  const idx = MOVES.indexOf(which);
+  if (idx >= 0) state.moveCursor = idx;
+  flag('The object is now ' + focusPhrase(state.do, state.fAbs) + '.');
+  return true;
+}
+function doMoveObject() {
+  state.moveCursor = (state.moveCursor + 1) % MOVES.length;
+  doPlace(MOVES[state.moveCursor]);
+}
+function doNudge(dir) {
+  state.do = clampDo(state.do + dir * 0.04);
+  flag('The object is now ' + focusPhrase(state.do, state.fAbs) + '.');
+}
+function doReset(fromUser = true) {
+  state.typeIndex = 0;
+  state.fAbs = 0.20;
+  state.do = 0.40;
+  state.side = 1;
+  state.view = 'bench';
+  state.theta = 32 * Math.PI / 180;
+  state.fromGlass = false;
+  state.showC = false;
+  state.moveCursor = 1;
+  if (fromUser) flag('The bench is back to a converging lens, with the object at twice the focal length.');
+  else { flagText = ''; flagHold = 0; }
+}
+function doSurface(on) {
+  state.view = on ? 'surface' : 'bench';
+  flag(on
+    ? 'This is a flat glass surface in air. The ray bends according to Snell’s law.'
+    : 'Back on the optical bench. The rays and the image follow the lens or the mirror again.');
+}
+function doTheta(delta) {
+  state.theta = clamp(state.theta + delta, TH_MIN, TH_MAX);
+  const sn = snellNow();
+  flag(sn.tir
+    ? 'The ray is steep enough that it reflects completely inside the glass.'
+    : 'The angle from the normal is now ' + fmtDeg(state.theta) + '.');
+}
+function doReverse() {
+  state.fromGlass = !state.fromGlass;
+  if (!state.fromGlass && state.theta > 70 * Math.PI / 180) state.theta = 32 * Math.PI / 180;
+  flag(state.fromGlass
+    ? 'The ray is traveling inside the glass, toward the air. Steepen it past the critical angle and it reflects completely.'
+    : 'The ray is traveling in air, toward the glass. It bends toward the normal.');
+}
+function doShowC() {
+  state.showC = !state.showC;
+  if (!state.showC) {
+    flag('The center-of-curvature ray is hidden. The three principal rays are still drawn.');
+    return;
+  }
+  if (typeNow().optic !== 'mirror') {
+    flag('That ray belongs to a mirror. Switch to a concave or convex mirror and the honey ray will show when it can hit the mirror.');
+    return;
+  }
+  flag('The honey ray goes through the center of curvature and reflects back on itself. It stays hidden if it would miss the mirror or run along the object.');
+}
+
+function dispatchAct(act) {
+  if (!act) return false;
+  if (act === 'cycle-type') doCycleType();
+  else if (act === 'double-f') doDoubleF();
+  else if (act === 'halve-f') doHalveF();
+  else if (act === 'flip-side') doFlipSide();
+  else if (act === 'move-object') doMoveObject();
+  else if (act === 'reset') doReset(true);
+  else if (act === 'converging') doSetType('converging');
+  else if (act === 'diverging') doSetType('diverging');
+  else if (act === 'concave') doSetType('concave');
+  else if (act === 'convex') doSetType('convex');
+  else if (act === 'place-2f') doPlace('2f');
+  else if (act === 'place-between') doPlace('between');
+  else if (act === 'place-inside') doPlace('inside');
+  else if (act === 'place-beyond') doPlace('beyond');
+  else if (act === 'place-at-f') doPlace('atf');
+  else if (act === 'nudge-in') doNudge(-1);
+  else if (act === 'nudge-out') doNudge(1);
+  else if (act === 'surface') doSurface(true);
+  else if (act === 'bench') doSurface(false);
+  else if (act === 'steeper') doTheta(6 * Math.PI / 180);
+  else if (act === 'shallower') doTheta(-6 * Math.PI / 180);
+  else if (act === 'reverse-ray') doReverse();
+  else if (act === 'show-c') doShowC();
+  else return false;
+  refresh();
+  return true;
+}
+
+function refresh() {
+  rebuildOptics();
+  syncLessonPressed();
+  updateHud();
+  updateLessonLive();
+  if (still) {
+    lift = liftGoal;
+    camBlend = state.view === 'surface' ? 1 : 0;
+    placeCamera(0);
+    syncTags();
+    render();
+  }
+}
+
+/* ================= pointer ================= */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+const hitV = new THREE.Vector3();
+const lean = { x: 0, y: 0, vx: 0, vy: 0 };
+const leanGoal = { x: 0, y: 0 };
+
+function setPointer(e) {
+  const r = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+}
+function intersectBench() {
+  raycaster.setFromCamera(pointer, camera);
+  if (!raycaster.ray.intersectPlane(planeZ, hitV)) return null;
+  return hitV;
+}
+function onDown(e) {
+  if (e.button != null && e.button !== 0) return;
+  setPointer(e);
+  raycaster.setFromCamera(pointer, camera);
+  const list = state.view === 'surface' ? [handle] : [grab];
+  const hits = raycaster.intersectObjects(list, true);
+  if (hits.length && state.view === 'surface') dragging = { kind: 'ray' };
+  else if (hits.length) dragging = { kind: 'object' };
+  else {
+    dragging = { kind: 'lean', sx: e.clientX, sy: e.clientY, lx: lean.x, ly: lean.y };
+  }
+  if (dragging.kind === 'object') liftGoal = 0.04;
+  canvas.classList.add('grabbing');
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+}
+function onMove(e) {
+  setPointer(e);
+  if (!dragging) {
+    raycaster.setFromCamera(pointer, camera);
+    const list = state.view === 'surface' ? [handle] : [grab];
+    const hits = raycaster.intersectObjects(list, true);
+    canvas.classList.toggle('can-grab', hits.length > 0);
+    return;
+  }
+  if (dragging.kind === 'object') {
+    const p = intersectBench();
+    if (p) {
+      rig.worldToLocal(p);
+      state.do = clampDo(-p.x);
+      refresh();
+    }
+  } else if (dragging.kind === 'ray') {
+    const p = intersectBench();
+    if (p) {
+      surfaceRig.worldToLocal(p);
+      const ax = state.fromGlass ? Math.max(0.04, p.x) : Math.max(0.04, -p.x);
+      state.theta = clamp(Math.atan2(Math.abs(p.y), ax), TH_MIN, TH_MAX);
+      refresh();
+    }
+  } else if (dragging.kind === 'lean') {
+    leanGoal.x = clamp(dragging.lx + (e.clientX - dragging.sx) * 0.0016, -0.34, 0.34);
+    leanGoal.y = clamp(dragging.ly + (e.clientY - dragging.sy) * -0.00115, -0.2, 0.2);
+    if (still) {
+      lean.x = leanGoal.x;
+      lean.y = leanGoal.y;
+      placeCamera(0);
+      syncTags();
+      render();
+    }
+  }
+}
+function onUp(e) {
+  const was = dragging && dragging.kind;
+  dragging = null;
+  liftGoal = 0;
+  canvas.classList.remove('grabbing');
+  if (was === 'lean') { leanGoal.x = 0; leanGoal.y = 0; }
+  if (was === 'object' || was === 'ray') {
+    if (was === 'object') flag('The object is ' + fmtCm(state.do) + ' from the ' + (typeNow().optic === 'lens' ? 'lens' : 'mirror') + '.');
+    refresh();
+  }
+  if (still) {
+    lean.x = 0; lean.y = 0; lean.vx = 0; lean.vy = 0;
+    leanGoal.x = 0; leanGoal.y = 0;
+    lift = 0; liftGoal = 0;
+    placeCamera(0);
+    syncTags();
+    render();
+  }
+  try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+document.getElementById('chips').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  dispatchAct(btn.dataset.act);
+});
+
+function stepLean(dt) {
+  if (still) return;
+  const k = 32;
+  const damp = 7.2;
+  lean.vx += (k * (leanGoal.x - lean.x) - damp * lean.vx) * dt;
+  lean.vy += (k * (leanGoal.y - lean.y) - damp * lean.vy) * dt;
+  lean.x += lean.vx * dt;
+  lean.y += lean.vy * dt;
+}
+function stepLift(dt) {
+  if (still) { lift = liftGoal; return; }
+  lift += (liftGoal - lift) * (1 - Math.exp(-dt * 10));
+}
+function stepBlend(dt) {
+  const goal = state.view === 'surface' ? 1 : 0;
+  if (still) { camBlend = goal; return; }
+  camBlend += (goal - camBlend) * (1 - Math.exp(-dt * 4.5));
+}
+
+const narrowMq = matchMedia('(max-width: 720px), (max-aspect-ratio: 5/6)');
+const lessonEl = document.getElementById('lesson');
+function chromeLeftEdge() {
+  if (embed || narrowMq.matches || !lsOpen) return 0;
+  return lessonEl.getBoundingClientRect().right;
+}
+function placeCamera(t) {
+  const left = chromeLeftEdge();
+  const shift = left > 40 ? (left / innerWidth) * 1.25 : 0;
+  const breathe = still ? 0 : Math.sin(t * 0.35) * 0.008;
+  const narrow = narrowMq.matches;
+  const from = narrow ? camNarrow : camBench;
+  const to = narrow ? camNarrowSurf : camSurf;
+  const lookA = narrow ? lookNarrow : lookBench;
+  const lookB = narrow ? lookNarrowSurf : lookSurf;
+  const bx = from.x + (to.x - from.x) * camBlend;
+  const by = from.y + (to.y - from.y) * camBlend;
+  const bz = from.z + (to.z - from.z) * camBlend;
+  const lx = lookA.x + (lookB.x - lookA.x) * camBlend;
+  const ly = lookA.y + (lookB.y - lookA.y) * camBlend;
+  camera.position.set(
+    bx - shift * 0.15 + lean.x * 0.9,
+    by + lean.y + breathe,
+    bz - lean.y * 0.12
+  );
+  camera.lookAt(lx - shift + lean.x * 0.28, ly, lean.x * 0.04);
+}
+function resize() {
+  const w = stage.clientWidth;
+  const h = stage.clientHeight;
+  camera.aspect = w / Math.max(1, h);
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+}
+
+/* ================= lesson ================= */
+const lsBody = document.getElementById('ls-body');
+const lsKicker = document.getElementById('ls-kicker');
+const lsDots = document.getElementById('ls-dots');
+const lsToggle = document.getElementById('ls-toggle');
+const labelEl = document.querySelector('.label');
+const footEl = document.querySelector('.foot');
+const metersEl = document.getElementById('meters');
+
+const LS = [
+  { topic: 'Meet the bench', focus: 'intro', html: `
+    <h3>Meet the bench</h3>
+    <p class="formula">1/f = 1/d<sub>o</sub> + 1/d<sub>i</sub></p>
+    <p>The warm arrow is the object. The glass at the center is a thin converging lens. The pearl line through the middle is the optical axis. Object distance d<sub>o</sub> is how far the object sits from the lens. Image distance d<sub>i</sub> is how far the image sits from the lens. The focal length f belongs to the lens. Magnification m compares the image height with the object height, and the sign of m tells you whether the image is inverted.</p>
+    <p>Drag the object along the bench. The three colored rays leave the tip of the object, bend at the lens, and meet at the tip of the image. The meters stay tied to the distances you set.</p>
+    <p class="watch"><b>Watch</b> You should see the object arrow, the lens, a warm ray, a pearl ray, a lilac ray, and an image arrow. The meters should name d<sub>o</sub>, d<sub>i</sub>, f, and m.</p>
+    <p class="live" aria-live="polite"><b>Now</b> This is a <span data-live="kind">—</span>. The object is <span data-live="do">—</span> away, the focal length is <span data-live="f">—</span>, the image is <span data-live="di">—</span> away, and m is <span data-live="m">—</span>.</p>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="place-2f">Place at 2f</button></div>` },
+  { topic: 'Reflection', focus: 'reflect', html: `
+    <h3>Reflection</h3>
+    <p class="formula">angle of incidence = angle of reflection</p>
+    <p>A mirror sends a ray back into the same material. The angle between the incoming ray and the normal equals the angle between the outgoing ray and the normal. Both angles are measured from the normal, the line straight out from the surface, not from the mirror itself. On a curved mirror the normal changes from point to point. At the center of this mirror, the normal is the optical axis.</p>
+    <p>Switch to a concave mirror. The rays should bounce back toward the object’s side instead of passing through. The pearl ray hits the center of the mirror. The angle it makes with the axis on the way in equals the angle it makes on the way out.</p>
+    <p class="watch"><b>Watch</b> Press Concave mirror, then follow the pearl ray. It should strike the center and leave at the same angle to the axis. The warm ray, which came in parallel to the axis, should leave through the focal point.</p>
+    <p class="live" aria-live="polite"><b>Now</b> This is a <span data-live="kind">—</span>. The center ray meets the axis at <span data-live="axisAngle">—</span>, and it leaves at the same angle. The image is <span data-live="imageWord">—</span>.</p>
+    <div class="acts"><button type="button" data-act="concave">Concave mirror</button><button type="button" data-act="convex">Convex mirror</button><button type="button" data-act="place-2f">Place at 2f</button></div>` },
+  { topic: 'Refraction · Snell', focus: 'snell', html: `
+    <h3>Refraction and Snell’s law</h3>
+    <p class="formula">n₁ sin θ₁ = n₂ sin θ₂</p>
+    <p>When a ray crosses from one clear material into another, it bends. That bend is refraction. Snell’s law sets the sizes of the angles. The angles are measured from the normal. On this surface the air has n = 1.00 and the glass has n = 1.50. A larger index means the light travels more slowly in that material, and the ray bends toward the normal as it enters.</p>
+    <p>Going the other way, from glass into air, the ray bends away from the normal. If the angle inside the glass is steep enough, there is no refracted ray in the air at all. The ray reflects completely. That is total internal reflection. The critical angle for this glass is about 41.8°.</p>
+    <p class="watch"><b>Watch</b> Show the glass surface. Make the ray steeper and shallower, and compare the ray in the air with the ray in the glass. Then reverse the ray and steepen it until it reflects completely inside the glass.</p>
+    <p class="live" aria-live="polite"><b>Now</b> θ₁ is <span data-live="theta1">—</span> in the material with n = <span data-live="n1">—</span>. θ₂ is <span data-live="theta2">—</span>. <span data-live="tirWord">—</span></p>
+    <div class="acts"><button type="button" data-act="surface">Show the glass</button><button type="button" data-act="steeper">Steeper ray</button><button type="button" data-act="shallower">Shallower ray</button><button type="button" data-act="reverse-ray">Reverse the ray</button><button type="button" data-act="bench">Back to the bench</button></div>` },
+  { topic: 'Thin-lens equation', focus: 'equation', html: `
+    <h3>The thin-lens equation</h3>
+    <p class="formula">1/f = 1/d<sub>o</sub> + 1/d<sub>i</sub></p>
+    <p>For a thin lens, the object distance, the image distance, and the focal length are tied together by that equation. Use the same unit on every term. On this bench the meters use centimeters. A spherical mirror uses the same equation, with a different meaning for where the image sits.</p>
+    <p>A positive f means a converging lens or a concave mirror. A negative f means a diverging lens or a convex mirror. A positive d<sub>i</sub> means a real image: on the far side of a lens, or in front of a mirror. A negative d<sub>i</sub> means a virtual image, which you find by extending the rays backward. The rays do not actually meet there.</p>
+    <p class="watch"><b>Watch</b> Read the equation under the meters, then double the focal length and read it again. The object distance stays put, so the image distance has to change to keep the equation true.</p>
+    <p class="live" aria-live="polite"><b>Now</b> f is <span data-live="f">—</span>, d<sub>o</sub> is <span data-live="do">—</span>, and d<sub>i</sub> is <span data-live="di">—</span>. The image is <span data-live="imageWord">—</span>.</p>
+    <div class="acts"><button type="button" data-act="double-f">Double f</button><button type="button" data-act="halve-f">Halve f</button><button type="button" data-act="reset">Reset</button></div>` },
+  { topic: 'Principal rays', focus: 'rays', html: `
+    <h3>Three principal rays</h3>
+    <p class="formula">parallel ray · center ray · focal ray</p>
+    <p>You only need two rays to locate the image. The third ray is a check. From the tip of the object on a thin lens: the warm ray runs parallel to the axis and then bends through the far focal point. The pearl ray goes straight through the center of the lens. The lilac ray passes through the near focal point and leaves the lens parallel to the axis. Where they meet is the tip of the image.</p>
+    <p>On a mirror the jobs change a little. A ray parallel to the axis reflects through the focal point. A ray that hits the center of the mirror reflects so the two angles match. A ray through the focal point reflects parallel to the axis. A ray aimed at the center of curvature reflects back along itself. That honey ray can be turned on when you want the extra check.</p>
+    <p class="watch"><b>Watch</b> Place the object at twice the focal length on a converging lens. The three rays should meet at an inverted arrow as tall as the object, on the far side of the lens.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The rays meet at an image with m = <span data-live="m">—</span>. The object is <span data-live="focusPhrase">—</span>.</p>
+    <div class="acts"><button type="button" data-act="converging">Converging lens</button><button type="button" data-act="place-2f">Place at 2f</button><button type="button" data-act="place-between">Between f and 2f</button><button type="button" data-act="show-c">Show the C ray</button></div>` },
+  { topic: 'Real image', focus: 'real', html: `
+    <h3>A real image</h3>
+    <p class="formula">d<sub>o</sub> &gt; f · the rays really meet · the image is inverted</p>
+    <p>When the object sits farther from a converging lens than the focal point, the rays meet on the far side. That meeting place is a real image. Light actually arrives there, so a card or a screen can catch the picture. The image is upside down. The faint card on the bench marks that plane.</p>
+    <p>Put the object at twice the focal length. The image is the same size as the object, and it also sits at twice the focal length, on the far side. Move the object out past that point and the image comes closer than 2f and gets smaller. Move the object in, between the focal point and 2f, and the image moves out past 2f and gets larger. It stays inverted.</p>
+    <p class="watch"><b>Watch</b> Place the object at 2f and compare the two arrows. Then place it beyond 2f, and then between f and 2f. The image arrow should stay on the far side and stay upside down, while its size and distance change.</p>
+    <p class="live" aria-live="polite"><b>Now</b> d<sub>o</sub> is <span data-live="do">—</span> and d<sub>i</sub> is <span data-live="di">—</span>. The image is <span data-live="imageWord">—</span>, <span data-live="placePhrase">—</span>. m is <span data-live="m">—</span>.</p>
+    <div class="acts"><button type="button" data-act="converging">Converging lens</button><button type="button" data-act="place-2f">Place at 2f</button><button type="button" data-act="place-beyond">Beyond 2f</button><button type="button" data-act="place-between">Between f and 2f</button></div>` },
+  { topic: 'Virtual image', focus: 'virtual', html: `
+    <h3>A virtual image</h3>
+    <p class="formula">object inside f · upright · the rays only appear to meet</p>
+    <p>Slide the object inside the focal point of a converging lens. The rays leave the lens spreading apart. They never meet on the far side, so a card there stays dark. If you extend those rays backward, the dashed lines meet on the same side as the object. That meeting place is a virtual image. It is upright, and it is larger than the object.</p>
+    <p>A magnifying glass works this way. You look through the lens, and your eye traces the spreading rays back to the upright image. The image is not a place you can catch on a screen. The same idea, with the object inside the focal length, gives the virtual image in a concave makeup mirror.</p>
+    <p class="watch"><b>Watch</b> Move the object inside f. The solid rays should miss each other on the far side, and the dashed lines should meet at an upright lilac arrow on the object’s side.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The object is <span data-live="focusPhrase">—</span>. d<sub>o</sub> is <span data-live="do">—</span> and f is <span data-live="f">—</span>. The image is <span data-live="imageWord">—</span>, and m is <span data-live="m">—</span>.</p>
+    <div class="acts"><button type="button" data-act="converging">Converging lens</button><button type="button" data-act="place-inside">Inside f</button><button type="button" data-act="place-2f">Place at 2f</button><button type="button" data-act="concave">Concave mirror</button></div>` },
+  { topic: 'Magnification', focus: 'mag', html: `
+    <h3>Magnification</h3>
+    <p class="formula">m = −d<sub>i</sub> / d<sub>o</sub></p>
+    <p>Magnification compares the image height with the object height, and it keeps the direction. A negative m means the image is inverted. A positive m means the image is upright. If the absolute value of m is greater than 1, the image is larger than the object. If it is less than 1, the image is smaller. If it is 1, the two arrows match in size.</p>
+    <p>The meter uses the live distances, so you can check it against the arrows. The minus sign is part of the answer. A real image on this bench is inverted, so m comes out negative. A virtual image from a single lens, with a real object, is upright, so m comes out positive.</p>
+    <p class="watch"><b>Watch</b> Move the object from beyond 2f to a place between f and 2f. The image should grow, and it should move farther from the lens. Then move the object inside f and watch the sign of m change as the image becomes upright.</p>
+    <p class="live" aria-live="polite"><b>Now</b> m = −d<sub>i</sub> / d<sub>o</sub> = <span data-live="m">—</span>. The image is <span data-live="magWord">—</span>.</p>
+    <div class="acts"><button type="button" data-act="place-beyond">Beyond 2f</button><button type="button" data-act="place-between">Between f and 2f</button><button type="button" data-act="place-inside">Inside f</button></div>` },
+  { topic: 'Diverging lens', focus: 'diverging', html: `
+    <h3>A diverging lens</h3>
+    <p class="formula">f is negative · virtual, upright, and smaller</p>
+    <p>A diverging lens is thinner in the middle. Parallel rays leave it spreading out, as if they had come from the focal point on the object’s side. For a real object, the image is always virtual, upright, and smaller than the object, and it sits on the object’s side of the lens. You see it by looking through the lens and tracing the dashed rays backward.</p>
+    <p>The focal length is written as a negative number so the same equation still works. Double the focal length and the lens gets weaker: the image changes size, but it stays virtual and upright. A diverging lens cannot catch a real image of a real object on a card.</p>
+    <p class="watch"><b>Watch</b> Switch to the diverging lens. The image arrow should be upright, shorter than the object, and on the same side as the object. The dashed lines should mark it.</p>
+    <p class="live" aria-live="polite"><b>Now</b> This is a <span data-live="kind">—</span>. f is <span data-live="f">—</span>, d<sub>i</sub> is <span data-live="di">—</span>, and m is <span data-live="m">—</span>. The image is <span data-live="magWord">—</span>.</p>
+    <div class="acts"><button type="button" data-act="diverging">Diverging lens</button><button type="button" data-act="double-f">Double f</button><button type="button" data-act="halve-f">Halve f</button><button type="button" data-act="place-beyond">Move farther</button></div>` },
+  { topic: 'Mirrors', focus: 'mirrors', html: `
+    <h3>Mirrors use the same equation</h3>
+    <p class="formula">concave like a converging lens · convex like a diverging lens</p>
+    <p>A concave mirror can do what a converging lens does, with the image in a different place. If the object is beyond the focal point, the reflected rays meet in front of the mirror. That image is real and inverted. If the object is inside the focal length, the reflected rays only appear to meet behind the mirror. That image is virtual, upright, and enlarged, which is the image in a makeup mirror.</p>
+    <p>A convex mirror spreads the reflected rays. For a real object it always makes a virtual, upright, smaller image behind the mirror. The passenger-side mirror on a car is convex. The warning that objects are closer than they appear is a magnification smaller than 1: the image is small, so the car looks farther away than it is.</p>
+    <p class="watch"><b>Watch</b> Put a concave mirror at 2f and find the real inverted image in front of the mirror. Then switch to a convex mirror. The image should become a small upright arrow behind the mirror.</p>
+    <p class="live" aria-live="polite"><b>Now</b> This is a <span data-live="kind">—</span>. The image is <span data-live="imageWord">—</span>, <span data-live="placePhrase">—</span>, and m is <span data-live="m">—</span>.</p>
+    <div class="acts"><button type="button" data-act="concave">Concave mirror</button><button type="button" data-act="place-2f">Place at 2f</button><button type="button" data-act="place-inside">Inside f</button><button type="button" data-act="convex">Convex mirror</button><button type="button" data-act="show-c">Show the C ray</button></div>` },
+  { topic: 'In the real world', focus: 'world', html: `
+    <h3>In the real world</h3>
+    <p>These ray rules are how a sharp picture gets made. A real image is light that actually arrives, so a screen or a camera sensor can catch it. A virtual image is a place the rays only seem to come from, which is what you see when you look through a magnifying glass or into a mirror.</p>
+    <p>An optometrist, and an ophthalmic technician who fits eyeglasses in an exam lane or an optical shop, uses lens power every day. Power in diopters is 1/f, with the focal length in meters. A stronger prescription is a shorter focal length, so the lens bends the rays more and moves the image onto the retina.</p>
+    <p>A camera engineer, and an optical engineer who designs lenses for augmented-reality glasses, traces the same principal rays you see on this bench. They choose object distance, image distance, and magnification so a real image lands on a sensor, or a virtual image sits where the eye expects the picture.</p>
+    <p>A stage-lighting designer, and a designer of a lighthouse lantern, puts a lamp near a focal point so a lens or a mirror sends the light out as a controlled beam. A telescope optician grinds a concave mirror or a lens so starlight, which comes in almost parallel, focuses to a real image at the focal point.</p>
+    <p class="watch"><b>Watch</b> Put a converging lens on the bench and place the object beyond the focal point, then inside it. The first case is a camera putting a real image on a sensor. The second case is a magnifier, which is the idea in a simple lens used up close.</p>
+    <p class="live" aria-live="polite"><b>Now</b> The focal length is <span data-live="f">—</span>, which is a lens power of <span data-live="power">—</span>. The image is <span data-live="imageWord">—</span>.</p>
+    <div class="acts"><button type="button" data-act="converging">Converging lens</button><button type="button" data-act="place-2f">Place at 2f</button><button type="button" data-act="place-inside">Inside f</button><button type="button" data-act="concave">Concave mirror</button></div>` },
+  { topic: 'Questions to try', focus: 'questions', html: `
+    <h3>Questions to try</h3>
+    <p>Use the bench, then open a hint after you have a prediction.</p>
+    <p class="watch"><b>Watch</b> Predict first. Then press the button the hint names, and check the meters against what you expected.</p>
+    <p class="live" aria-live="polite"><b>Now</b> This is a <span data-live="kind">—</span>. d<sub>o</sub> is <span data-live="do">—</span>, d<sub>i</sub> is <span data-live="di">—</span>, f is <span data-live="f">—</span>, and m is <span data-live="m">—</span>.</p>
+    <details><summary>The object is at twice the focal length of a converging lens. Where is the image, and which way does it point?</summary><p>Place the object at 2f on a converging lens. Then d<sub>i</sub> equals d<sub>o</sub>, so the image is also at twice the focal length, on the far side. m = −1, so the image is inverted and the same size as the object. Right now the image is <span data-live="imageWord">—</span> and m is <span data-live="m">—</span>.</p></details>
+    <details><summary>You leave the object where it is and double f. What happens to the image?</summary><p>Use 1/d<sub>i</sub> = 1/f − 1/d<sub>o</sub>. Doubling f changes the first term, so d<sub>i</sub> changes. If you started at 2f, doubling f puts the object at the new focal point, and the outgoing rays become parallel. Press Reset, read the image distance, then press Double f and read it again.</p></details>
+    <details><summary>The object moves inside the focal length of a converging lens. Is the image real or virtual, and is it upright?</summary><p>The rays no longer meet on the far side. The image is virtual, on the same side as the object, and it is upright and larger. m is positive. Press Inside f and compare the dashed arrow with the object.</p></details>
+    <details><summary>Why is m negative when the image on this bench is real?</summary><p>m = −d<sub>i</sub> / d<sub>o</sub>. For a real image, d<sub>i</sub> and d<sub>o</sub> are both positive, so the minus sign makes m negative. A negative magnification means the image is inverted. The arrow on the far side points the other way.</p></details>
+    <details><summary>A diverging lens has f = −20 cm and the object is at 40 cm. Is the image larger or smaller, and which side is it on?</summary><p>1/d<sub>i</sub> = 1/(−20) − 1/40 = −0.075, so d<sub>i</sub> is about −13 cm. m = −d<sub>i</sub> / d<sub>o</sub> is positive and less than 1. The image is virtual, upright, and smaller, on the object’s side. Press Diverging lens, then Place at 2f, which puts the object at twice the focal length.</p></details>
+    <details><summary>Light goes from air into glass. Does the ray bend toward the normal or away from it?</summary><p>Glass has the larger index, so the ray bends toward the normal. Snell’s law, n₁ sin θ₁ = n₂ sin θ₂, gives a smaller angle in the glass. Press Show the glass and compare θ₁ with θ₂. Reverse the ray if you want to see the bend the other way, and the chance of a complete reflection.</p></details>
+    <details><summary>Why can a card catch a real image, but not a virtual image?</summary><p>A real image is a place the rays actually meet, so the light hits the card. A virtual image is only the backward extension of rays that are spreading apart. The light never arrives at that point, so the card stays dark. The faint card on the bench appears only for a real image.</p></details>
+    <details><summary>A convex passenger-side mirror makes cars look smaller. Where is the image, and why do the cars look farther away than they are?</summary><p>A convex mirror gives a virtual, upright image behind the mirror, with magnification smaller than 1. A smaller image is what your eye would see if the car were farther away, so the car looks farther than it is. Press Convex mirror and read m. It should be positive and less than 1.</p></details>
+    <div class="acts"><button type="button" data-act="reset">Reset</button><button type="button" data-act="double-f">Double f</button><button type="button" data-act="place-inside">Inside f</button><button type="button" data-act="convex">Convex mirror</button></div>` },
+];
+
+let lsStep = 0;
+let lsOpen = !params.has('nolesson');
+let mMode = 'learn';
+const lsLive = [];
+
+for (let i = 0; i < LS.length; i++) {
+  const d = document.createElement('button');
+  d.type = 'button';
+  d.dataset.go = String(i);
+  d.setAttribute('aria-label', 'Step ' + (i + 1) + ': ' + LS[i].topic);
+  lsDots.appendChild(d);
+}
+
+function renderLesson() {
+  const st = LS[lsStep];
+  lsKicker.innerHTML = 'Lesson ' + (lsStep + 1) + '/' + LS.length + ' · <b>' + st.topic + '</b>';
+  lsBody.innerHTML = st.html;
+  lsBody.scrollTop = 0;
+  lsLive.length = 0;
+  for (const el of lsBody.querySelectorAll('[data-live]')) lsLive.push(el);
+  for (const dot of lsDots.children) dot.toggleAttribute('aria-current', false);
+  lsDots.children[lsStep].setAttribute('aria-current', 'step');
+  lessonEl.querySelector('[data-step="prev"]').disabled = lsStep === 0;
+  lessonEl.querySelector('[data-step="next"]').disabled = lsStep === LS.length - 1;
+  document.body.dataset.focus = lsOpen ? st.focus : 'both';
+  syncLessonPressed();
+  updateLessonLive();
+}
+function syncLessonPressed() {
+  const id = typeNow().id;
+  for (const b of lsBody.querySelectorAll('button[data-act]')) {
+    const a = b.dataset.act;
+    let on = null;
+    if (a === 'converging' || a === 'diverging' || a === 'concave' || a === 'convex') on = id === a;
+    else if (a === 'surface') on = state.view === 'surface';
+    else if (a === 'bench') on = state.view === 'bench';
+    else if (a === 'show-c') on = state.showC;
+    else continue;
+    b.setAttribute('aria-pressed', String(on));
+  }
+}
+function updateLessonLive() {
+  if (!lsLive.length || !latest) return;
+  const tr = latest;
+  const sn = tr.snell || snellNow();
+  const vals = {
+    do: fmtCm(tr.d),
+    di: tr.far ? (tr.atInfinity ? 'very far' : (tr.real ? 'past the bench' : 'virtual, past the bench')) : fmtCm(tr.di),
+    f: fmtCm(tr.f),
+    m: fmtM(tr),
+    kind: tr.name,
+    imageWord: imageWord(tr),
+    magWord: magWord(tr),
+    focusPhrase: focusPhrase(tr.d, state.fAbs),
+    placePhrase: placePhrase(tr, tr.optic),
+    power: fmtPower(tr.f),
+    theta1: fmtDeg(sn.th),
+    theta2: sn.tir ? 'none, because the ray reflects completely' : fmtDeg(sn.th2),
+    n1: sn.n1.toFixed(2),
+    n2: sn.n2.toFixed(2),
+    tirWord: sn.tir
+      ? 'The products do not have a matching angle in the second material, so the ray reflects completely.'
+      : ('The two sides of Snell’s law are ' + sn.left.toFixed(3) + ' and ' + sn.right.toFixed(3) + '.'),
+    axisAngle: fmtDeg(Math.atan2(H_OBJ, tr.d)),
+  };
+  for (const el of lsLive) el.textContent = vals[el.dataset.live] ?? '—';
+}
+
+function goStep(i) {
+  const prev = lsStep;
+  lsStep = Math.max(0, Math.min(LS.length - 1, i | 0));
+  const focus = LS[lsStep].focus;
+  const prevFocus = LS[prev].focus;
+  if (focus === 'snell') state.view = 'surface';
+  else if (prevFocus === 'snell' && focus !== 'snell') state.view = 'bench';
+  renderLesson();
+  refresh();
+}
+function onLessonClick(e) {
+  const btn = e.target.closest('button');
+  if (!btn || !lessonEl.contains(btn)) return;
+  if (btn.dataset.step === 'prev') goStep(lsStep - 1);
+  else if (btn.dataset.step === 'next') goStep(lsStep + 1);
+  else if (btn.dataset.go) goStep(+btn.dataset.go);
+  else if (btn.dataset.mode) setMobileMode(btn.dataset.mode);
+  else if (btn === lsToggle) setLessonOpen(!lsOpen);
+  else if (btn.dataset.act) dispatchAct(btn.dataset.act);
+}
+function setLessonOpen(open) {
+  lsOpen = open;
+  document.body.classList.toggle('lesson-closed', !open);
+  lsToggle.setAttribute('aria-expanded', String(open));
+  lsToggle.textContent = open ? 'Hide' : 'Open lesson';
+  document.body.dataset.focus = open ? LS[lsStep].focus : 'both';
+  fitLesson();
+  resize();
+  placeCamera(0);
+  if (still) render();
+}
+function setMobileMode(mode) {
+  mMode = mode;
+  document.body.classList.toggle('m-learn', mode === 'learn');
+  document.body.classList.toggle('m-numbers', mode === 'numbers');
+  for (const b of lessonEl.querySelectorAll('[data-mode]')) {
+    b.setAttribute('aria-selected', String(b.dataset.mode === mode));
+  }
+}
+function placeLesson() {
+  if (narrowMq.matches) {
+    if (lessonEl.parentElement !== footEl) footEl.insertBefore(lessonEl, metersEl);
+    if (!lsOpen) setLessonOpen(true);
+  } else if (lessonEl.parentElement !== labelEl) {
+    labelEl.appendChild(lessonEl);
+  }
+  fitLesson();
+}
+function fitLesson() {
+  if (narrowMq.matches) { lessonEl.style.maxHeight = ''; return; }
+  const top = lessonEl.getBoundingClientRect().top;
+  const footH = footEl.getBoundingClientRect().height;
+  const padB = parseFloat(getComputedStyle(document.querySelector('.chrome')).paddingBottom) || 16;
+  lessonEl.style.maxHeight = Math.max(180, innerHeight - padB - footH - 20 - top) + 'px';
+}
+function onLessonKey(e) {
+  if (e.target.closest && e.target.closest('input, textarea, summary')) return;
+  if (e.key === 'ArrowRight') goStep(lsStep + 1);
+  else if (e.key === 'ArrowLeft') goStep(lsStep - 1);
+}
+
+const leanClock = { t: 0 };
+function render() { renderer.render(scene, camera); }
+let raf = 0;
+const clock = new THREE.Clock();
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  leanClock.t += dt;
+  stepLean(dt);
+  stepLift(dt);
+  stepBlend(dt);
+  if (Math.abs(lift - objectArrow.group.position.y) > 0.0005) {
+    objectArrow.group.position.y = lift;
+  }
+  if (!still) {
+    const pulse = 0.38 + 0.12 * Math.sin(leanClock.t * 1.5);
+    objectArrow.mat.emissiveIntensity = pulse + 0.15;
+    glassMat.emissiveIntensity = 0.36 + 0.12 * Math.sin(leanClock.t * 1.3);
+    metalMat.emissiveIntensity = 0.24 + 0.08 * Math.sin(leanClock.t * 1.3);
+  }
+  placeCamera(leanClock.t);
+  syncTags();
+  flagHold = Math.max(0, flagHold - dt);
+  updateHud();
+  updateLessonLive();
+  render();
+}
+function holdStill() {
+  cancelAnimationFrame(raf); raf = 0;
+  lean.x = 0; lean.y = 0; lean.vx = 0; lean.vy = 0;
+  leanGoal.x = 0; leanGoal.y = 0;
+  lift = liftGoal;
+  camBlend = state.view === 'surface' ? 1 : 0;
+  objectArrow.mat.emissiveIntensity = 0.5;
+  glassMat.emissiveIntensity = 0.45;
+  metalMat.emissiveIntensity = 0.3;
+  objectArrow.group.position.y = lift;
+  placeCamera(0);
+  syncTags();
+  updateHud();
+  updateLessonLive();
+  render();
+}
+function start() {
+  if (still) { holdStill(); return; }
+  if (raf || document.hidden) return;
+  clock.getDelta();
+  raf = requestAnimationFrame(frame);
+}
+
+document.body.classList.add('has-lesson');
+setMobileMode('learn');
+lessonEl.addEventListener('click', onLessonClick);
+addEventListener('keydown', onLessonKey);
+narrowMq.addEventListener('change', () => { placeLesson(); resize(); });
+placeLesson();
+doReset(false);
+renderLesson();
+if (!lsOpen) setLessonOpen(false);
+rebuildOptics();
+updateHud();
+const ro = new ResizeObserver(() => { fitLesson(); resize(); if (still) { placeCamera(0); syncTags(); render(); } });
+ro.observe(stage);
+resize();
+placeCamera(0);
+syncTags();
+render();
+start();
+
+motionQuery.addEventListener('change', (e) => {
+  reduced = e.matches;
+  still = reduced || params.has('still');
+  if (still) holdStill();
+  else start();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else start();
+});
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  cancelAnimationFrame(raf); raf = 0;
+  showErr('The picture stopped. Reload the page to bring it back.');
+});
+
+function teardown() {
+  cancelAnimationFrame(raf); raf = 0;
+  ro.disconnect();
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup', onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  lessonEl.removeEventListener('click', onLessonClick);
+  removeEventListener('keydown', onLessonKey);
+  for (const d of disposables) {
+    if (d && d.dispose) d.dispose();
+  }
+  renderer.dispose();
+  renderer.forceContextLoss();
+  canvas.remove();
+}
+addEventListener('pagehide', (e) => { if (!e.persisted) teardown(); });
+
+function snapshot() {
+  const tr = latest || traceBench();
+  const sn = tr.snell || snellNow();
+  return {
+    kind: tr.kind,
+    optic: tr.optic,
+    name: tr.name,
+    do: tr.d,
+    di: tr.di,
+    f: tr.f,
+    m: tr.m,
+    far: tr.far,
+    atInfinity: tr.atInfinity,
+    real: tr.real,
+    upright: tr.upright,
+    side: state.side,
+    view: state.view,
+    showC: state.showC,
+    xObj: tr.xObj,
+    xImg: tr.xImg,
+    yImg: tr.yImg,
+    rayError: tr.rayError,
+    rayCount: tr.rayCount,
+    theta1: sn.th,
+    theta2: sn.th2,
+    tir: sn.tir,
+    n1: sn.n1,
+    n2: sn.n2,
+    snellResidual: sn.tir ? null : Math.abs(sn.left - sn.right),
+    step: lsStep,
+    still,
+    lessonOpen: lsOpen,
+    title: document.title,
+  };
+}
+
+window.__geometricOpticsTeardown = teardown;
+window.__geometricOptics = {
+  renderer,
+  get still() { return still; },
+  get step() { return lsStep; },
+  act: dispatchAct,
+  goStep,
+  snapshot,
+};
+window.__geometricOpticsReady = true;
+
+} catch (e) {
+  const raw = e && e.message ? e.message : String(e);
+  showErr(/webgl/i.test(raw)
+    ? 'The picture could not start in this browser. Reload the page, or open the lesson in a current browser.'
+    : raw);
+  console.error('[geometric-optics]', e);
+}
+</script>
+</body>
+</html>
